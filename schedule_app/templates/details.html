@@ -1,0 +1,93 @@
+{% extends 'master.html' %}
+
+{% block content %}
+<!-- Main Container using Soft Sage Green Background -->
+<div class="min-h-screen py-12 px-4 sm:px-6 lg:px-8 bg-emerald-950/10 text-stone-800 antialiased flex items-center justify-center">
+    
+    <!-- Member Card Container -->
+    <div class="w-full max-w-md bg-amber-50/70 border border-stone-200/90 rounded-3xl shadow-xl backdrop-blur-sm overflow-hidden relative">
+
+        <!-- Top Accent Banner -->
+        <div class="h-28 bg-gradient-to-r from-amber-900 via-amber-800 to-amber-900 relative"></div>
+        
+        <!-- Card Body -->
+        <div class="px-6 pb-8 pt-0 sm:px-8 relative text-center">
+            
+            <!-- Avatar Placeholder / Initial Badge -->
+            <div class="-mt-14 mb-4 inline-flex items-center justify-center w-24 h-24 rounded-full bg-amber-100 border-4 border-amber-50/90 shadow-md text-amber-900 text-3xl font-extrabold ring-1 ring-stone-200">
+                {% if mymembers.user.first_name %}
+                    {{ mymembers.user.first_name|slice:":1" }}{{ mymembers.user.last_name|slice:":1" }}
+                {% else %}
+                    {{ mymembers.user.username|slice:":1"|upper }}
+                {% endif %}
+            </div>
+
+            <!-- Member Name & Handle -->
+            <h1 class="text-2xl sm:text-3xl font-extrabold text-stone-900 tracking-tight leading-tight">
+                {% if mymembers.user.first_name %}
+                    {{ mymembers.user.first_name }} {{ mymembers.user.last_name }}
+                {% else %}
+                    {{ mymembers.user.username }}
+                {% endif %}
+            </h1>
+
+            <span class="inline-block mt-1 text-xs font-bold tracking-wider text-emerald-900 bg-emerald-200/80 border border-emerald-300/60 rounded-full px-3 py-1">
+                @{{ mymembers.user.username }}
+            </span>
+
+            <!-- Info List -->
+            <div class="mt-8 space-y-3.5 text-left">
+                
+                <!-- Birthdate Row -->
+                <div class="flex items-center gap-3.5 p-3.5 rounded-2xl bg-white/80 border border-stone-200/70 shadow-xs">
+                    <div class="w-10 h-10 rounded-xl bg-amber-100/80 border border-amber-200/60 flex items-center justify-center text-lg flex-none">
+                        🎂
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <div class="text-[10px] font-bold uppercase tracking-wider text-stone-400">Birthdate</div>
+                        <div class="text-sm font-semibold text-stone-800 truncate">
+                            {{ mymembers.birth_date|default:"Not specified" }}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Phone Row -->
+                <div class="flex items-center gap-3.5 p-3.5 rounded-2xl bg-white/80 border border-stone-200/70 shadow-xs">
+                    <div class="w-10 h-10 rounded-xl bg-amber-100/80 border border-amber-200/60 flex items-center justify-center text-lg flex-none">
+                        📞
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <div class="text-[10px] font-bold uppercase tracking-wider text-stone-400">Phone</div>
+                        <div class="text-sm font-semibold text-stone-800 truncate">
+                            {{ mymembers.phone|default:"Not specified" }}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Joined Date Row -->
+                <div class="flex items-center gap-3.5 p-3.5 rounded-2xl bg-white/80 border border-stone-200/70 shadow-xs">
+                    <div class="w-10 h-10 rounded-xl bg-amber-100/80 border border-amber-200/60 flex items-center justify-center text-lg flex-none">
+                        🏆
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <div class="text-[10px] font-bold uppercase tracking-wider text-stone-400">Joined</div>
+                        <div class="text-sm font-semibold text-stone-800 truncate">
+                            {{ mymembers.joined_date|default:"Not specified" }}
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Back Link -->
+            <div class="mt-8 pt-2">
+                <a href="{% url 'members' %}" 
+                   class="inline-flex items-center justify-center gap-2 w-full py-3 px-4 rounded-xl text-xs sm:text-sm font-semibold text-amber-900 bg-amber-100/60 hover:bg-amber-200/60 border border-amber-200/80 transition-all duration-150 active:scale-95">
+                    &larr; Back to Members
+                </a>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

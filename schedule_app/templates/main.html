@@ -1,0 +1,206 @@
+{% extends 'master.html' %}
+
+{% block content %}
+<!-- Main Container using Soft Sage Green Background -->
+<div class="min-h-screen py-10 px-4 sm:px-6 lg:px-8 bg-emerald-950/10 text-stone-800 antialiased relative">
+    
+    {% if user.is_authenticated %}
+    <!-- Floating User Card with Dropdown Menu -->
+    <div class="fixed top-6 right-6 z-40" id="userMenuDropdown">
+        <button 
+            type="button"
+            onclick="toggleDropdown()"
+            class="bg-amber-50/90 border border-stone-200/90 rounded-2xl p-3 sm:px-4 sm:py-3 shadow-lg backdrop-blur-md flex items-center gap-3 hover:shadow-xl transition-all cursor-pointer text-left focus:outline-none"
+        >
+            <div class="w-10 h-10 rounded-xl bg-stone-200/70 border border-stone-300/60 flex items-center justify-center text-lg shadow-inner flex-none">
+                👤
+            </div>
+            <div class="flex flex-col pr-1">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-stone-500">Welcome Back</span>
+                <h5 class="text-xs sm:text-sm font-bold text-stone-900 leading-tight flex items-center gap-1.5">
+                    {{ request.user.get_full_name|default:request.user.username }}
+                    <svg class="w-3.5 h-3.5 text-stone-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                    </svg>
+                </h5>
+            </div>
+        </button>
+
+        <!-- Dropdown Menu -->
+        <div 
+            id="userDropdownMenu" 
+            class="hidden absolute right-0 mt-2 w-48 bg-amber-50/95 border border-stone-200/90 rounded-2xl shadow-xl backdrop-blur-md p-1.5 z-50 animate-in fade-in zoom-in-95 duration-100"
+        >
+            <button 
+                type="button" 
+                onclick="openLogoutModal()" 
+                class="w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-amber-900 hover:bg-amber-200/60 transition-colors cursor-pointer"
+            >
+                <svg class="w-4 h-4 text-amber-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+                <span>Logout</span>
+            </button>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Club Hero Container -->
+    <div class="max-w-2xl mx-auto mt-12 sm:mt-16 bg-amber-50/70 border border-stone-200/90 rounded-3xl p-8 sm:p-12 shadow-xl backdrop-blur-sm flex flex-col items-center text-center">
+        
+        <!-- Crest SVG Logo -->
+        <svg class="w-28 h-28 sm:w-32 sm:h-32 mb-6 drop-shadow-sm transition-transform hover:scale-105 duration-300" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+            <!-- Thin outer ring -->
+            <circle cx="60" cy="60" r="57" fill="none" stroke="#a9895f" stroke-width="0.75"/>
+            <circle cx="60" cy="60" r="52" fill="#fbf8f2" stroke="#7c5c3e" stroke-width="1.25"/>
+
+            <!-- Laurel, left -->
+            <g stroke="#8a7c68" stroke-width="1.1" fill="none" stroke-linecap="round">
+                <path d="M 30 78 Q 22 62 30 44"/>
+                <path d="M 30 70 L 22 68"/>
+                <path d="M 28 62 L 20 61"/>
+                <path d="M 27 54 L 19 54"/>
+                <path d="M 28 46 L 21 44"/>
+            </g>
+
+            <!-- Laurel, right -->
+            <g stroke="#8a7c68" stroke-width="1.1" fill="none" stroke-linecap="round">
+                <path d="M 90 78 Q 98 62 90 44"/>
+                <path d="M 90 70 L 98 68"/>
+                <path d="M 92 62 L 100 61"/>
+                <path d="M 93 54 L 101 54"/>
+                <path d="M 92 46 L 99 44"/>
+            </g>
+
+            <!-- Tennis Racket Center -->
+            <g transform="translate(60 50)">
+                <ellipse cx="0" cy="-6" rx="15" ry="19" fill="none" stroke="#5f4630" stroke-width="1.4"/>
+                <path d="M -11 -20 L 11 8 M -3 -22 L 6 10 M 5 -20 L -8 8
+                         M -13 -14 L 13 -10 M -14 -6 L 14 -3 M -13 2 L 13 5"
+                      stroke="#c9bfa8" stroke-width="0.6"/>
+                <path d="M 0 13 L 0 34" stroke="#5f4630" stroke-width="2.2" stroke-linecap="round"/>
+            </g>
+
+            <path d="M 34 88 L 86 88" stroke="#a9895f" stroke-width="0.75"/>
+        </svg>
+
+        <!-- Main Title & Eyebrow Badge -->
+        <h1 class="text-3xl sm:text-4xl font-extrabold text-stone-900 tracking-tight mb-2">
+            Peralta's Tennis Club
+        </h1>
+        <p class="text-xs font-bold tracking-widest uppercase text-emerald-900 bg-emerald-200/80 border border-emerald-300/60 rounded-full px-3 py-1 mb-8">
+            Since 2026
+        </p>
+
+        <!-- Club Navigation Links -->
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-3.5 w-full max-w-md">
+            <a href="{% url 'myactivity' %}" 
+               class="w-full sm:w-auto inline-flex items-center justify-center bg-amber-900 hover:bg-amber-950 text-amber-50 text-xs sm:text-sm font-semibold px-6 py-3 rounded-xl shadow-sm hover:shadow transition-all duration-150 active:scale-95">
+                My Activity
+            </a>
+            {% if request.user.member.role == "ADMIN" %}
+            <a href="{% url 'members' %}" 
+               class="w-full sm:w-auto inline-flex items-center justify-center bg-amber-900 hover:bg-amber-950 text-amber-50 text-xs sm:text-sm font-semibold px-6 py-3 rounded-xl shadow-sm hover:shadow transition-all duration-150 active:scale-95">
+                See Members
+            </a>
+            {% endif %}
+            <a href="{% url 'about_us' %}" 
+               class="w-full sm:w-auto inline-flex items-center justify-center bg-amber-900 hover:bg-amber-950 text-amber-50 text-xs sm:text-sm font-semibold px-6 py-3 rounded-xl shadow-sm hover:shadow transition-all duration-150 active:scale-95">
+                About Us
+            </a>
+        </div>
+
+    </div>
+</div>
+
+<!-- Logout Modal Overlay with website color scheme -->
+<div
+    id="logoutModal"
+    class="hidden fixed inset-0 bg-emerald-950/40 backdrop-blur-sm items-center justify-center z-50 p-4 transition-all"
+>
+    <!-- Modal Card (Warm Amber & Earthy Tone Palette) -->
+    <div class="bg-amber-50/95 border border-stone-200/90 rounded-3xl w-full max-w-md p-6 sm:p-8 shadow-2xl relative text-center backdrop-blur-md animate-in fade-in zoom-in-95 duration-150">
+        
+        <!-- Floating Corner Close Button -->
+        <button
+            type="button"
+            class="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full text-stone-400 hover:text-stone-700 hover:bg-amber-200/50 transition-colors text-xl font-bold cursor-pointer"
+            onclick="closeLogoutModal()"
+        >
+            &times;
+        </button>
+
+        <!-- Icon Badge (Warm Amber) -->
+        <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-amber-100/80 border border-amber-200/80 flex items-center justify-center text-amber-900 shadow-inner">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+            </svg>
+        </div>
+
+        <!-- Text Content -->
+        <h2 class="text-2xl font-extrabold text-stone-900 tracking-tight mb-1">
+            Sign Out
+        </h2>
+        <p class="text-xs sm:text-sm text-stone-500 font-medium mb-6">
+            Are you sure you want to end your current session?
+        </p>
+
+        <!-- Action Buttons -->
+        <div class="flex flex-col sm:flex-row justify-end gap-2.5 pt-4 border-t border-stone-200/70">
+            <button
+                type="button"
+                onclick="closeLogoutModal()"
+                class="w-full sm:w-1/2 text-xs font-bold px-4 py-2.5 rounded-xl border border-stone-300 text-stone-600 hover:bg-stone-200/50 transition-colors cursor-pointer"
+            >
+                Cancel
+            </button>
+
+            <form method="POST" action="{% url 'logout' %}" class="w-full sm:w-1/2">
+                {% csrf_token %}
+                <button
+                    type="submit"
+                    class="w-full text-xs font-bold px-5 py-2.5 rounded-xl bg-amber-900 hover:bg-amber-950 text-amber-50 shadow-md transition-all cursor-pointer active:scale-95"
+                >
+                    Yes, Logout
+                </button>
+            </form>
+        </div>
+
+    </div>
+</div>
+
+<script>
+  function toggleDropdown() {
+    const menu = document.getElementById("userDropdownMenu");
+    menu.classList.toggle("hidden");
+  }
+
+  // Close the dropdown when clicking outside
+  document.addEventListener("click", function (event) {
+    const dropdown = document.getElementById("userMenuDropdown");
+    if (!dropdown.contains(event.target)) {
+      document.getElementById("userDropdownMenu").classList.add("hidden");
+    }
+  });
+
+  // Logout Modal Functions
+  function openLogoutModal() {
+    document.getElementById("userDropdownMenu").classList.add("hidden");
+    const modal = document.getElementById("logoutModal");
+    modal.classList.remove("hidden");
+    modal.classList.add("flex");
+  }
+
+  function closeLogoutModal() {
+    const modal = document.getElementById("logoutModal");
+    modal.classList.add("hidden");
+    modal.classList.remove("flex");
+  }
+
+  document.getElementById("logoutModal").addEventListener("click", function (e) {
+    if (e.target === this) {
+      closeLogoutModal();
+    }
+  });
+</script>
+{% endblock %}
