@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard</title>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+    <!-- Tailwind CSS v4 CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  </head>
+  <body class="font-['Inter',sans-serif] antialiased bg-emerald-950/10 min-h-screen">
+     <!-- Top Bar Navigation Header with Menu Toggle -->
+    <header class="bg-amber-50/90 border-b border-stone-200/90 backdrop-blur-md sticky top-0 z-30 px-4 py-2.5 flex items-center justify-between">
+        <!-- Left: Menu Toggle Button -->
+        <div class="flex items-center">
+            <button 
+                type="button" 
+                onclick="toggleSidebar()" 
+                class="p-2 rounded-xl text-stone-700 hover:bg-amber-200/60 transition-colors focus:outline-none flex items-center gap-2 font-bold text-xs cursor-pointer"
+                aria-label="Toggle Sidebar"
+            >
+                <svg class="w-6 h-6 text-amber-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                </svg>
+                <span class="hidden sm:inline text-stone-800">Menu</span>
+            </button>
+        </div>
+
+        <!-- Right: Styled Username Badge -->
+        <div class="flex items-center">
+            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-100/80 border border-stone-300/80 rounded-full shadow-xs text-xs font-extrabold text-stone-900 tracking-tight">
+                <span class="w-2 h-2 rounded-full bg-emerald-600 animate-pulse"></span>
+                @{{ user.username|default:"arz" }}
+            </span>
+        </div>
+    </header>
+
+    
+    <!-- Collapsible Hidden Sidebar Panel (Pops out when triggered) -->
+    <aside 
+        id="sidebarPanel" 
+        class="fixed top-0 left-0 h-screen w-64 bg-amber-50/95 border-r border-stone-200/90 shadow-2xl backdrop-blur-md z-50 flex flex-col justify-between p-4 transition-transform duration-300 transform -translate-x-full"
+    >
+        <!-- Top Section: Brand & Nav Links -->
+        <div class="space-y-6">
+            <!-- Brand / Logo Header & Close Button -->
+            <div class="flex items-center justify-between pt-2 px-2">
+                <a href="{% url 'main' %}" class="flex items-center gap-3">
+                    <svg class="w-8 h-8 flex-none" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="60" cy="60" r="57" fill="none" stroke="#a9895f" stroke-width="1.5"/>
+                        <circle cx="60" cy="60" r="52" fill="#fbf8f2" stroke="#7c5c3e" stroke-width="2"/>
+                        <g transform="translate(60 50)">
+                            <ellipse cx="0" cy="-6" rx="15" ry="19" fill="none" stroke="#5f4630" stroke-width="2"/>
+                            <path d="M 0 13 L 0 34" stroke="#5f4630" stroke-width="3" stroke-linecap="round"/>
+                        </g>
+                    </svg>
+                    <div>
+                        <h2 class="font-extrabold text-stone-900 text-sm leading-tight">Peralta's Tennis Club</h2>
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-900">Est. 2026</span>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Navigation Links -->
+            <nav class="space-y-1.5">
+                <!-- Home -->
+                <a 
+                    href="{% url 'main' %}" 
+                    class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-sm font-bold text-stone-800 hover:bg-amber-200/60 transition-colors"
+                    title="Home"
+                >
+                    <svg class="w-5 h-5 text-amber-900 flex-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                    </svg>
+                    <span>Home</span>
+                </a>
+
+                <!-- Messages -->
+                <a 
+                    href="#" 
+                    class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-sm font-bold text-stone-800 hover:bg-amber-200/60 transition-colors relative"
+                    title="Messages"
+                >
+                    <div class="relative flex-none">
+                        <svg class="w-5 h-5 text-amber-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                        </svg>
+                        <span class="absolute -top-1.5 -right-2 bg-rose-600 text-white text-[9px] font-extrabold w-4 h-4 rounded-full flex items-center justify-center border-2 border-amber-50">
+                            2
+                        </span>
+                    </div>
+                    <span>Messages</span>
+                </a>
+
+                <!-- Search -->
+                <a 
+                    href="#" 
+                    class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-sm font-bold text-stone-800 hover:bg-amber-200/60 transition-colors"
+                    title="Search"
+                >
+                    <svg class="w-5 h-5 text-amber-900 flex-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                    <span>Search</span>
+                </a>
+
+                <!-- Notifications -->
+                <a 
+                    href="#" 
+                    class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-sm font-bold text-stone-800 hover:bg-amber-200/60 transition-colors"
+                    title="Notifications"
+                >
+                    <div class="relative flex-none">
+                        <svg class="w-5 h-5 text-amber-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                        </svg>
+                        <span class="absolute -top-0.5 -right-0.5 w-2 h-2 bg-rose-600 rounded-full"></span>
+                    </div>
+                    <span>Notifications</span>
+                </a>
+
+                <!-- Profile -->
+                <a 
+                    href="{% url 'profile' %}" 
+                    class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-sm font-bold text-stone-800 hover:bg-amber-200/60 transition-colors"
+                    title="Profile"
+                >
+                    <div class="w-5 h-5 rounded-full bg-stone-300 border border-stone-400 flex items-center justify-center text-xs flex-none">
+                        👤
+                    </div>
+                    <span>Profile</span>
+                </a>
+            </nav>
+        </div>
+
+        <!-- Bottom Options -->
+        <div class="space-y-1 pt-4 border-t border-stone-200/80 mb-2">
+            <!-- More Dropdown / Sign Out Trigger -->
+            <button 
+                type="button"
+                onclick="openLogoutModal()" 
+                class="w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-sm font-bold text-stone-800 hover:bg-amber-200/60 transition-colors text-left cursor-pointer"
+                title="More"
+            >
+                <svg class="w-5 h-5 text-amber-900 flex-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                </svg>
+                <span>More</span>
+            </button>
+
+            <!-- Also from Club -->
+            <a 
+                href="{% url 'about_us' %}" 
+                class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-sm font-bold text-stone-800 hover:bg-amber-200/60 transition-colors"
+                title="Also from Club"
+            >
+                <svg class="w-5 h-5 text-amber-900 flex-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
+                </svg>
+                <span>Also from Club</span>
+            </a>
+        </div>
+    </aside>
+
+    <!-- Overlay Backdrop for Sidebar -->
+    <div 
+        id="sidebarBackdrop" 
+        onclick="toggleSidebar()" 
+        class="hidden fixed inset-0 bg-stone-950/40 backdrop-blur-xs z-40 transition-opacity cursor-pointer"
+    ></div>
+
+    
+    <script>
+      function toggleSidebar() {
+        const sidebar = document.getElementById("sidebarPanel");
+        const backdrop = document.getElementById("sidebarBackdrop");
+        
+        sidebar.classList.toggle("-translate-x-full");
+        backdrop.classList.toggle("hidden");
+      }
+    </script>
+  </body>
+</html>

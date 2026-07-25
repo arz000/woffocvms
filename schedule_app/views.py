@@ -66,6 +66,11 @@ def logout_user(request):
 def main(request):
    return render(request, 'main.html')
 
+def profile(request):
+    member = get_object_or_404(Member, user=request.user)
+    context = {'member': member}
+    return render(request, 'profile.html', context)
+
 @login_required(login_url='login_page')
 def myactivity(request):
     if request.method == 'POST':
