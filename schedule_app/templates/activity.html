@@ -1,56 +1,42 @@
 {% extends 'master.html' %} 
 {% block content %}
 {% include 'includes/sidebar.html' %}
+{% include 'includes/logoutmodal.html' %}
 
-<!-- Main Container using Soft Sage Green Background -->
-<div
-  class="min-h-screen py-10 px-4 sm:px-6 lg:px-8 bg-emerald-950/10 text-stone-800 antialiased"
->
-  <div
-    class="max-w-2xl mx-auto bg-amber-50/80 border border-stone-200/90 rounded-3xl shadow-xl backdrop-blur-md relative"
-  >
+<!-- Main Shell: Dark Slate / Stone Background -->
+<div class="min-h-screen py-10 px-4 sm:px-6 lg:px-8 bg-stone-950 text-stone-100 antialiased selection:bg-emerald-500 selection:text-stone-950">
+  <div class="max-w-3xl mx-auto bg-stone-900/90 border border-stone-800 rounded-3xl shadow-2xl shadow-emerald-950/20 backdrop-blur-xl relative overflow-hidden">
+    
+    <!-- Glow Accent background glow -->
+    <div class="absolute -top-24 -right-24 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="absolute -bottom-24 -left-24 w-96 h-96 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none"></div>
+
     <!-- Inner Content Box -->
-    <div class="rounded-3xl overflow-hidden flex flex-col relative">
+    <div class="rounded-3xl flex flex-col relative z-10">
       
       <!-- Header Section -->
-      <div
-        class="p-6 sm:p-8 border-b border-stone-200/80 bg-white/50 backdrop-blur-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 flex-none"
-      >
-        <div class="pt-1">
-          <span
-            class="inline-flex items-center gap-1.5 text-[10px] font-extrabold tracking-widest uppercase text-emerald-900 bg-emerald-100 border border-emerald-200 rounded-full px-3 py-1 mb-2.5 shadow-2xs"
-          >
-            <span class="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse"></span>
-            Schedule
-          </span>
-          <h1
-            class="text-2xl sm:text-3xl font-black text-stone-900 tracking-tight"
-          >
+      <div class="p-6 sm:p-8 border-b border-stone-800 bg-stone-900/60 backdrop-blur-md flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <div class="inline-flex items-center gap-2 text-[11px] font-black tracking-wider uppercase text-emerald-400 bg-emerald-950/80 border border-emerald-800/80 rounded-full px-3.5 py-1 mb-3">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            Schedule Dashboard
+          </div>
+          <h1 class="text-2xl sm:text-3xl font-black text-white tracking-tight">
             My Activity
           </h1>
-          <p class="text-xs sm:text-sm text-stone-500 mt-1 font-medium">
-            Be excited for your incoming activity
+          <p class="text-xs sm:text-sm text-stone-400 mt-1 font-medium">
+            Track and manage your upcoming schedule
           </p>
         </div>
 
-        <div class="mt-2 sm:mt-0 flex items-center">
+        <div class="flex items-center">
           <button
             type="button"
-            class="inline-flex items-center justify-center gap-2 bg-amber-900 hover:bg-amber-950 text-amber-50 text-xs sm:text-sm font-semibold px-5 py-2.5 rounded-xl shadow-md transition-all duration-150 cursor-pointer active:scale-98"
+            class="inline-flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-stone-950 text-xs sm:text-sm font-black px-5 py-2.5 rounded-xl shadow-lg shadow-emerald-950/50 transition-all duration-200 cursor-pointer active:scale-95"
             onclick="openAddActivityModal()"
           >
-            <svg
-              class="w-4 h-4 text-amber-300"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2.5"
-                d="M12 4v16m8-8H4"
-              />
+            <svg class="w-4 h-4 stroke-[3]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
             </svg>
             <span>Add Activity</span>
           </button>
@@ -58,36 +44,37 @@
       </div>
 
       <!-- Activity List -->
-      <ul class="divide-y divide-stone-200/60 bg-amber-50/30">
+      <ul class="divide-y divide-stone-800/80 bg-stone-900/30">
         {% for x in page_obj %}
-        <li class="flex items-start justify-between gap-4 p-5 hover:bg-white/40 transform-gpu">
+        <li class="group flex items-start justify-between gap-4 p-5 sm:p-6 hover:bg-stone-800/40 transition-all duration-150 transform-gpu">
           <div class="flex-1 min-w-0">
-            <div class="flex flex-wrap items-center gap-2 mb-1">
-              <h2 class="font-bold text-base sm:text-lg text-stone-900 leading-snug tracking-tight">
+            <div class="flex flex-wrap items-center gap-2.5 mb-2">
+              <h2 class="font-bold text-base sm:text-lg text-stone-100 leading-snug tracking-tight group-hover:text-emerald-300 transition-colors">
                 {{ x.title }}
               </h2>
-              <span class="inline-flex items-center text-[10px] font-bold uppercase tracking-wider text-emerald-900 bg-emerald-100/90 border border-emerald-200/80 rounded-md px-2.5 py-0.5 shadow-2xs">
+              <span class="inline-flex items-center text-[10px] font-black uppercase tracking-wider text-emerald-400 bg-emerald-950/60 border border-emerald-800/60 rounded-md px-2.5 py-0.5">
                 {{ x.activity_date }}
               </span>
             </div>
             
-            <div class="text-xs sm:text-sm text-stone-600 leading-relaxed font-normal line-clamp-2 schedule-description">
+            <div class="text-xs sm:text-sm text-stone-400 leading-relaxed font-normal line-clamp-2 schedule-description">
               {{ x.description }}
             </div>
 
             <button 
               type="button" 
-              class="hidden text-xs font-bold text-amber-900 hover:text-amber-700 mt-1 cursor-pointer schedule-more transition-colors"
+              class="hidden text-xs font-bold text-emerald-400 hover:text-emerald-300 mt-2 cursor-pointer schedule-more transition-colors"
               onclick="toggleDescription(this)"
             > 
               See more 
             </button>
           </div>
 
-          <div class="flex items-center gap-1 flex-none pt-0.5">
+          <!-- Action Buttons -->
+          <div class="flex items-center gap-1 flex-none pt-0.5 opacity-90 group-hover:opacity-100 transition-opacity">
             <button 
               type="button" 
-              class="p-2 rounded-xl text-stone-500 hover:text-emerald-800 hover:bg-emerald-100/70 border border-transparent hover:border-emerald-200 transition-colors cursor-pointer active:scale-95"
+              class="p-2.5 rounded-xl text-stone-400 hover:text-emerald-300 hover:bg-emerald-950/50 border border-transparent hover:border-emerald-800/60 transition-all cursor-pointer active:scale-95"
               data-id="{{ x.id }}"
               data-title="{{ x.title }}"
               data-description="{{ x.description }}"
@@ -99,7 +86,9 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
               </svg>
             </button>
-            <button type="button" class="p-2 rounded-xl text-stone-500 hover:text-amber-900 hover:bg-amber-100/70 border border-transparent hover:border-amber-200 transition-colors cursor-pointer active:scale-95"
+            <button 
+              type="button" 
+              class="p-2.5 rounded-xl text-stone-400 hover:text-rose-400 hover:bg-rose-950/40 border border-transparent hover:border-rose-900/60 transition-all cursor-pointer active:scale-95"
               data-title="{{ x.title|escapejs }}"
               data-url="{% url 'delete_activity' x.id %}"
               onclick="openDeleteModal(this)"
@@ -112,32 +101,30 @@
           </div>
         </li>
         {% empty %}
-        <li class="text-center py-16 px-6 text-stone-500 flex flex-col items-center justify-center">
-          <div class="w-12 h-12 mx-auto mb-3 rounded-full bg-stone-200/60 border border-stone-300/50 flex items-center justify-center text-stone-400 shadow-inner">
-            🌿
+        <li class="text-center py-20 px-6 text-stone-400 flex flex-col items-center justify-center">
+          <div class="w-14 h-14 mx-auto mb-4 rounded-2xl bg-stone-800/80 border border-stone-700/80 flex items-center justify-center text-stone-400 shadow-inner">
+            <svg class="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
           </div>
-          <p class="text-sm font-bold text-stone-700 mb-1">No activities scheduled yet.</p>
-          <p class="text-xs text-stone-400">Click above to add your first session!</p>
+          <p class="text-base font-bold text-stone-200 mb-1">No activities scheduled yet</p>
+          <p class="text-xs text-stone-500 max-w-xs">Click the button above to add your first task or activity session.</p>
         </li>
         {% endfor %}
       </ul>
 
-      <!-- Numbers-Only Pagination Controls (Lower Right) -->
+      <!-- Pagination -->
       {% if page_obj.paginator.num_pages > 1 %}
-      <div
-        class="flex justify-end items-center gap-1 py-2.5 px-5 border-t border-stone-200/70 bg-white/50"
-      >
+      <div class="flex justify-end items-center gap-1.5 py-4 px-6 border-t border-stone-800 bg-stone-900/60">
         {% for num in page_obj.paginator.page_range %}
         {% if page_obj.number == num %}
-        <span
-          class="px-2.5 py-1 rounded-lg bg-amber-900 text-white text-xs font-bold shadow-xs"
-        >
+        <span class="px-3 py-1.5 rounded-xl bg-emerald-500 text-stone-950 text-xs font-black shadow-md shadow-emerald-950/40">
           {{ num }}
         </span>
         {% else %}
         <a
           href="?page={{ num }}"
-          class="px-2.5 py-1 rounded-lg border border-stone-300/80 bg-white hover:bg-stone-100 text-stone-700 text-xs font-bold transition-colors shadow-2xs"
+          class="px-3 py-1.5 rounded-xl border border-stone-800 bg-stone-800/60 hover:bg-stone-800 text-stone-300 hover:text-white text-xs font-bold transition-all"
         >
           {{ num }}
         </a>
@@ -151,19 +138,17 @@
 
 <!-- Add/Edit Activity Modal -->
 <div
-  class="hidden fixed inset-0 bg-stone-950/50 backdrop-blur-sm items-center justify-center z-50 p-4 transition-all"
+  class="hidden fixed inset-0 bg-stone-950/80 backdrop-blur-md items-center justify-center z-50 p-4 transition-all"
   id="addActivityModal"
 >
-  <div
-    class="bg-amber-50 border border-stone-200/90 rounded-3xl w-full max-w-md p-6 sm:p-7 shadow-2xl relative animate-in fade-in zoom-in-95 duration-150"
-  >
-    <div class="flex justify-between items-center mb-6 border-b border-stone-200/70 pb-4">
-      <h2 class="text-xl font-black text-stone-900 tracking-tight" id="modalHeaderTitle">
+  <div class="bg-stone-900 border border-stone-800 rounded-3xl w-full max-w-md p-6 sm:p-8 shadow-2xl relative animate-in fade-in zoom-in-95 duration-150">
+    <div class="flex justify-between items-center mb-6 border-b border-stone-800 pb-4">
+      <h2 class="text-xl font-black text-white tracking-tight" id="modalHeaderTitle">
         Add Activity
       </h2>
       <button
         type="button"
-        class="w-8 h-8 flex items-center justify-center rounded-full text-stone-400 hover:text-stone-700 hover:bg-stone-200/60 transition-colors text-xl font-bold cursor-pointer"
+        class="w-8 h-8 flex items-center justify-center rounded-full text-stone-400 hover:text-white hover:bg-stone-800 transition-colors text-xl font-bold cursor-pointer"
         onclick="closeAddActivityModal()"
       >
         &times;
@@ -174,55 +159,37 @@
       {% csrf_token %}
 
       <div>
-        <label
-          for="titleField"
-          class="block text-[11px] font-extrabold text-stone-600 uppercase tracking-wider mb-1.5"
-          >Title</label
-        >
-        <div
-          class="[&_input]:w-full [&_input]:px-3.5 [&_input]:py-2.5 [&_input]:border [&_input]:border-stone-300/90 [&_input]:rounded-xl [&_input]:text-sm [&_input]:text-stone-900 [&_input]:bg-white/90 [&_input]:shadow-2xs [&_input]:focus:outline-none [&_input]:focus:border-amber-800 [&_input]:focus:ring-2 [&_input]:focus:ring-amber-800/20 [&_input]:transition-all"
-        >
+        <label for="titleField" class="block text-[11px] font-black text-stone-400 uppercase tracking-wider mb-2">Title</label>
+        <div class="[&_input]:w-full [&_input]:px-4 [&_input]:py-2.5 [&_input]:border [&_input]:border-stone-700/80 [&_input]:rounded-xl [&_input]:text-sm [&_input]:text-stone-100 [&_input]:bg-stone-800/60 [&_input]:placeholder-stone-500 [&_input]:focus:outline-none [&_input]:focus:border-emerald-500 [&_input]:focus:ring-2 [&_input]:focus:ring-emerald-500/20 [&_input]:transition-all">
           {{ form.title }}
         </div>
       </div>
 
       <div>
-        <label
-          for="descriptionField"
-          class="block text-[11px] font-extrabold text-stone-600 uppercase tracking-wider mb-1.5"
-          >Description</label
-        >
-        <div
-          class="[&_textarea]:w-full [&_textarea]:px-3.5 [&_textarea]:py-2.5 [&_textarea]:border [&_textarea]:border-stone-300/90 [&_textarea]:rounded-xl [&_textarea]:text-sm [&_textarea]:text-stone-900 [&_textarea]:bg-white/90 [&_textarea]:shadow-2xs [&_textarea]:focus:outline-none [&_textarea]:focus:border-amber-800 [&_textarea]:focus:ring-2 [&_textarea]:focus:ring-amber-800/20 [&_textarea]:min-h-[90px] [&_textarea]:resize-y [&_textarea]:transition-all"
-        >
+        <label for="descriptionField" class="block text-[11px] font-black text-stone-400 uppercase tracking-wider mb-2">Description</label>
+        <div class="[&_textarea]:w-full [&_textarea]:px-4 [&_textarea]:py-2.5 [&_textarea]:border [&_textarea]:border-stone-700/80 [&_textarea]:rounded-xl [&_textarea]:text-sm [&_textarea]:text-stone-100 [&_textarea]:bg-stone-800/60 [&_textarea]:placeholder-stone-500 [&_textarea]:focus:outline-none [&_textarea]:focus:border-emerald-500 [&_textarea]:focus:ring-2 [&_textarea]:focus:ring-emerald-500/20 [&_textarea]:min-h-[100px] [&_textarea]:resize-y [&_textarea]:transition-all">
           {{ form.description }}
         </div>
       </div>
 
       <div>
-        <label
-          for="dateField"
-          class="block text-[11px] font-extrabold text-stone-600 uppercase tracking-wider mb-1.5"
-          >Activity Date</label
-        >
-        <div
-          class="[&_input]:w-full [&_input]:px-3.5 [&_input]:py-2.5 [&_input]:border [&_input]:border-stone-300/90 [&_input]:rounded-xl [&_input]:text-sm [&_input]:text-stone-900 [&_input]:bg-white/90 [&_input]:shadow-2xs [&_input]:focus:outline-none [&_input]:focus:border-amber-800 [&_input]:focus:ring-2 [&_input]:focus:ring-amber-800/20 [&_input]:transition-all"
-        >
+        <label for="dateField" class="block text-[11px] font-black text-stone-400 uppercase tracking-wider mb-2">Activity Date</label>
+        <div class="[&_input]:w-full [&_input]:px-4 [&_input]:py-2.5 [&_input]:border [&_input]:border-stone-700/80 [&_input]:rounded-xl [&_input]:text-sm [&_input]:text-stone-100 [&_input]:bg-stone-800/60 [&_input]:focus:outline-none [&_input]:focus:border-emerald-500 [&_input]:focus:ring-2 [&_input]:focus:ring-emerald-500/20 [&_input]:transition-all">
           {{ form.activity_date }}
         </div>
       </div>
 
-      <div class="flex justify-end gap-2.5 pt-4 border-t border-stone-200/70 mt-6">
+      <div class="flex justify-end gap-3 pt-4 border-t border-stone-800 mt-6">
         <button
           type="button"
-          class="text-xs font-bold px-4 py-2.5 rounded-xl border border-stone-300 text-stone-600 hover:bg-stone-200/50 transition-colors cursor-pointer"
+          class="text-xs font-bold px-4 py-2.5 rounded-xl border border-stone-700 text-stone-300 hover:bg-stone-800 hover:text-white transition-colors cursor-pointer"
           onclick="closeAddActivityModal()"
         >
           Cancel
         </button>
         <button
           type="submit"
-          class="text-xs font-bold px-5 py-2.5 rounded-xl bg-amber-900 hover:bg-amber-950 text-white shadow-md transition-all cursor-pointer active:scale-98"
+          class="text-xs font-black px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-stone-950 shadow-lg shadow-emerald-950/40 transition-all cursor-pointer active:scale-95"
         >
           Save Activity
         </button>
@@ -231,52 +198,49 @@
   </div>
 </div>
 
-<!-- Delete Confirmation Modal (Theme-Matched Earthy Amber & Terracotta) -->
+<!-- Delete Confirmation Modal -->
 <div
   id="deleteModal"
-  class="hidden fixed inset-0 bg-stone-950/50 backdrop-blur-sm items-center justify-center z-50 p-4 transition-all"
+  class="hidden fixed inset-0 bg-stone-950/80 backdrop-blur-md items-center justify-center z-50 p-4 transition-all"
 >
-  <div class="bg-amber-50 border border-stone-200/90 rounded-3xl w-full max-w-md p-6 sm:p-7 shadow-2xl relative text-center animate-in fade-in zoom-in-95 duration-150">
+  <div class="bg-stone-900 border border-stone-800 rounded-3xl w-full max-w-md p-6 sm:p-8 shadow-2xl relative text-center animate-in fade-in zoom-in-95 duration-150">
     
     <button
       type="button"
-      class="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full text-stone-400 hover:text-stone-700 hover:bg-stone-200/60 transition-colors text-xl font-bold cursor-pointer"
+      class="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full text-stone-400 hover:text-white hover:bg-stone-800 transition-colors text-xl font-bold cursor-pointer"
       onclick="closeDeleteModal()"
     >
       &times;
     </button>
 
-    <!-- Warm Terracotta Warning Icon -->
-    <div class="w-14 h-14 mx-auto mb-4 rounded-2xl bg-amber-100 border border-amber-200/90 flex items-center justify-center text-amber-900 shadow-inner">
-      <svg class="w-7 h-7 text-amber-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <div class="w-14 h-14 mx-auto mb-4 rounded-2xl bg-rose-950/50 border border-rose-900/60 flex items-center justify-center text-rose-400 shadow-inner">
+      <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
       </svg>
     </div>
 
-    <!-- Modal Text Content -->
-    <h2 class="text-xl font-black text-stone-900 tracking-tight mb-1">
+    <h2 class="text-xl font-black text-white tracking-tight mb-1">
       Delete Activity
     </h2>
-    <p class="text-xs sm:text-sm text-stone-500 font-medium mb-1">
+    <p class="text-xs sm:text-sm text-stone-400 font-medium mb-1">
       Are you sure you want to delete this activity?
     </p>
-    <p id="deleteTitle" class="text-sm font-bold text-amber-950 bg-amber-100/70 border border-amber-200/80 rounded-xl px-3 py-2 my-3 truncate max-w-full">
-      <!-- Title dynamically populated via JS -->
+    <p id="deleteTitle" class="text-sm font-bold text-rose-300 bg-rose-950/40 border border-rose-900/50 rounded-xl px-3.5 py-2.5 my-4 truncate max-w-full">
+      <!-- Dynamically Populated -->
     </p>
 
-    <!-- Action Buttons -->
-    <form method="POST" id="deleteForm" class="flex flex-col sm:flex-row justify-end gap-2.5 pt-4 border-t border-stone-200/70">
+    <form method="POST" id="deleteForm" class="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t border-stone-800">
       {% csrf_token %}
       <button
         type="button"
         onclick="closeDeleteModal()"
-        class="w-full sm:w-1/2 text-xs font-bold px-4 py-2.5 rounded-xl border border-stone-300 text-stone-600 hover:bg-stone-200/50 transition-colors cursor-pointer"
+        class="w-full sm:w-1/2 text-xs font-bold px-4 py-2.5 rounded-xl border border-stone-700 text-stone-300 hover:bg-stone-800 hover:text-white transition-colors cursor-pointer"
       >
         Cancel
       </button>
       <button
         type="submit"
-        class="w-full sm:w-1/2 text-xs font-bold px-5 py-2.5 rounded-xl bg-amber-900 hover:bg-amber-950 text-amber-50 shadow-md transition-all cursor-pointer active:scale-95"
+        class="w-full sm:w-1/2 text-xs font-black px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white shadow-lg shadow-rose-950/50 transition-all cursor-pointer active:scale-95"
       >
         Yes, Delete
       </button>

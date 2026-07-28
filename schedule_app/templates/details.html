@@ -1,93 +1,102 @@
 {% extends 'master.html' %}
 
 {% block content %}
-<!-- Main Container using Soft Sage Green Background -->
-<div class="min-h-screen py-12 px-4 sm:px-6 lg:px-8 bg-emerald-950/10 text-stone-800 antialiased flex items-center justify-center">
-    
-    <!-- Member Card Container -->
-    <div class="w-full max-w-md bg-amber-50/70 border border-stone-200/90 rounded-3xl shadow-xl backdrop-blur-sm overflow-hidden relative">
+{% include 'includes/sidebar.html' %}
+{% include 'includes/logoutmodal.html' %}
 
-        <!-- Top Accent Banner -->
-        <div class="h-28 bg-gradient-to-r from-amber-900 via-amber-800 to-amber-900 relative"></div>
-        
-        <!-- Card Body -->
-        <div class="px-6 pb-8 pt-0 sm:px-8 relative text-center">
-            
-            <!-- Avatar Placeholder / Initial Badge -->
-            <div class="-mt-14 mb-4 inline-flex items-center justify-center w-24 h-24 rounded-full bg-amber-100 border-4 border-amber-50/90 shadow-md text-amber-900 text-3xl font-extrabold ring-1 ring-stone-200">
-                {% if mymembers.user.first_name %}
-                    {{ mymembers.user.first_name|slice:":1" }}{{ mymembers.user.last_name|slice:":1" }}
-                {% else %}
-                    {{ mymembers.user.username|slice:":1"|upper }}
-                {% endif %}
+<!-- Main App Wrapper -->
+<div class="min-h-screen bg-stone-900 text-stone-100 antialiased font-['Inter',sans-serif] flex flex-col relative selection:bg-emerald-800 selection:text-emerald-100 transition-colors duration-200">
+
+    <!-- Main Content Body -->
+    <main class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex-1 w-full space-y-6">
+
+        <!-- Member Detail Card Container -->
+        <div class="bg-stone-800/90 border border-stone-700/80 rounded-3xl shadow-xl overflow-hidden relative">
+
+            <!-- Banner Header -->
+            <div class="h-28 bg-gradient-to-r from-emerald-950 via-emerald-900 to-stone-900 border-b border-stone-700/80 relative flex items-start justify-end p-4 overflow-hidden">
+                <div class="absolute -right-6 -bottom-12 opacity-10 pointer-events-none">
+                    <svg class="w-48 h-48 text-emerald-300" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+                    </svg>
+                </div>
             </div>
 
-            <!-- Member Name & Handle -->
-            <h1 class="text-2xl sm:text-3xl font-extrabold text-stone-900 tracking-tight leading-tight">
-                {% if mymembers.user.first_name %}
-                    {{ mymembers.user.first_name }} {{ mymembers.user.last_name }}
-                {% else %}
-                    {{ mymembers.user.username }}
-                {% endif %}
-            </h1>
+            <!-- Card Content Body -->
+            <div class="p-6 sm:p-8 space-y-6 relative z-10">
 
-            <span class="inline-block mt-1 text-xs font-bold tracking-wider text-emerald-900 bg-emerald-200/80 border border-emerald-300/60 rounded-full px-3 py-1">
-                @{{ mymembers.user.username }}
-            </span>
-
-            <!-- Info List -->
-            <div class="mt-8 space-y-3.5 text-left">
-                
-                <!-- Birthdate Row -->
-                <div class="flex items-center gap-3.5 p-3.5 rounded-2xl bg-white/80 border border-stone-200/70 shadow-xs">
-                    <div class="w-10 h-10 rounded-xl bg-amber-100/80 border border-amber-200/60 flex items-center justify-center text-lg flex-none">
-                        🎂
-                    </div>
-                    <div class="min-w-0 flex-1">
-                        <div class="text-[10px] font-bold uppercase tracking-wider text-stone-400">Birthdate</div>
-                        <div class="text-sm font-semibold text-stone-800 truncate">
-                            {{ mymembers.birth_date|default:"Not specified" }}
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+                    
+                    <!-- Left Side: Avatar & Member Name -->
+                    <div class="lg:col-span-5 bg-stone-900/90 border border-stone-700/70 rounded-2xl p-6 text-center space-y-3 shadow-inner flex flex-col items-center justify-center">
+                        <!-- Original Avatar Size -->
+                        <div class="w-20 h-20 mx-auto rounded-2xl bg-stone-800 border-2 border-emerald-500/40 text-emerald-400 text-2xl font-black flex items-center justify-center shadow-md">
+                            {% if mymembers.user.first_name %}
+                                {{ mymembers.user.first_name|slice:":1" }}{{ mymembers.user.last_name|slice:":1" }}
+                            {% else %}
+                                {{ mymembers.user.username|slice:":1"|upper }}
+                            {% endif %}
                         </div>
-                    </div>
-                </div>
 
-                <!-- Phone Row -->
-                <div class="flex items-center gap-3.5 p-3.5 rounded-2xl bg-white/80 border border-stone-200/70 shadow-xs">
-                    <div class="w-10 h-10 rounded-xl bg-amber-100/80 border border-amber-200/60 flex items-center justify-center text-lg flex-none">
-                        📞
+                        <!-- Name Only -->
+                        <h1 class="text-2xl font-black text-stone-100 tracking-tight">
+                            {% if mymembers.user.first_name %}
+                                {{ mymembers.user.first_name }} {{ mymembers.user.last_name }}
+                            {% else %}
+                                {{ mymembers.user.username }}
+                            {% endif %}
+                        </h1>
                     </div>
-                    <div class="min-w-0 flex-1">
-                        <div class="text-[10px] font-bold uppercase tracking-wider text-stone-400">Phone</div>
-                        <div class="text-sm font-semibold text-stone-800 truncate">
-                            {{ mymembers.phone|default:"Not specified" }}
-                        </div>
-                    </div>
-                </div>
 
-                <!-- Joined Date Row -->
-                <div class="flex items-center gap-3.5 p-3.5 rounded-2xl bg-white/80 border border-stone-200/70 shadow-xs">
-                    <div class="w-10 h-10 rounded-xl bg-amber-100/80 border border-amber-200/60 flex items-center justify-center text-lg flex-none">
-                        🏆
-                    </div>
-                    <div class="min-w-0 flex-1">
-                        <div class="text-[10px] font-bold uppercase tracking-wider text-stone-400">Joined</div>
-                        <div class="text-sm font-semibold text-stone-800 truncate">
-                            {{ mymembers.joined_date|default:"Not specified" }}
+                    <!-- Right Side: Standard Sized Data Cards -->
+                    <div class="lg:col-span-7 space-y-3">
+                        
+                        <!-- Birthdate Card -->
+                        <div class="p-4 bg-stone-900/90 border border-stone-700/70 rounded-2xl flex items-center gap-4 shadow-sm hover:border-emerald-600/40 transition-colors">
+                            <div class="w-10 h-10 rounded-xl bg-emerald-950/80 border border-emerald-800/60 flex items-center justify-center text-lg flex-none shadow-xs">
+                                🎂
+                            </div>
+                            <div class="min-w-0 flex-1">
+                                <span class="text-[10px] font-extrabold uppercase tracking-widest text-stone-400 block">Birthdate</span>
+                                <p class="font-bold text-stone-100 text-sm truncate">
+                                    {{ mymembers.birth_date|default:"Not specified" }}
+                                </p>
+                            </div>
                         </div>
+
+                        <!-- Phone Card -->
+                        <div class="p-4 bg-stone-900/90 border border-stone-700/70 rounded-2xl flex items-center gap-4 shadow-sm hover:border-emerald-600/40 transition-colors">
+                            <div class="w-10 h-10 rounded-xl bg-emerald-950/80 border border-emerald-800/60 flex items-center justify-center text-lg flex-none shadow-xs">
+                                📞
+                            </div>
+                            <div class="min-w-0 flex-1">
+                                <span class="text-[10px] font-extrabold uppercase tracking-widest text-stone-400 block">Phone</span>
+                                <p class="font-bold text-stone-100 text-sm truncate">
+                                    {{ mymembers.phone|default:"Not specified" }}
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Joined Date Card -->
+                        <div class="p-4 bg-stone-900/90 border border-stone-700/70 rounded-2xl flex items-center gap-4 shadow-sm hover:border-emerald-600/40 transition-colors">
+                            <div class="w-10 h-10 rounded-xl bg-emerald-950/80 border border-emerald-800/60 flex items-center justify-center text-lg flex-none shadow-xs">
+                                🏆
+                            </div>
+                            <div class="min-w-0 flex-1">
+                                <span class="text-[10px] font-extrabold uppercase tracking-widest text-stone-400 block">Joined</span>
+                                <p class="font-bold text-stone-100 text-sm truncate">
+                                    {{ mymembers.joined_date|default:"Not specified" }}
+                                </p>
+                            </div>
+                        </div>
+
                     </div>
+
                 </div>
 
             </div>
-
-            <!-- Back Link -->
-            <div class="mt-8 pt-2">
-                <a href="{% url 'members' %}" 
-                   class="inline-flex items-center justify-center gap-2 w-full py-3 px-4 rounded-xl text-xs sm:text-sm font-semibold text-amber-900 bg-amber-100/60 hover:bg-amber-200/60 border border-amber-200/80 transition-all duration-150 active:scale-95">
-                    &larr; Back to Members
-                </a>
-            </div>
-
         </div>
-    </div>
+
+    </main>
 </div>
 {% endblock %}

@@ -4,7 +4,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title></title>
+    <title>{% block title %}My Schedule App{% endblock %}</title>
 
     <!-- Google Fonts: Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -13,10 +13,31 @@
     <!-- Tailwind CSS v4 CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
   </head>
-  <body class="font-['Inter',sans-serif] antialiased bg-emerald-950/10 min-h-screen">
+  <body>
     {% block content %} 
     
+
+
     
     {% endblock %}
+    <script>
+    function openLogoutModal() {
+      const modal = document.getElementById("logoutModal");
+      modal.classList.remove("hidden");
+      modal.classList.add("flex");
+    }
+
+    function closeLogoutModal() {
+      const modal = document.getElementById("logoutModal");
+      modal.classList.add("hidden");
+      modal.classList.remove("flex");
+    }
+
+    document.getElementById("logoutModal").addEventListener("click", function (e) {
+      if (e.target === this) {
+        closeLogoutModal();
+      }
+    });
+    </script>
   </body>
 </html>

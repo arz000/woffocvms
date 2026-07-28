@@ -1,80 +1,119 @@
 {% extends 'master.html' %}
 
 {% block content %}
-<!-- Background: Soft Sage Tint (bg-emerald-950/10) -->
-<div class="min-h-screen py-10 px-4 sm:px-6 lg:px-8 bg-emerald-950/10 text-stone-800 antialiased">
-    
-    <!-- Main Card Container -->
-    <div class="max-w-2xl mx-auto bg-amber-50/70 border border-stone-200/90 rounded-3xl shadow-xl backdrop-blur-sm relative">
-        
-        <!-- Floating Corner Close Button ('X') - Positioned on the top-right edge -->
-        <a
-          href="{% url 'main' %}"
-          class="absolute -top-3.5 -right-3.5 z-20 w-9 h-9 flex items-center justify-center rounded-full bg-white/90 border border-stone-300/80 text-stone-500 hover:text-rose-600 hover:bg-rose-50 hover:border-rose-300 shadow-md transition-colors duration-150 cursor-pointer text-lg font-bold leading-none active:scale-95"
-          title="Back to Main"
-        >
-          &times;
-        </a>
+{% include 'includes/sidebar.html' %}
+{% include 'includes/logoutmodal.html' %}
 
-        <!-- Inner Wrapper to handle rounded corners with overflow-hidden -->
-        <div class="rounded-3xl overflow-hidden">
-            <!-- Header Section -->
-            <div class="p-6 sm:p-8 border-b border-stone-200/80 bg-white/50 flex flex-col justify-between">
-                <div>
-                    <span class="inline-block text-[10px] font-bold tracking-widest uppercase text-emerald-900 bg-emerald-200/80 border border-emerald-300/60 rounded-full px-3 py-0.5 mb-2">
-                        Community
-                    </span>
-                    <h1 class="text-2xl sm:text-3xl font-extrabold text-stone-900 tracking-tight">Tennis Club Members</h1>
-                    <p class="text-xs sm:text-sm text-stone-500 mt-0.5 font-medium">Connect with active players and roster members</p>
-                </div>
+<!-- Main App Wrapper -->
+<div class="min-h-screen bg-stone-900 text-stone-100 antialiased font-['Inter',sans-serif] flex flex-col relative selection:bg-emerald-800 selection:text-emerald-100 transition-colors duration-200">
+
+    <!-- Main Content Body -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6 flex-1 w-full">
+
+        <!-- Banner Card -->
+        <div class="relative overflow-hidden bg-gradient-to-r from-emerald-950 via-emerald-900 to-stone-900 rounded-3xl p-6 sm:p-8 text-white shadow-xl border border-emerald-800/40">
+            <div class="relative z-10 max-w-2xl space-y-2">
+                <span class="inline-block text-[10px] font-extrabold tracking-widest uppercase text-emerald-400 bg-emerald-950 border border-emerald-700/50 rounded-full px-3 py-1">
+                    Official Directory
+                </span>
+                <h1 class="text-2xl sm:text-4xl font-extrabold tracking-tight leading-tight text-white">
+                    Tennis Club Member
+                </h1>
+                <p class="text-xs sm:text-sm text-stone-300 font-medium">
+                    Manage registered players, inspect active profiles, and update member credentials.
+                </p>
             </div>
-
-            <!-- Members List -->
-            <ul class="divide-y divide-stone-200/70">
-                {% for x in mymembers %}
-                <li class="group hover:bg-stone-200/30 transition-colors duration-150">
-                    <a href="details/{{ x.id }}" class="flex items-center justify-between p-5 sm:px-8 text-decoration-none">
-                        
-                        <div class="flex items-center gap-3.5 min-w-0">
-                            <!-- Avatar Badge -->
-                            <div class="w-10 h-10 rounded-full bg-amber-900/10 border border-amber-900/20 text-amber-900 font-bold text-sm flex items-center justify-center shadow-xs flex-none group-hover:bg-amber-900 group-hover:text-amber-50 transition-all duration-200">
-                                {{ x.user.first_name|slice:":1" }}{{ x.user.last_name|slice:":1" }}
-                            </div>
-
-                            <!-- Member Info -->
-                            <div class="truncate">
-                                <h2 class="font-bold text-sm sm:text-base text-stone-900 tracking-tight group-hover:text-amber-950 transition-colors truncate">
-                                    {{ x.user.first_name }} {{ x.user.last_name }}
-                                </h2>
-                                <p class="text-xs text-stone-500 truncate font-medium">
-                                    @{{ x.user.username }}
-                                </p>
-                            </div>
-                        </div>
-
-                        <!-- Badge & Arrow Action -->
-                        <div class="flex items-center gap-3 flex-none ml-4">
-                            <span class="inline-flex items-center text-[10px] font-bold uppercase tracking-wider text-emerald-900 bg-emerald-100/80 border border-emerald-200/60 rounded-full px-2.5 py-0.5">
-                                SEE PROFILE
-                            </span>
-                            
-                            <svg class="w-4 h-4 text-stone-400 group-hover:text-amber-900 group-hover:translate-x-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-                        </div>
-
-                    </a>
-                </li>
-                {% empty %}
-                <li class="text-center py-16 px-6 text-stone-500">
-                    <div class="w-12 h-12 mx-auto mb-3 rounded-full bg-stone-200/60 flex items-center justify-center text-stone-400">
-                        🎾
-                    </div>
-                    <p class="text-sm font-semibold text-stone-600 mb-1">No members found.</p>
-                    <p class="text-xs text-stone-400">Check back later once new players register!</p>
-                </li>
-                {% endfor %}
-            </ul>
+            
+            <!-- Subtle Decorative Graphic -->
+            <div class="absolute -right-8 -bottom-10 opacity-10 pointer-events-none">
+                <svg class="w-64 h-64 text-emerald-300" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+                </svg>
+            </div>
         </div>
 
-    </div>
+        <!-- Toolbar Section: Filter / Quick Stats -->
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 bg-stone-800/90 border border-stone-700/80 rounded-2xl p-4 shadow-sm">
+            <div class="flex items-center gap-2">
+                <span class="text-xs font-extrabold text-stone-400 uppercase tracking-wider">Total Active:</span>
+                <span class="px-2.5 py-0.5 bg-emerald-950 text-emerald-300 border border-emerald-700/60 text-xs font-bold rounded-full">
+                    {{ mymembers|length }} Players
+                </span>
+            </div>
+
+            <div class="relative w-full sm:w-72">
+                <input 
+                    type="text" 
+                    placeholder="Search roster..." 
+                    class="w-full pl-9 pr-4 py-2 bg-stone-900 border border-stone-700/80 rounded-xl text-xs font-medium text-stone-100 placeholder-stone-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                />
+                <svg class="w-4 h-4 text-stone-500 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Grid View Directory -->
+        {% if mymembers %}
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                {% for x in mymembers %}
+                <div class="group bg-stone-800/90 border border-stone-700/80 hover:border-emerald-600/50 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-200 flex flex-col justify-between">
+                    
+                    <div class="flex items-start gap-4">
+                        <!-- Avatar Initials Badge -->
+                        <div class="w-12 h-12 rounded-2xl bg-stone-900 border border-emerald-800/50 text-emerald-400 font-extrabold text-base flex items-center justify-center shadow-xs flex-none group-hover:bg-emerald-800 group-hover:text-white transition-colors duration-200">
+                            {{ x.user.first_name|slice:":1" }}{{ x.user.last_name|slice:":1" }}
+                        </div>
+
+                        <!-- Player Details -->
+                        <div class="min-w-0 flex-1">
+                            <h2 class="font-bold text-base text-stone-100 tracking-tight truncate group-hover:text-emerald-400 transition-colors">
+                                {{ x.user.first_name }} {{ x.user.last_name }}
+                            </h2>
+                            <p class="text-xs text-stone-400 font-semibold truncate">
+                                @{{ x.user.username }}
+                            </p>
+                            <span class="inline-block mt-2 text-[10px] font-bold uppercase tracking-wider text-emerald-300 bg-emerald-950 border border-emerald-700/60 rounded-md px-2 py-0.5">
+                                Active Member
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Action Link -->
+                    <div class="mt-5 pt-4 border-t border-stone-700/80 flex items-center justify-between">
+                        <span class="text-[11px] font-bold text-stone-400 uppercase tracking-wider">Member Details</span>
+                        <a 
+                            href="details/{{ x.id }}" 
+                            class="inline-flex items-center gap-1.5 text-xs font-extrabold text-emerald-400 hover:text-emerald-300 transition-colors"
+                        >
+                            <span>View Profile</span>
+                            <svg class="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+                            </svg>
+                        </a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+        {% else %}
+            <!-- Empty State Container -->
+            <div class="bg-stone-800/90 border border-stone-700/80 rounded-3xl p-12 text-center max-w-md mx-auto shadow-sm">
+                <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-stone-900 border border-stone-700/80 flex items-center justify-center text-2xl text-stone-400 shadow-inner">
+                    🎾
+                </div>
+                <h3 class="text-base font-extrabold text-stone-100 tracking-tight mb-1">No Members Registered</h3>
+                <p class="text-xs text-stone-400 font-medium mb-6">There are currently no players listed in the roster directory.</p>
+                
+                <a href="{% url 'add_member' %}" class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-800 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition-all active:scale-95 cursor-pointer">
+                    <svg class="w-4 h-4 text-emerald-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4.5v15m7.5-7.5h-15"/>
+                    </svg>
+                    <span>Register First Member</span>
+                </a>
+            </div>
+        {% endif %}
+
+    </main>
 </div>
 {% endblock %}

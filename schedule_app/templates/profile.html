@@ -2,267 +2,139 @@
 
 {% block content %}
 {% include 'includes/sidebar.html' %}
+{% include 'includes/logoutmodal.html' %}
 
-<div class="min-h-screen bg-stone-100/60 text-stone-800 antialiased flex flex-col relative selection:bg-amber-200 selection:text-amber-900">
-    <!-- Main Profile Content Area -->
-    <main class="flex-1 w-full max-w-4xl mx-auto px-4 sm:px-6 pt-3 sm:pt-4 pb-8">
-
-        <!-- Profile Header Section -->
-        <section class="bg-amber-50/70 border border-stone-200/80 rounded-3xl p-5 sm:p-6 shadow-sm backdrop-blur-sm mb-6">
-            <div class="flex flex-col sm:flex-row items-center sm:items-start gap-5 sm:gap-8">
-                
-                <!-- Avatar with Status Bubble -->
-                <div class="relative flex-none group">
-                    <div class="w-24 h-24 sm:w-32 sm:h-32 rounded-full overflow-hidden border-4 border-amber-50 ring-2 ring-stone-300/80 shadow-md bg-stone-200 transition-transform duration-300 group-hover:scale-[1.02]">
-                        <img 
-                            src="https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400&auto=format&fit=crop&q=80" 
-                            alt="{{ user.first_name }} {{ user.last_name }}'s profile dynamic picture" 
-                            class="w-full h-full object-cover"
-                            loading="lazy"
-                        >
+<div class="min-h-screen bg-stone-900 text-stone-100 antialiased flex flex-col relative selection:bg-emerald-800 selection:text-emerald-100 transition-colors duration-200">
+    <main class="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 pt-8 pb-12">
+        
+        <!-- Dashboard Main Grid Container -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            
+            <!-- LEFT PANEL: Identity Summary & Primary Controls -->
+            <aside class="lg:col-span-4 bg-gradient-to-b from-emerald-950 via-stone-800 to-stone-800 border border-stone-700/80 rounded-3xl p-6 sm:p-8 shadow-xl space-y-6">
+                <!-- User Profile Header -->
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <!-- Monogram Badge Initials -->
+                        <div class="w-14 h-14 rounded-2xl bg-emerald-900/80 border border-emerald-600/40 text-emerald-300 font-black text-xl flex items-center justify-center shadow-md">
+                            {{ user.first_name|slice:":1" }}{{ user.last_name|slice:":1" }}
+                        </div>
+                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-emerald-950 text-emerald-400 border border-emerald-700/60">
+                            {{ user.is_active|yesno:"Active,Inactive" }}
+                        </span>
                     </div>
-                </div>
 
-                <!-- User Info Details -->
-                <div class="flex-1 text-center sm:text-left space-y-4 w-full">
-                    
-                    <!-- Display Name & Username -->
                     <div>
-                        <h1 class="font-bold text-stone-900 text-xl sm:text-2xl font-serif tracking-tight">
+                        <h1 class="text-xl sm:text-2xl font-black text-white tracking-tight">
                             {{ user.first_name }} {{ user.last_name }}
                         </h1>
-                    </div>
-
-                    <!-- Stats Count Row -->
-                    <div class="flex justify-center sm:justify-start gap-6 sm:gap-10 py-2 border-y border-stone-200/60 text-xs sm:text-sm font-medium text-stone-600">
-                        <div class="text-center sm:text-left">
-                            <span class="block font-extrabold text-stone-900 text-base sm:text-lg leading-none">0</span>
-                            <span class="text-[11px] uppercase tracking-wider text-stone-500 font-semibold">Posts</span>
-                        </div>
-                        <div class="text-center sm:text-left">
-                            <span class="block font-extrabold text-stone-900 text-base sm:text-lg leading-none">0</span>
-                            <span class="text-[11px] uppercase tracking-wider text-stone-500 font-semibold">Followers</span>
-                        </div>
-                        <div class="text-center sm:text-left">
-                            <span class="block font-extrabold text-stone-900 text-base sm:text-lg leading-none">0</span>
-                            <span class="text-[11px] uppercase tracking-wider text-stone-500 font-semibold">Following</span>
-                        </div>
-                    </div>
-
-                    <!-- Action Buttons Row -->
-                    <div class="flex items-center justify-center sm:justify-start gap-3 pt-1">
-                        <a 
-                            href="{% url 'myactivity' %}" 
-                            class="flex-1 sm:flex-none px-6 py-2.5 bg-stone-800 hover:bg-stone-900 active:scale-[0.98] text-amber-50 text-xs font-bold rounded-xl transition-all shadow-sm hover:shadow text-center inline-flex items-center justify-center gap-2 cursor-pointer focus:outline-none focus:ring-2 focus:ring-stone-800 focus:ring-offset-2"
-                        >
-                            <svg class="w-4 h-4 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                            </svg>
-                            <span>My Activity</span>
-                        </a>
-                        <a 
-                            href="#" 
-                            class="flex-1 sm:flex-none px-6 py-2.5 bg-stone-800 hover:bg-stone-900 active:scale-[0.98] text-amber-50 text-xs font-bold rounded-xl border border-stone-300/70 transition-all shadow-sm hover:shadow text-center inline-flex items-center justify-center gap-2 cursor-pointer focus:outline-none focus:ring-2 focus:ring-stone-800 focus:ring-offset-2"
-                        >
-                            <svg class="w-4 h-4 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                            </svg>
-                            <span>Edit Profile</span>
-                        </a>
+                        <p class="text-xs font-semibold text-stone-400">
+                            @{{ user.username }}
+                        </p>
                     </div>
                 </div>
-            </div>
-        </section>
 
-        <!-- Profile Tab Navigation Bar -->
-        <nav aria-label="Profile Sections" class="flex justify-center border-b border-stone-200/90 mb-6 sticky top-0 bg-stone-100/80 backdrop-blur-md z-10 -mx-4 px-4 sm:mx-0 sm:px-0">
-            <div class="flex gap-8 sm:gap-12">
-                <!-- Posts Tab (Active) -->
-                <button 
-                    type="button" 
-                    class="flex items-center gap-2 py-3 border-b-2 border-stone-900 text-stone-900 font-bold text-xs uppercase tracking-widest cursor-pointer transition-colors focus:outline-none"
-                    aria-current="page"
-                >
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
-                    </svg>
-                    <span>Posts</span>
-                </button>
+                <hr class="border-stone-700/80">
 
-                <!-- Saved Tab -->
-                <button 
-                    type="button" 
-                    class="flex items-center gap-2 py-3 border-b-2 border-transparent text-stone-400 hover:text-stone-700 font-bold text-xs uppercase tracking-widest transition-colors cursor-pointer focus:outline-none"
-                >
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/>
-                    </svg>
-                    <span>Saved</span>
-                </button>
+                <!-- Quick Action Buttons -->
+                <div class="space-y-2">
+                    <a 
+                        href="{% url 'myactivity' %}" 
+                        class="w-full px-4 py-2.5 bg-emerald-800 hover:bg-emerald-700 active:scale-[0.98] text-white text-xs font-bold rounded-xl transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                        <svg class="w-4 h-4 text-emerald-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <span>View Activity Log</span>
+                    </a>
+                    <a 
+                        href="#" 
+                        class="w-full px-4 py-2.5 bg-stone-700/80 hover:bg-stone-600 active:scale-[0.98] text-stone-200 text-xs font-bold rounded-xl border border-stone-600/80 transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                        <svg class="w-4 h-4 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                        </svg>
+                        <span>Edit Profile</span>
+                    </a>
+                </div>
+            </aside>
 
-                <!-- Tagged Tab -->
-                <button 
-                    type="button" 
-                    class="flex items-center gap-2 py-3 border-b-2 border-transparent text-stone-400 hover:text-stone-700 font-bold text-xs uppercase tracking-widest transition-colors cursor-pointer focus:outline-none"
-                >
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                    </svg>
-                    <span>Tagged</span>
-                </button>
-            </div>
-        </nav>
-
-        <!-- Posts Grid Section -->
-        <section class="grid grid-cols-3 gap-2 sm:gap-4">
-            <!-- Grid Post Item 1 -->
-            <article class="aspect-square bg-stone-200 rounded-xl overflow-hidden relative group cursor-pointer shadow-xs border border-stone-200/60">
-                <img 
-                    src="https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500&auto=format&fit=crop&q=80" 
-                    alt="User post image 1"
-                    class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 ease-out"
-                    loading="lazy"
-                >
-                <div class="absolute inset-0 bg-stone-900/50 backdrop-blur-[1px] opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center gap-4 sm:gap-6 text-white text-xs sm:text-sm font-bold">
-                    <span class="flex items-center gap-1.5 drop-shadow-sm">
-                        <svg class="w-4 h-4 text-rose-400 fill-current" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-                        24
-                    </span>
-                    <span class="flex items-center gap-1.5 drop-shadow-sm">
-                        <svg class="w-4 h-4 text-white fill-current" viewBox="0 0 24 24"><path d="M21.99 4c0-1.1-.89-2-1.99-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14l4 4-.01-18z"/></svg>
-                        3
+            <!-- RIGHT PANEL: Full User Profile Credentials & Details -->
+            <section class="lg:col-span-8 space-y-6">
+                
+                <!-- Profile Header Title -->
+                <div class="bg-stone-800/90 border border-stone-700/80 rounded-2xl p-5 shadow-sm flex items-center justify-between">
+                    <div>
+                        <h2 class="text-xs font-extrabold uppercase tracking-wider text-stone-400">User Profile</h2>
+                        <p class="text-sm font-bold text-stone-100">Account Information & Settings</p>
+                    </div>
+                    <span class="text-xs font-semibold text-emerald-400 bg-emerald-950/60 border border-emerald-800/60 px-3 py-1 rounded-lg">
+                        System Verified
                     </span>
                 </div>
-            </article>
 
-            <!-- Grid Post Item 2 -->
-            <article class="aspect-square bg-stone-200 rounded-xl overflow-hidden relative group cursor-pointer shadow-xs border border-stone-200/60">
-                <img 
-                    src="https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500&auto=format&fit=crop&q=80" 
-                    alt="User post image 2"
-                    class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 ease-out"
-                    loading="lazy"
-                >
-                <div class="absolute inset-0 bg-stone-900/50 backdrop-blur-[1px] opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center gap-4 sm:gap-6 text-white text-xs sm:text-sm font-bold">
-                    <span class="flex items-center gap-1.5 drop-shadow-sm">
-                        <svg class="w-4 h-4 text-rose-400 fill-current" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-                        18
-                    </span>
-                    <span class="flex items-center gap-1.5 drop-shadow-sm">
-                        <svg class="w-4 h-4 text-white fill-current" viewBox="0 0 24 24"><path d="M21.99 4c0-1.1-.89-2-1.99-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14l4 4-.01-18z"/></svg>
-                        1
-                    </span>
-                </div>
-            </article>
+                <!-- Detailed User Information Panel -->
+                <div class="bg-stone-800/90 border border-stone-700/80 rounded-2xl p-6 shadow-sm space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
+                        
+                        <!-- Name Field -->
+                        <div class="p-3 bg-stone-900/60 rounded-xl border border-stone-700/60">
+                            <span class="text-[10px] font-extrabold uppercase tracking-wider text-stone-400 block mb-1">Name</span>
+                            <span class="font-bold text-stone-100 text-sm">{{ user.get_full_name|default:user.first_name }}</span>
+                        </div>
 
-            <!-- Grid Post Item 3 -->
-            <article class="aspect-square bg-stone-200 rounded-xl overflow-hidden relative group cursor-pointer shadow-xs border border-stone-200/60">
-                <img 
-                    src="https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=500&auto=format&fit=crop&q=80" 
-                    alt="User post image 3"
-                    class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 ease-out"
-                    loading="lazy"
-                >
-                <div class="absolute inset-0 bg-stone-900/50 backdrop-blur-[1px] opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center gap-4 sm:gap-6 text-white text-xs sm:text-sm font-bold">
-                    <span class="flex items-center gap-1.5 drop-shadow-sm">
-                        <svg class="w-4 h-4 text-rose-400 fill-current" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-                        42
-                    </span>
-                    <span class="flex items-center gap-1.5 drop-shadow-sm">
-                        <svg class="w-4 h-4 text-white fill-current" viewBox="0 0 24 24"><path d="M21.99 4c0-1.1-.89-2-1.99-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14l4 4-.01-18z"/></svg>
-                        7
-                    </span>
+                        <!-- Username Field -->
+                        <div class="p-3 bg-stone-900/60 rounded-xl border border-stone-700/60">
+                            <span class="text-[10px] font-extrabold uppercase tracking-wider text-stone-400 block mb-1">Username</span>
+                            <span class="font-bold text-stone-100 text-sm">@{{ user.username }}</span>
+                        </div>
+
+                        <!-- Email Field -->
+                        <div class="p-3 bg-stone-900/60 rounded-xl border border-stone-700/60">
+                            <span class="text-[10px] font-extrabold uppercase tracking-wider text-stone-400 block mb-1">Email</span>
+                            <span class="font-bold text-stone-100 text-sm">{{ user.email|default:"Not specified" }}</span>
+                        </div>
+
+                        <!-- Phone Field -->
+                        <div class="p-3 bg-stone-900/60 rounded-xl border border-stone-700/60">
+                            <span class="text-[10px] font-extrabold uppercase tracking-wider text-stone-400 block mb-1">Phone</span>
+                            <span class="font-bold text-stone-100 text-sm">{{ user.profile.phone|default:"Not provided" }}</span>
+                        </div>
+
+                        <!-- Account Status Field -->
+                        <div class="p-3 bg-stone-900/60 rounded-xl border border-stone-700/60">
+                            <span class="text-[10px] font-extrabold uppercase tracking-wider text-stone-400 block mb-1">Account Status</span>
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-emerald-950 text-emerald-400 border border-emerald-700/60">
+                                {{ user.is_active|yesno:"Active,Inactive" }}
+                            </span>
+                        </div>
+
+                        <!-- Role Field -->
+                        <div class="p-3 bg-stone-900/60 rounded-xl border border-stone-700/60">
+                            <span class="text-[10px] font-extrabold uppercase tracking-wider text-stone-400 block mb-1">Role</span>
+                            <span class="font-bold uppercase text-emerald-400 text-sm">
+                                {{ user.is_staff|yesno:"Administrator,Standard User" }}
+                            </span>
+                        </div>
+
+                        <!-- Member Since Field -->
+                        <div class="p-3 bg-stone-900/60 rounded-xl border border-stone-700/60">
+                            <span class="text-[10px] font-extrabold uppercase tracking-wider text-stone-400 block mb-1">Member Since</span>
+                            <span class="font-bold text-stone-100 text-sm">{{ user.date_joined|date:"F d, Y" }}</span>
+                        </div>
+
+                        <!-- Last Login Field -->
+                        <div class="p-3 bg-stone-900/60 rounded-xl border border-stone-700/60">
+                            <span class="text-[10px] font-extrabold uppercase tracking-wider text-stone-400 block mb-1">Last Login</span>
+                            <span class="font-bold text-stone-100 text-sm">{{ user.last_login|date:"F d, Y - h:i A"|default:"Never logged in" }}</span>
+                        </div>
+
+                    </div>
                 </div>
-            </article>
-        </section>
+
+            </section>
+        </div>
 
     </main>
 </div>
-
-<!-- Logout Modal Overlay -->
-<div 
-    id="logoutModal" 
-    class="hidden fixed inset-0 bg-stone-950/50 backdrop-blur-sm items-center justify-center z-50 p-4 transition-all duration-200 opacity-0"
-    role="dialog"
-    aria-labelledby="logoutModalTitle"
-    aria-modal="true"
->
-    <div class="bg-amber-50/95 border border-stone-200/90 rounded-3xl w-full max-w-md p-6 sm:p-8 shadow-2xl relative text-center backdrop-blur-md transform transition-all duration-200 scale-95">
-        <button 
-            type="button" 
-            class="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full text-stone-400 hover:text-stone-700 hover:bg-amber-200/50 transition-colors text-xl font-bold cursor-pointer focus:outline-none focus:ring-2 focus:ring-stone-400" 
-            onclick="closeLogoutModal()"
-            aria-label="Close dialog"
-        >&times;</button>
-        
-        <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-amber-100/80 border border-amber-200/80 flex items-center justify-center text-amber-900 shadow-inner">
-            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
-            </svg>
-        </div>
-        
-        <h2 id="logoutModalTitle" class="text-2xl font-extrabold text-stone-900 tracking-tight mb-1">Sign Out</h2>
-        <p class="text-xs sm:text-sm text-stone-500 font-medium mb-6">Are you sure you want to end your current session?</p>
-        
-        <div class="flex flex-col sm:flex-row justify-end gap-2.5 pt-4 border-t border-stone-200/70">
-            <button 
-                type="button" 
-                onclick="closeLogoutModal()" 
-                class="w-full sm:w-1/2 text-xs font-bold px-4 py-2.5 rounded-xl border border-stone-300/80 text-stone-700 hover:bg-stone-200/60 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-stone-400"
-            >
-                Cancel
-            </button>
-            <form method="POST" action="{% url 'logout' %}" class="w-full sm:w-1/2">
-                {% csrf_token %}
-                <button 
-                    type="submit" 
-                    class="w-full text-xs font-bold px-5 py-2.5 rounded-xl bg-amber-900 hover:bg-amber-950 text-amber-50 shadow-md transition-all cursor-pointer active:scale-95 focus:outline-none focus:ring-2 focus:ring-amber-900 focus:ring-offset-2"
-                >
-                    Yes, Logout
-                </button>
-            </form>
-        </div>
-    </div>
-</div>
-
-<script>
-  function toggleSidebar() {
-    const sidebar = document.getElementById("sidebarPanel");
-    const backdrop = document.getElementById("sidebarBackdrop");
-    if (sidebar && backdrop) {
-      sidebar.classList.toggle("-translate-x-full");
-      backdrop.classList.toggle("hidden");
-    }
-  }
-
-  function openLogoutModal() {
-    const modal = document.getElementById("logoutModal");
-    if (!modal) return;
-    const dialog = modal.querySelector("div");
-    modal.classList.remove("hidden");
-    modal.classList.add("flex");
-    setTimeout(() => {
-      modal.classList.remove("opacity-0");
-      if (dialog) dialog.classList.remove("scale-95");
-    }, 10);
-  }
-
-  function closeLogoutModal() {
-    const modal = document.getElementById("logoutModal");
-    if (!modal) return;
-    const dialog = modal.querySelector("div");
-    modal.classList.add("opacity-0");
-    if (dialog) dialog.classList.add("scale-95");
-    setTimeout(() => {
-      modal.classList.add("hidden");
-      modal.classList.remove("flex");
-    }, 200);
-  }
-
-  document.getElementById("logoutModal").addEventListener("click", function (e) {
-    if (e.target === this) {
-      closeLogoutModal();
-    }
-  });
-</script>
 {% endblock %}

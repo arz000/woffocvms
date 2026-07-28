@@ -2,6 +2,8 @@
 
 {% block content %}
 {% include 'includes/sidebar.html' %}
+{% include 'includes/logoutmodal.html' %}
+
 
 <div class="min-h-screen bg-emerald-950/10 text-stone-800 antialiased flex flex-col relative">
     <!-- Center Post Feed Area -->
@@ -61,72 +63,4 @@
     </main>
 </div>
 
-<!-- Logout Modal Overlay -->
-<div
-    id="logoutModal"
-    class="hidden fixed inset-0 bg-emerald-950/40 backdrop-blur-sm items-center justify-center z-50 p-4 transition-all"
->
-    <div class="bg-amber-50/95 border border-stone-200/90 rounded-3xl w-full max-w-md p-6 sm:p-8 shadow-2xl relative text-center backdrop-blur-md">
-        <button
-            type="button"
-            class="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full text-stone-400 hover:text-stone-700 hover:bg-amber-200/50 transition-colors text-xl font-bold cursor-pointer"
-            onclick="closeLogoutModal()"
-        >
-            &times;
-        </button>
-
-        <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-amber-100/80 border border-amber-200/80 flex items-center justify-center text-amber-900 shadow-inner">
-            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
-            </svg>
-        </div>
-
-        <h2 class="text-2xl font-extrabold text-stone-900 tracking-tight mb-1">
-            Sign Out
-        </h2>
-        <p class="text-xs sm:text-sm text-stone-500 font-medium mb-6">
-            Are you sure you want to end your current session?
-        </p>
-
-        <div class="flex flex-col sm:flex-row justify-end gap-2.5 pt-4 border-t border-stone-200/70">
-            <button
-                type="button"
-                onclick="closeLogoutModal()"
-                class="w-full sm:w-1/2 text-xs font-bold px-4 py-2.5 rounded-xl border border-stone-300 text-stone-600 hover:bg-stone-200/50 transition-colors cursor-pointer"
-            >
-                Cancel
-            </button>
-
-            <form method="POST" action="{% url 'logout' %}" class="w-full sm:w-1/2">
-                {% csrf_token %}
-                <button
-                    type="submit"
-                    class="w-full text-xs font-bold px-5 py-2.5 rounded-xl bg-amber-900 hover:bg-amber-950 text-amber-50 shadow-md transition-all cursor-pointer active:scale-95"
-                >
-                    Yes, Logout
-                </button>
-            </form>
-        </div>
-    </div>
-</div>
-
-<script>
-  function openLogoutModal() {
-    const modal = document.getElementById("logoutModal");
-    modal.classList.remove("hidden");
-    modal.classList.add("flex");
-  }
-
-  function closeLogoutModal() {
-    const modal = document.getElementById("logoutModal");
-    modal.classList.add("hidden");
-    modal.classList.remove("flex");
-  }
-
-  document.getElementById("logoutModal").addEventListener("click", function (e) {
-    if (e.target === this) {
-      closeLogoutModal();
-    }
-  });
-</script>
 {% endblock %}

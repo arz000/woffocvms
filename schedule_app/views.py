@@ -63,15 +63,17 @@ def logout_user(request):
         logout(request)
     return render(request, "firstpage.html")
 
+@login_required
 def main(request):
    return render(request, 'main.html')
 
+@login_required
 def profile(request):
     member = get_object_or_404(Member, user=request.user)
     context = {'member': member}
     return render(request, 'profile.html', context)
 
-@login_required(login_url='login_page')
+@login_required
 def myactivity(request):
     if request.method == 'POST':
         form = ActivityForm(request.POST)
@@ -115,7 +117,7 @@ def delete_activity(request, id):
         activity.delete()
     return redirect("myactivity")
 
-@login_required(login_url='login_page')
+@login_required
 def members(request):
     mymembers = Member.objects.select_related('user').all()
     context = {'mymembers': mymembers}

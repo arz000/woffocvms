@@ -102,6 +102,7 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 
+
 # Internationalization
 # https://docs.djangoproject.com/en/6.0/topics/i18n/
 
@@ -118,3 +119,11 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
+
+# Aunthentication redirects
+
+LOGIN_URL = 'login_page'
+
+LOGIN_REDIRECT_URL = 'main'
+
+LOGOUT_REDIRECT_URL = 'first_page'
