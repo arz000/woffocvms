@@ -1,63 +1,97 @@
 {% extends 'master.html' %}
+{% load custom_filters %}
 
 {% block content %}
 {% include 'includes/sidebar.html' %}
+{% include 'includes/createpostmodal.html' %}
 {% include 'includes/logoutmodal.html' %}
 
+<!-- Full-screen Container -->
+<div class="min-h-screen w-full bg-stone-950 text-stone-100 antialiased flex flex-col relative overflow-x-hidden selection:bg-emerald-500 selection:text-stone-950">
+    
+    <!-- Ambient Background Glows -->
+    <div class="absolute -top-32 -left-32 w-[35rem] h-[35rem] bg-emerald-500/10 rounded-full blur-[128px] pointer-events-none"></div>
+    <div class="absolute -bottom-32 -right-32 w-[35rem] h-[35rem] bg-amber-500/10 rounded-full blur-[128px] pointer-events-none"></div>
 
-<div class="min-h-screen bg-emerald-950/10 text-stone-800 antialiased flex flex-col relative">
     <!-- Center Post Feed Area -->
-    <main class="flex-1 min-h-screen py-8 px-4 flex justify-center">
-        <div class="w-full max-w-lg space-y-6">
+    <main class="flex-1 min-h-screen py-10 px-4 sm:px-6 flex justify-center relative z-10">
+        <!-- Expanded max-width from max-w-lg to max-w-2xl -->
+        <div class="w-full max-w-2xl space-y-8">
 
-            <!-- Feed Post Example Card -->
-            <div class="bg-amber-50/70 border border-stone-200/90 rounded-2xl overflow-hidden shadow-xl backdrop-blur-sm">
+            <!-- "Create New Post" Action Button Banner -->
+            {% if request.user.is_staff %}
+            <button
+                type="button"
+                onclick="openCreatePostModal()"
+                class="w-full bg-emerald-500 hover:bg-emerald-400 text-stone-950 font-black text-xs py-4 px-6 rounded-2xl shadow-xl shadow-emerald-950/40 border border-emerald-400/50 flex items-center justify-center gap-2.5 transition-all duration-200 active:scale-[0.99] cursor-pointer group"
+            >
+                <svg class="w-4 h-4 stroke-[3] text-stone-950 transition-transform group-hover:rotate-90 duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+                <span class="uppercase tracking-wider">Create New Post</span>
+            </button>
+            {% endif %}
+
+            {% for post in posts %}
+            <!-- Feed Post Card -->
+            <div class="bg-stone-900/60 border border-stone-800/80 rounded-3xl overflow-hidden shadow-2xl shadow-stone-950/80 backdrop-blur-2xl relative z-10 transition-all duration-200 hover:border-stone-700/80">
+                
                 <!-- Post Header -->
-                <div class="p-4 flex items-center justify-between border-b border-stone-200/70">
-                    <div class="flex items-center gap-3">
-                        <div class="w-9 h-9 rounded-full bg-amber-200/80 border border-amber-300 flex items-center justify-center font-bold text-amber-900 text-xs">
-                            PT
+                <div class="p-5 sm:px-6 flex items-center justify-between border-b border-stone-800/60">
+                    <div class="flex items-center gap-3.5">
+                        <div class="w-10 h-10 rounded-full bg-emerald-950/80 border border-emerald-800/80 flex items-center justify-center font-black text-emerald-400 text-xs shadow-inner uppercase">
+                            {{ post.author|slice:":2" }}
                         </div>
                         <div>
-                            <h4 class="text-xs font-bold text-stone-900">Peralta's Tennis Club</h4>
-                            <span class="text-[10px] text-stone-500 font-medium">2 hours ago</span>
+                            <h4 class="text-sm font-black text-white tracking-tight">{{ post.author }}</h4>
+                            <span class="text-[11px] text-stone-400 font-medium">{{ post.created_at|smart_date }}</span>
                         </div>
                     </div>
-                    <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-900 bg-emerald-200/80 border border-emerald-300/60 rounded-full px-2.5 py-0.5">
-                        Daily Inspiration
+                    <span class="text-[10px] font-black uppercase tracking-widest text-emerald-400 bg-emerald-950/80 border border-emerald-800/80 rounded-full px-3.5 py-1">
+                        Daily Feed
                     </span>
                 </div>
 
-                <!-- Post Content Media Area -->
-                <div class="bg-amber-100/40 border-y border-stone-200/70 aspect-square flex flex-col items-center justify-center p-8 text-center relative">
-                    <div class="w-20 h-20 mb-4 rounded-full bg-amber-200/50 border border-amber-300 flex items-center justify-center text-amber-900">
-                        <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-                        </svg>
-                    </div>
-                    <blockquote class="text-base sm:text-lg font-bold text-stone-800 italic mb-2">
-                        "Every stroke is a step toward mastery. Keep pushing your boundaries."
+                <!-- Post Content Area -->
+                <div class="bg-stone-950/40 border-y border-stone-800/60 min-h-[12rem] flex flex-col items-center justify-center p-8 sm:p-10 text-center relative overflow-hidden group">
+                    <div class="absolute inset-0 bg-gradient-to-b from-emerald-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+                    
+                    {% if post.title %}
+                    <h3 class="text-xl sm:text-2xl font-black text-white mb-3 tracking-tight relative z-10">
+                        {{ post.title }}
+                    </h3>
+                    {% endif %}
+
+                    {% if post.content %}
+                    <blockquote class="text-xs sm:text-base font-medium text-stone-300 leading-relaxed max-w-xl relative z-10">
+                        {{ post.content }}
                     </blockquote>
-                    <p class="text-xs text-stone-600 font-medium">— Peralta Club Coaches</p>
+                    {% endif %}
                 </div>
 
                 <!-- Post Actions -->
-                <div class="p-4 space-y-3">
-                    <div class="flex items-center gap-4 text-stone-700">
-                        <button class="hover:text-rose-600 transition-colors">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="p-5 sm:px-6 space-y-3">
+                    <div class="flex items-center gap-5 text-stone-400">
+                        <button class="hover:text-rose-400 transition-colors cursor-pointer active:scale-90">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
                             </svg>
                         </button>
-                        <button class="hover:text-amber-900 transition-colors">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <button class="hover:text-emerald-400 transition-colors cursor-pointer active:scale-90">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
                             </svg>
                         </button>
                     </div>
-                    <p class="text-xs font-bold text-stone-800">24 likes</p>
+                    <p class="text-xs font-bold text-stone-300">24 likes</p>
                 </div>
             </div>
+            {% empty %}
+            <!-- Empty State -->
+            <div class="bg-stone-900/60 border border-stone-800/80 rounded-3xl p-10 text-center backdrop-blur-2xl">
+                <p class="text-xs sm:text-sm text-stone-400 font-medium">No posts available right now.</p>
+            </div>
+            {% endfor %}
 
         </div>
     </main>

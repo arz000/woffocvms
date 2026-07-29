@@ -4,8 +4,8 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect
 from django.contrib.auth.models import User
 from django.core.paginator import Paginator
-from .models import Member, Activity
-from .forms import RegistrationForm, ActivityForm
+from .models import Member, Activity, Post
+from .forms import RegistrationForm, ActivityForm, PostForm
 
 
 # Create your views here.
@@ -65,7 +65,22 @@ def logout_user(request):
 
 @login_required
 def main(request):
-   return render(request, 'main.html')
+   posts = Post.objects.all().order_by('-created_at')
+   post_form = PostForm()
+   context = {'posts': posts,
+              'post_form': post_form
+              } 
+   return render(request, 'main.html', context)
+
+def create_post(request):
+   if request.method == 'POST':
+      post_form = PostForm(request.POST)
+      if post_form.is_valid():
+         post = post_form.save(commit=False)
+         post.author = request.user
+         post.save()
+         return redirect('main')
+   return redirect('main')
 
 @login_required
 def profile(request):
@@ -128,6 +143,13 @@ def details(request, id):
   context = {'mymembers': mymembers}
   return render(request, 'details.html', context)
 
-
 def about_us(request):
     return render(request, 'aboutUs.html')
+
+
+def message(request):
+    return render(request, 'message.html')
+
+def notification(request):
+    return render(request, 'notification.html')
+

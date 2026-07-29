@@ -21,6 +21,7 @@
     
     {% endblock %}
     <script>
+      // Logout Modal Functions
     function openLogoutModal() {
       const modal = document.getElementById("logoutModal");
       modal.classList.remove("hidden");
@@ -38,6 +39,19 @@
         closeLogoutModal();
       }
     });
+
+    // Create Post Modal Functions
+    function openCreatePostModal(){
+      const modal = document.getElementById("createPostModal");
+      modal.classList.remove("hidden");
+      modal.classList.add("flex");
+    }
+
+    function closeCreatePostModal(){
+      const modal = document.getElementById("createPostModal");
+      modal.classList.add("hidden");
+      modal.classList.remove("flex");
+    }
     </script>
   </body>
 </html>

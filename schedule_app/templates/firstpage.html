@@ -2,60 +2,67 @@
 
 {% block content %}
 
-<div class="min-h-[80vh] flex flex-col items-center justify-center text-center px-6 py-16 antialiased">
-    <!-- Club Logo SVG -->
-    <svg 
-      class="w-32 h-32 mb-6 drop-shadow-sm transition-transform duration-300 hover:scale-105 cursor-pointer" 
-      viewBox="0 0 120 120" 
-      xmlns="http://www.w3.org/2000/svg"
-    >
-        <circle cx="60" cy="60" r="57" fill="none" stroke="#a9895f" stroke-width="0.75"/>
-        <circle cx="60" cy="60" r="52" fill="#fbf8f2" stroke="#7c5c3e" stroke-width="1.25"/>
+<div class="min-h-screen w-full flex flex-col items-center justify-center text-center px-6 py-16 antialiased bg-stone-950 text-stone-100 relative overflow-hidden">
+    
+    <!-- Background Radial Glow Accents -->
+    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-amber-500/5 rounded-full blur-3xl pointer-events-none"></div>
 
-        <g stroke="#8a7c68" stroke-width="1.1" fill="none" stroke-linecap="round">
-            <path d="M 30 78 Q 22 62 30 44"/>
-            <path d="M 30 70 L 22 68"/>
-            <path d="M 28 62 L 20 61"/>
-            <path d="M 27 54 L 19 54"/>
-            <path d="M 28 46 L 21 44"/>
-        </g>
-        <g stroke="#8a7c68" stroke-width="1.1" fill="none" stroke-linecap="round">
-            <path d="M 90 78 Q 98 62 90 44"/>
-            <path d="M 90 70 L 98 68"/>
-            <path d="M 92 62 L 100 61"/>
-            <path d="M 93 54 L 101 54"/>
-            <path d="M 92 46 L 99 44"/>
-        </g>
-
-        <g transform="translate(60 50)">
-            <ellipse cx="0" cy="-6" rx="15" ry="19" fill="none" stroke="#5f4630" stroke-width="1.4"/>
-            <path d="M -11 -20 L 11 8 M -3 -22 L 6 10 M 5 -20 L -8 8
-                     M -13 -14 L 13 -10 M -14 -6 L 14 -3 M -13 2 L 13 5"
-                  stroke="#c9bfa8" stroke-width="0.6"/>
-            <path d="M 0 13 L 0 34" stroke="#5f4630" stroke-width="2.2" stroke-linecap="round"/>
-        </g>
-
-        <path d="M 34 88 L 86 88" stroke="#a9895f" stroke-width="0.75"/>
-    </svg>
-
-    <!-- Main Heading -->
-    <h1 class="text-3xl sm:text-5xl font-black text-stone-900 tracking-tight m-0">
-      Peralta's Tennis Club
-    </h1>
-
-    <!-- Subtitle / Eyebrow -->
-    <p class="text-xs sm:text-sm font-bold uppercase tracking-[0.15em] text-amber-900/80 mt-2 mb-8">
-      Since 2026
-    </p>
-
-    <!-- Navigation Buttons -->
-    <div class="flex flex-wrap justify-center items-center gap-3 mt-2">
-        <a 
-          href="{% url 'login_page' %}" 
-          class="inline-flex items-center px-5 py-2.5 text-xs sm:text-sm font-bold text-stone-700 bg-amber-50/80 border border-stone-90/80 rounded-full shadow-2xs hover:bg-emerald-900 hover:text-white hover:border-emerald-900 hover:shadow-md transition-all duration-200"
+    <div class="relative z-10 flex flex-col items-center">
+        <!-- Club Logo SVG -->
+        <svg 
+          class="w-32 h-32 mb-6 drop-shadow-[0_10px_25px_rgba(16,185,129,0.15)] transition-transform duration-300 hover:scale-105 cursor-pointer" 
+          viewBox="0 0 120 120" 
+          xmlns="http://www.w3.org/2000/svg"
         >
-          Login
-        </a>
+            <circle cx="60" cy="60" r="57" fill="none" stroke="#d97706" stroke-width="0.75"/>
+            <circle cx="60" cy="60" r="52" fill="#1c1917" stroke="#f59e0b" stroke-width="1.25"/>
+
+            <g stroke="#78716c" stroke-width="1.1" fill="none" stroke-linecap="round">
+                <path d="M 30 78 Q 22 62 30 44"/>
+                <path d="M 30 70 L 22 68"/>
+                <path d="M 28 62 L 20 61"/>
+                <path d="M 27 54 L 19 54"/>
+                <path d="M 28 46 L 21 44"/>
+            </g>
+            <g stroke="#78716c" stroke-width="1.1" fill="none" stroke-linecap="round">
+                <path d="M 90 78 Q 98 62 90 44"/>
+                <path d="M 90 70 L 98 68"/>
+                <path d="M 92 62 L 100 61"/>
+                <path d="M 93 54 L 101 54"/>
+                <path d="M 92 46 L 99 44"/>
+            </g>
+
+            <g transform="translate(60 50)">
+                <ellipse cx="0" cy="-6" rx="15" ry="19" fill="none" stroke="#f59e0b" stroke-width="1.4"/>
+                <path d="M -11 -20 L 11 8 M -3 -22 L 6 10 M 5 -20 L -8 8
+                         M -13 -14 L 13 -10 M -14 -6 L 14 -3 M -13 2 L 13 5"
+                      stroke="#10b981" stroke-width="0.7"/>
+                <path d="M 0 13 L 0 34" stroke="#f59e0b" stroke-width="2.2" stroke-linecap="round"/>
+            </g>
+
+            <path d="M 34 88 L 86 88" stroke="#d97706" stroke-width="0.75"/>
+        </svg>
+
+        <!-- Main Heading -->
+        <h1 class="text-3xl sm:text-5xl font-black text-white tracking-tight m-0 drop-shadow-sm">
+          Peralta's Tennis Club
+        </h1>
+
+        <!-- Subtitle / Eyebrow -->
+        <p class="text-xs sm:text-sm font-bold uppercase tracking-[0.2em] text-emerald-400 mt-3 mb-8">
+          Since 2026
+        </p>
+
+        <!-- Navigation Buttons -->
+        <div class="flex flex-wrap justify-center items-center gap-3 mt-2">
+            <a 
+              href="{% url 'login_page' %}" 
+              class="inline-flex items-center px-6 py-2.5 text-xs sm:text-sm font-black text-stone-950 bg-emerald-400 hover:bg-emerald-300 rounded-full shadow-lg shadow-emerald-950/50 transition-all duration-200 cursor-pointer active:scale-95"
+            >
+              Login
+            </a>
+        </div>
     </div>
 </div>
 

@@ -30,16 +30,15 @@
             </button>
         </div>
 
-        <!-- Right: Styled Username Badge -->
-        <div class="flex items-center">
-            <span class="inline-flex items-center gap-1.5 px-3 py-1 bg-stone-800 border border-stone-700/80 rounded-full shadow-xs text-xs font-bold text-stone-200 tracking-tight">
+        <!-- Top Right Greetings Badge -->
+        <div class="flex items-center gap-3">
+            <span class="inline-flex items-center gap-2 px-3.5 py-1.5 bg-stone-800/90 border border-stone-700/80 rounded-full shadow-xs text-xs font-semibold text-stone-200">
                 <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                @{{ user.username|default:"arz" }}
+                <span>Welcome back, <strong class="font-black text-emerald-400">{{ user.username |upper }}</strong></span>
             </span>
         </div>
     </header>
 
-    
     <!-- Collapsible Hidden Sidebar Panel -->
     <aside 
         id="sidebarPanel" 
@@ -91,18 +90,13 @@
 
                 <!-- Messages -->
                 <a 
-                    href="#" 
+                    href="{% url 'message' %}" 
                     class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold text-stone-300 hover:text-stone-100 hover:bg-stone-800/80 transition-all border border-transparent hover:border-stone-700/50"
                     title="Messages"
                 >
-                    <div class="relative flex-none">
-                        <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-                        </svg>
-                        <span class="absolute -top-1 -right-1.5 bg-rose-500 text-white text-[9px] font-black w-3.5 h-3.5 rounded-full flex items-center justify-center">
-                            2
-                        </span>
-                    </div>
+                    <svg class="w-4 h-4 text-emerald-400 flex-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                    </svg>
                     <span>Messages</span>
                 </a>
 
@@ -120,16 +114,13 @@
 
                 <!-- Notifications -->
                 <a 
-                    href="#" 
+                    href="{% url 'notification' %}" 
                     class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold text-stone-300 hover:text-stone-100 hover:bg-stone-800/80 transition-all border border-transparent hover:border-stone-700/50"
                     title="Notifications"
                 >
-                    <div class="relative flex-none">
-                        <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
-                        </svg>
-                        <span class="absolute top-0 right-0 w-2 h-2 bg-rose-500 rounded-full ring-2 ring-stone-900"></span>
-                    </div>
+                    <svg class="w-4 h-4 text-emerald-400 flex-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                    </svg>
                     <span>Notifications</span>
                 </a>
 
@@ -178,7 +169,6 @@
         </div>
     </aside>
 
-
     <!-- Overlay Backdrop for Sidebar -->
     <div 
         id="sidebarBackdrop" 
@@ -186,15 +176,14 @@
         class="hidden fixed inset-0 bg-stone-950/60 backdrop-blur-xs z-40 transition-opacity cursor-pointer"
     ></div>
 
-    
     <script>
-      function toggleSidebar() {
+    function toggleSidebar() {
         const sidebar = document.getElementById("sidebarPanel");
         const backdrop = document.getElementById("sidebarBackdrop");
         
         sidebar.classList.toggle("-translate-x-full");
         backdrop.classList.toggle("hidden");
-      }
+    }
     </script>
   </body>
 </html>

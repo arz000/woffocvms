@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Dashboard</title>
+        <!-- Google Fonts: Inter -->
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+        <!-- Tailwind CSS v4 CDN -->
+        <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    </head>
+    <body class="bg-stone-950 font-['Inter',sans-serif] text-stone-100 antialiased selection:bg-emerald-500 selection:text-stone-950">
+
+        <!-- Create Post Modal Container -->
+        <div
+            id="createPostModal"
+            class="hidden fixed inset-0 bg-stone-950/80 backdrop-blur-md items-center justify-center z-50 p-4 transition-all duration-300"
+        >
+            <!-- Modal Dialog Panel -->
+            <div class="bg-stone-900 border border-stone-800 rounded-3xl w-full max-w-lg shadow-2xl shadow-stone-950/80 overflow-hidden transform transition-all">
+                
+                <!-- Modal Header -->
+                <div class="px-6 py-4 border-b border-stone-800/80 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <h2 class="text-xs font-black uppercase tracking-wider text-stone-200">
+                            Create Post
+                        </h2>
+                    </div>
+
+                    <button
+                        type="button"
+                        onclick="closeCreatePostModal()"
+                        class="p-1.5 rounded-xl text-stone-400 hover:text-stone-100 hover:bg-stone-800 transition-colors cursor-pointer"
+                        aria-label="Close modal"
+                    >
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Modal Form -->
+                <form method="POST" id="createPostModal" action="{% url 'create_post' %}" class="p-6 space-y-4">
+                    {% csrf_token %}
+
+                    <!-- Title Field Container -->
+                    <div class="space-y-1.5">
+                        <label class="block text-[10px] font-black uppercase tracking-wider text-stone-400">
+                            Title
+                        </label>
+                        <div class="relative [&>input]:w-full [&>input]:bg-stone-950 [&>input]:border [&>input]:border-stone-800 [&>input]:focus:border-emerald-500 [&>input]:focus:ring-1 [&>input]:focus:ring-emerald-500 [&>input]:rounded-2xl [&>input]:px-4 [&>input]:py-2.5 [&>input]:text-xs [&>input]:text-stone-100 [&>input]:placeholder-stone-600 [&>input]:outline-none [&>input]:transition-all">
+                            {{ post_form.title }}
+                        </div>
+                    </div>
+
+                    <!-- Content Field Container -->
+                    <div class="space-y-1.5">
+                        <label class="block text-[10px] font-black uppercase tracking-wider text-stone-400">
+                            Content
+                        </label>
+                        <div class="relative [&>textarea]:w-full [&>textarea]:bg-stone-950 [&>textarea]:border [&>textarea]:border-stone-800 [&>textarea]:focus:border-emerald-500 [&>textarea]:focus:ring-1 [&>textarea]:focus:ring-emerald-500 [&>textarea]:rounded-2xl [&>textarea]:p-4 [&>textarea]:text-xs [&>textarea]:text-stone-100 [&>textarea]:placeholder-stone-600 [&>textarea]:outline-none [&>textarea]:transition-all [&>textarea]:min-h-[7rem] [&>textarea]:resize-none">
+                            {{ post_form.content }}
+                        </div>
+                    </div>
+
+                    <!-- Footer Action Buttons -->
+                    <div class="flex items-center justify-end gap-3 pt-3 border-t border-stone-800/50">
+                        <button
+                            type="button"
+                            onclick="closeCreatePostModal()"
+                            class="px-4 py-2.5 rounded-xl text-xs font-bold text-stone-400 hover:text-stone-200 hover:bg-stone-800/80 transition-all cursor-pointer"
+                        >
+                            Cancel
+                        </button>
+
+                        <button
+                            type="submit"
+                            class="bg-emerald-500 hover:bg-emerald-400 text-stone-950 font-black text-xs px-5 py-2.5 rounded-xl shadow-lg shadow-emerald-950/40 transition-all duration-200 cursor-pointer active:scale-95 flex items-center gap-2"
+                        >
+                            <svg class="w-4 h-4 stroke-[2.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3 21l18-9L3 3l3 9zm0 0h7.5"/>
+                            </svg>
+                            <span>Post</span>
+                        </button>
+                    </div>
+                </form>
+
+            </div>
+        </div>
+
+    </body>
+</html>

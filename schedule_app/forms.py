@@ -1,5 +1,5 @@
 from django import forms
-from .models import Member, Activity
+from .models import Member, Activity, Post
 
 class RegistrationForm(forms.Form):
     first_name = forms.CharField(
@@ -84,7 +84,21 @@ class ActivityForm(forms.ModelForm):
             }),
         }
     
-
+class PostForm(forms.ModelForm):
+    class Meta:
+        model = Post
+        fields = ['title', 'content']
+        widgets = {
+            'title': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Post Title',
+            }),
+            'content': forms.Textarea(attrs={
+                'class': 'form-control',
+                'placeholder': 'What\'s on your mind?',
+                'rows': 4,
+            }),
+        }
 # class Member(forms.Form):
 #     class Meta:
 #         model = Member

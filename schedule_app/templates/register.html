@@ -1,131 +1,168 @@
 {% extends 'master.html' %}
 
 {% block content %}
-<!-- Main Container using Soft Sage Green Background -->
-<div class="min-h-screen py-12 px-4 sm:px-6 lg:px-8 bg-emerald-950/10 text-stone-800 antialiased flex items-center justify-center">
+<!-- Full-screen Container -->
+<div class="min-h-screen w-full bg-stone-950 text-stone-100 antialiased flex items-center justify-center p-4 sm:p-6 lg:p-8 relative overflow-hidden selection:bg-emerald-500 selection:text-stone-950">
     
-    <!-- Registration Card Container -->
-    <div class="w-full max-w-lg bg-amber-50/70 border border-stone-200/90 rounded-3xl shadow-xl backdrop-blur-sm overflow-hidden my-6">
+    <!-- Ambient Background Glows -->
+    <div class="absolute -top-32 -left-32 w-[30rem] h-[30rem] bg-emerald-500/10 rounded-full blur-[128px] pointer-events-none"></div>
+    <div class="absolute -bottom-32 -right-32 w-[30rem] h-[30rem] bg-amber-500/10 rounded-full blur-[128px] pointer-events-none"></div>
+
+    <!-- Main Shell Container -->
+    <div class="w-full max-w-4xl bg-stone-900/60 border border-stone-800/80 rounded-3xl shadow-2xl shadow-stone-950/80 backdrop-blur-2xl grid grid-cols-1 md:grid-cols-12 overflow-hidden relative z-10 my-6">
         
-        <!-- Top Accent Banner -->
-        <div class="h-2 bg-gradient-to-r from-amber-900 via-amber-800 to-amber-900"></div>
-        
-        <!-- Card Body -->
-        <div class="p-8 sm:p-10">
-            <!-- Header -->
-            <div class="text-center mb-8">
-                <span class="inline-block text-[10px] font-bold tracking-widest uppercase text-emerald-900 bg-emerald-200/80 border border-emerald-300/60 rounded-full px-3 py-0.5 mb-2.5">
-                    Member Registration
-                </span>
-                <h1 class="text-2xl sm:text-3xl font-extrabold text-stone-900 tracking-tight">Join the Club</h1>
-                <p class="text-xs sm:text-sm text-stone-500 mt-1 font-medium">Create your member account</p>
+        <!-- Left Side: Modern Visual Banner -->
+        <div class="md:col-span-5 bg-gradient-to-br from-stone-900 via-stone-900/80 to-emerald-950/40 p-8 sm:p-10 flex flex-col justify-between border-b md:border-b-0 md:border-r border-stone-800/60 relative overflow-hidden">
+            <div class="absolute top-0 right-0 w-48 h-48 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none"></div>
+            
+            <div>
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-950/80 border border-emerald-800/60 text-emerald-400 text-[10px] font-black uppercase tracking-widest mb-6">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    New Registration
+                </div>
+                <h2 class="text-2xl sm:text-3xl font-black text-white tracking-tight leading-snug">
+                    <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-amber-300">Peralta's Tennis Club</span>
+                </h2>
+                <p class="text-xs text-stone-400 mt-2 font-medium leading-relaxed">
+                    Create an account to gain access to court reservations, match scheduling, and club updates.
+                </p>
             </div>
 
-            <!-- Form Errors (Global) -->
+            <div class="mt-8 md:mt-0 pt-6 border-t border-stone-800/50 flex items-center justify-between text-[11px] font-semibold text-stone-500">
+                <span>Est. 2026</span>
+                <span class="flex items-center gap-1.5 text-stone-400">
+                    <svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                    </svg>
+                    Member Portal
+                </span>
+            </div>
+        </div>
+
+        <!-- Right Side: Registration Form -->
+        <div class="md:col-span-7 p-8 sm:p-10 flex flex-col justify-center">
+            
+            <div class="mb-6">
+                <h1 class="text-xl sm:text-2xl font-black text-white tracking-tight">Create Account</h1>
+                <p class="text-xs text-stone-400 mt-1">Fill out the details below to complete your registration</p>
+            </div>
+
+            <!-- Global Form Errors -->
             {% if form.non_field_errors %}
-            <div class="mb-6 p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold text-center flex flex-col gap-1 shadow-xs">
+            <div class="mb-6 p-3.5 rounded-2xl bg-rose-950/40 border border-rose-800/60 text-rose-300 text-xs font-semibold flex flex-col gap-1 shadow-inner">
                 {% for error in form.non_field_errors %}
-                    <span>⚠️ {{ error }}</span>
+                    <div class="flex items-center gap-2">
+                        <svg class="w-4 h-4 text-rose-400 flex-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span>{{ error }}</span>
+                    </div>
                 {% endfor %}
             </div>
             {% endif %}
 
-            <!-- Form -->
             <form method="POST" class="space-y-4">
                 {% csrf_token %}
 
                 <!-- First Name & Last Name Row -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                        <label for="{{ form.first_name.id_for_label }}" class="block text-[11px] font-bold text-stone-600 uppercase tracking-wider mb-1.5">First Name</label>
-                        <div class="[&_input]:w-full [&_input]:px-4 [&_input]:py-2.5 [&_input]:border [&_input]:border-stone-300 [&_input]:rounded-xl [&_input]:text-sm [&_input]:text-stone-900 [&_input]:bg-white/90 [&_input]:focus:outline-none [&_input]:focus:border-amber-800 [&_input]:focus:ring-1 [&_input]:focus:ring-amber-800 [&_input]:shadow-xs">
+                        <label for="{{ form.first_name.id_for_label }}" class="block text-[11px] font-black text-stone-400 uppercase tracking-wider mb-1.5">First Name</label>
+                        <div class="[&_input]:w-full [&_input]:px-4 [&_input]:py-2.5 [&_input]:border [&_input]:border-stone-800 [&_input]:rounded-2xl [&_input]:text-xs [&_input]:sm:text-sm [&_input]:text-stone-100 [&_input]:bg-stone-950/50 [&_input]:focus:outline-none [&_input]:focus:border-emerald-500 [&_input]:focus:ring-2 [&_input]:focus:ring-emerald-500/20 [&_input]:transition-all">
                             {{ form.first_name }}
                         </div>
                         {% if form.first_name.errors %}
-                            <p class="text-[11px] text-rose-600 font-medium mt-1">{{ form.first_name.errors.0 }}</p>
+                            <p class="text-[11px] text-rose-400 font-medium mt-1">{{ form.first_name.errors.0 }}</p>
                         {% endif %}
                     </div>
 
                     <div>
-                        <label for="{{ form.last_name.id_for_label }}" class="block text-[11px] font-bold text-stone-600 uppercase tracking-wider mb-1.5">Last Name</label>
-                        <div class="[&_input]:w-full [&_input]:px-4 [&_input]:py-2.5 [&_input]:border [&_input]:border-stone-300 [&_input]:rounded-xl [&_input]:text-sm [&_input]:text-stone-900 [&_input]:bg-white/90 [&_input]:focus:outline-none [&_input]:focus:border-amber-800 [&_input]:focus:ring-1 [&_input]:focus:ring-amber-800 [&_input]:shadow-xs">
+                        <label for="{{ form.last_name.id_for_label }}" class="block text-[11px] font-black text-stone-400 uppercase tracking-wider mb-1.5">Last Name</label>
+                        <div class="[&_input]:w-full [&_input]:px-4 [&_input]:py-2.5 [&_input]:border [&_input]:border-stone-800 [&_input]:rounded-2xl [&_input]:text-xs [&_input]:sm:text-sm [&_input]:text-stone-100 [&_input]:bg-stone-950/50 [&_input]:focus:outline-none [&_input]:focus:border-emerald-500 [&_input]:focus:ring-2 [&_input]:focus:ring-emerald-500/20 [&_input]:transition-all">
                             {{ form.last_name }}
                         </div>
                         {% if form.last_name.errors %}
-                            <p class="text-[11px] text-rose-600 font-medium mt-1">{{ form.last_name.errors.0 }}</p>
+                            <p class="text-[11px] text-rose-400 font-medium mt-1">{{ form.last_name.errors.0 }}</p>
                         {% endif %}
                     </div>
                 </div>
 
                 <!-- Username -->
                 <div>
-                    <label for="{{ form.username.id_for_label }}" class="block text-[11px] font-bold text-stone-600 uppercase tracking-wider mb-1.5">Username</label>
-                    <div class="[&_input]:w-full [&_input]:px-4 [&_input]:py-2.5 [&_input]:border [&_input]:border-stone-300 [&_input]:rounded-xl [&_input]:text-sm [&_input]:text-stone-900 [&_input]:bg-white/90 [&_input]:focus:outline-none [&_input]:focus:border-amber-800 [&_input]:focus:ring-1 [&_input]:focus:ring-amber-800 [&_input]:shadow-xs">
+                    <label for="{{ form.username.id_for_label }}" class="block text-[11px] font-black text-stone-400 uppercase tracking-wider mb-1.5">Username</label>
+                    <div class="[&_input]:w-full [&_input]:px-4 [&_input]:py-2.5 [&_input]:border [&_input]:border-stone-800 [&_input]:rounded-2xl [&_input]:text-xs [&_input]:sm:text-sm [&_input]:text-stone-100 [&_input]:bg-stone-950/50 [&_input]:focus:outline-none [&_input]:focus:border-emerald-500 [&_input]:focus:ring-2 [&_input]:focus:ring-emerald-500/20 [&_input]:transition-all">
                         {{ form.username }}
                     </div>
                     {% if form.username.errors %}
-                        <p class="text-[11px] text-rose-600 font-medium mt-1">{{ form.username.errors.0 }}</p>
+                        <p class="text-[11px] text-rose-400 font-medium mt-1">{{ form.username.errors.0 }}</p>
                     {% endif %}
                 </div>
 
                 <!-- Email -->
                 <div>
-                    <label for="{{ form.email.id_for_label }}" class="block text-[11px] font-bold text-stone-600 uppercase tracking-wider mb-1.5">Email</label>
-                    <div class="[&_input]:w-full [&_input]:px-4 [&_input]:py-2.5 [&_input]:border [&_input]:border-stone-300 [&_input]:rounded-xl [&_input]:text-sm [&_input]:text-stone-900 [&_input]:bg-white/90 [&_input]:focus:outline-none [&_input]:focus:border-amber-800 [&_input]:focus:ring-1 [&_input]:focus:ring-amber-800 [&_input]:shadow-xs">
+                    <label for="{{ form.email.id_for_label }}" class="block text-[11px] font-black text-stone-400 uppercase tracking-wider mb-1.5">Email</label>
+                    <div class="[&_input]:w-full [&_input]:px-4 [&_input]:py-2.5 [&_input]:border [&_input]:border-stone-800 [&_input]:rounded-2xl [&_input]:text-xs [&_input]:sm:text-sm [&_input]:text-stone-100 [&_input]:bg-stone-950/50 [&_input]:focus:outline-none [&_input]:focus:border-emerald-500 [&_input]:focus:ring-2 [&_input]:focus:ring-emerald-500/20 [&_input]:transition-all">
                         {{ form.email }}
                     </div>
                     {% if form.email.errors %}
-                        <p class="text-[11px] text-rose-600 font-medium mt-1">{{ form.email.errors.0 }}</p>
+                        <p class="text-[11px] text-rose-400 font-medium mt-1">{{ form.email.errors.0 }}</p>
                     {% endif %}
                 </div>
 
                 <!-- Phone & Birth Date Row -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                        <label for="{{ form.phone.id_for_label }}" class="block text-[11px] font-bold text-stone-600 uppercase tracking-wider mb-1.5">Phone</label>
-                        <div class="[&_input]:w-full [&_input]:px-4 [&_input]:py-2.5 [&_input]:border [&_input]:border-stone-300 [&_input]:rounded-xl [&_input]:text-sm [&_input]:text-stone-900 [&_input]:bg-white/90 [&_input]:focus:outline-none [&_input]:focus:border-amber-800 [&_input]:focus:ring-1 [&_input]:focus:ring-amber-800 [&_input]:shadow-xs">
+                        <label for="{{ form.phone.id_for_label }}" class="block text-[11px] font-black text-stone-400 uppercase tracking-wider mb-1.5">Phone</label>
+                        <div class="[&_input]:w-full [&_input]:px-4 [&_input]:py-2.5 [&_input]:border [&_input]:border-stone-800 [&_input]:rounded-2xl [&_input]:text-xs [&_input]:sm:text-sm [&_input]:text-stone-100 [&_input]:bg-stone-950/50 [&_input]:focus:outline-none [&_input]:focus:border-emerald-500 [&_input]:focus:ring-2 [&_input]:focus:ring-emerald-500/20 [&_input]:transition-all">
                             {{ form.phone }}
                         </div>
                         {% if form.phone.errors %}
-                            <p class="text-[11px] text-rose-600 font-medium mt-1">{{ form.phone.errors.0 }}</p>
+                            <p class="text-[11px] text-rose-400 font-medium mt-1">{{ form.phone.errors.0 }}</p>
                         {% endif %}
                     </div>
 
                     <div>
-                        <label for="{{ form.birth_date.id_for_label }}" class="block text-[11px] font-bold text-stone-600 uppercase tracking-wider mb-1.5">Birth Date</label>
-                        <div class="[&_input]:w-full [&_input]:px-4 [&_input]:py-2.5 [&_input]:border [&_input]:border-stone-300 [&_input]:rounded-xl [&_input]:text-sm [&_input]:text-stone-900 [&_input]:bg-white/90 [&_input]:focus:outline-none [&_input]:focus:border-amber-800 [&_input]:focus:ring-1 [&_input]:focus:ring-amber-800 [&_input]:shadow-xs">
+                        <label for="{{ form.birth_date.id_for_label }}" class="block text-[11px] font-black text-stone-400 uppercase tracking-wider mb-1.5">Birth Date</label>
+                        <div class="[&_input]:w-full [&_input]:px-4 [&_input]:py-2.5 [&_input]:border [&_input]:border-stone-800 [&_input]:rounded-2xl [&_input]:text-xs [&_input]:sm:text-sm [&_input]:text-stone-100 [&_input]:bg-stone-950/50 [&_input]:focus:outline-none [&_input]:focus:border-emerald-500 [&_input]:focus:ring-2 [&_input]:focus:ring-emerald-500/20 [&_input]:transition-all">
                             {{ form.birth_date }}
                         </div>
                         {% if form.birth_date.errors %}
-                            <p class="text-[11px] text-rose-600 font-medium mt-1">{{ form.birth_date.errors.0 }}</p>
+                            <p class="text-[11px] text-rose-400 font-medium mt-1">{{ form.birth_date.errors.0 }}</p>
                         {% endif %}
                     </div>
                 </div>
 
                 <!-- Password -->
                 <div>
-                    <label for="{{ form.password.id_for_label }}" class="block text-[11px] font-bold text-stone-600 uppercase tracking-wider mb-1.5">Password</label>
-                    <div class="[&_input]:w-full [&_input]:px-4 [&_input]:py-2.5 [&_input]:border [&_input]:border-stone-300 [&_input]:rounded-xl [&_input]:text-sm [&_input]:text-stone-900 [&_input]:bg-white/90 [&_input]:focus:outline-none [&_input]:focus:border-amber-800 [&_input]:focus:ring-1 [&_input]:focus:ring-amber-800 [&_input]:shadow-xs">
+                    <label for="{{ form.password.id_for_label }}" class="block text-[11px] font-black text-stone-400 uppercase tracking-wider mb-1.5">Password</label>
+                    <div class="[&_input]:w-full [&_input]:px-4 [&_input]:py-2.5 [&_input]:border [&_input]:border-stone-800 [&_input]:rounded-2xl [&_input]:text-xs [&_input]:sm:text-sm [&_input]:text-stone-100 [&_input]:bg-stone-950/50 [&_input]:focus:outline-none [&_input]:focus:border-emerald-500 [&_input]:focus:ring-2 [&_input]:focus:ring-emerald-500/20 [&_input]:transition-all">
                         {{ form.password }}
                     </div>
                     {% if form.password.errors %}
-                        <p class="text-[11px] text-rose-600 font-medium mt-1">{{ form.password.errors.0 }}</p>
+                        <p class="text-[11px] text-rose-400 font-medium mt-1">{{ form.password.errors.0 }}</p>
                     {% endif %}
                 </div>
 
                 <!-- Submit Button -->
-                <button type="submit" 
-                        class="w-full mt-4 bg-amber-900 hover:bg-amber-950 text-amber-50 text-xs sm:text-sm font-semibold py-3.5 rounded-xl shadow-sm hover:shadow transition-all duration-150 active:scale-[0.98] cursor-pointer">
-                    Register Account
+                <button 
+                    type="submit" 
+                    class="w-full mt-2 inline-flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-stone-950 font-black text-xs sm:text-sm py-3.5 rounded-2xl shadow-lg shadow-emerald-950/60 hover:shadow-emerald-950/80 transition-all duration-200 cursor-pointer active:scale-[0.98]"
+                >
+                    <span>Register Account</span>
+                    <svg class="w-4 h-4 stroke-[2.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                    </svg>
                 </button>
             </form>
 
-            <!-- Footer Link -->
-            <p class="text-xs text-center text-stone-500 mt-8 font-medium">
+            <p class="text-xs text-center sm:text-left text-stone-400 mt-6 font-medium">
                 Already a member? 
-                <a href="{% url 'login_page' %}" class="text-amber-900 font-bold hover:underline ml-0.5">Log in</a>
+                <a href="{% url 'login_page' %}" class="text-emerald-400 font-bold hover:text-emerald-300 hover:underline transition-colors ml-0.5">
+                    Log in here
+                </a>
             </p>
         </div>
+
     </div>
 </div>
 {% endblock %}

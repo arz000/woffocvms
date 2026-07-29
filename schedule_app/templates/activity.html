@@ -3,16 +3,16 @@
 {% include 'includes/sidebar.html' %}
 {% include 'includes/logoutmodal.html' %}
 
-<!-- Main Shell: Dark Slate / Stone Background -->
-<div class="min-h-screen py-10 px-4 sm:px-6 lg:px-8 bg-stone-950 text-stone-100 antialiased selection:bg-emerald-500 selection:text-stone-950">
-  <div class="max-w-3xl mx-auto bg-stone-900/90 border border-stone-800 rounded-3xl shadow-2xl shadow-emerald-950/20 backdrop-blur-xl relative overflow-hidden">
+<!-- Main Shell: Full-Width Layout -->
+<div class="min-h-screen py-8 px-4 sm:px-8 lg:px-12 bg-stone-950 text-stone-100 antialiased selection:bg-emerald-500 selection:text-stone-950">
+  <div class="w-full max-w-7xl mx-auto bg-stone-900/80 border border-stone-800 rounded-3xl shadow-2xl shadow-emerald-950/20 backdrop-blur-xl relative overflow-hidden">
     
-    <!-- Glow Accent background glow -->
+    <!-- Glow Accents -->
     <div class="absolute -top-24 -right-24 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
     <div class="absolute -bottom-24 -left-24 w-96 h-96 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none"></div>
 
-    <!-- Inner Content Box -->
-    <div class="rounded-3xl flex flex-col relative z-10">
+    <!-- Inner Content Wrapper -->
+    <div class="flex flex-col relative z-10">
       
       <!-- Header Section -->
       <div class="p-6 sm:p-8 border-b border-stone-800 bg-stone-900/60 backdrop-blur-md flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -43,12 +43,12 @@
         </div>
       </div>
 
-      <!-- Activity List -->
+      <!-- Activity List (Expanded Wide) -->
       <ul class="divide-y divide-stone-800/80 bg-stone-900/30">
         {% for x in page_obj %}
-        <li class="group flex items-start justify-between gap-4 p-5 sm:p-6 hover:bg-stone-800/40 transition-all duration-150 transform-gpu">
+        <li class="group flex items-start justify-between gap-6 p-6 sm:px-8 sm:py-6 hover:bg-stone-800/40 transition-all duration-150 transform-gpu">
           <div class="flex-1 min-w-0">
-            <div class="flex flex-wrap items-center gap-2.5 mb-2">
+            <div class="flex flex-wrap items-center gap-3 mb-2">
               <h2 class="font-bold text-base sm:text-lg text-stone-100 leading-snug tracking-tight group-hover:text-emerald-300 transition-colors">
                 {{ x.title }}
               </h2>
@@ -71,7 +71,7 @@
           </div>
 
           <!-- Action Buttons -->
-          <div class="flex items-center gap-1 flex-none pt-0.5 opacity-90 group-hover:opacity-100 transition-opacity">
+          <div class="flex items-center gap-1.5 flex-none pt-0.5 opacity-90 group-hover:opacity-100 transition-opacity">
             <button 
               type="button" 
               class="p-2.5 rounded-xl text-stone-400 hover:text-emerald-300 hover:bg-emerald-950/50 border border-transparent hover:border-emerald-800/60 transition-all cursor-pointer active:scale-95"
@@ -115,7 +115,7 @@
 
       <!-- Pagination -->
       {% if page_obj.paginator.num_pages > 1 %}
-      <div class="flex justify-end items-center gap-1.5 py-4 px-6 border-t border-stone-800 bg-stone-900/60">
+      <div class="flex justify-end items-center gap-1.5 py-4 px-8 border-t border-stone-800 bg-stone-900/60">
         {% for num in page_obj.paginator.page_range %}
         {% if page_obj.number == num %}
         <span class="px-3 py-1.5 rounded-xl bg-emerald-500 text-stone-950 text-xs font-black shadow-md shadow-emerald-950/40">
@@ -141,7 +141,7 @@
   class="hidden fixed inset-0 bg-stone-950/80 backdrop-blur-md items-center justify-center z-50 p-4 transition-all"
   id="addActivityModal"
 >
-  <div class="bg-stone-900 border border-stone-800 rounded-3xl w-full max-w-md p-6 sm:p-8 shadow-2xl relative animate-in fade-in zoom-in-95 duration-150">
+  <div class="bg-stone-900 border border-stone-800 rounded-3xl w-full max-w-lg p-6 sm:p-8 shadow-2xl relative animate-in fade-in zoom-in-95 duration-150">
     <div class="flex justify-between items-center mb-6 border-b border-stone-800 pb-4">
       <h2 class="text-xl font-black text-white tracking-tight" id="modalHeaderTitle">
         Add Activity
