@@ -30,11 +30,28 @@
             </button>
         </div>
 
-        <!-- Top Right Greetings Badge -->
-        <div class="flex items-center gap-3">
-            <span class="inline-flex items-center gap-2 px-3.5 py-1.5 bg-stone-800/90 border border-stone-700/80 rounded-full shadow-xs text-xs font-semibold text-stone-200">
-                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                <span>Welcome back, <strong class="font-black text-emerald-400">{{ user.username |upper }}</strong></span>
+        <!-- Top Right Greetings Badge & Notifications -->
+        <div class="flex items-center gap-3.5">
+            <!-- Notification Bell Icon Button -->
+            <a 
+                href="{% url 'notification' %}" 
+                class="relative p-2.5 rounded-2xl text-stone-300 hover:text-stone-100 bg-stone-800/40 border border-stone-700/50 hover:bg-stone-800 transition-all focus:outline-none flex items-center justify-center cursor-pointer group shadow-sm active:scale-95"
+                title="Notifications"
+                aria-label="Notifications"
+            >
+                <svg class="w-6 h-6 text-stone-300 group-hover:text-emerald-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                </svg>
+                <!-- Unread Indicator Badge -->
+                <span class="absolute top-1.5 right-1.5 flex h-2.5 w-2.5">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                </span>
+            </a>
+
+            <!-- Greetings Badge -->
+            <span class="inline-flex items-center gap-2 px-4 py-2 bg-stone-800/90 border border-stone-700/80 rounded-full shadow-xs text-xs font-semibold text-stone-200">
+                <span>Welcome, <strong class="font-black text-emerald-400">{{ user.username |upper }}</strong></span>
             </span>
         </div>
     </header>
@@ -102,7 +119,7 @@
 
                 <!-- Search -->
                 <a 
-                    href="#" 
+                    href="{% url 'search' %}" 
                     class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold text-stone-300 hover:text-stone-100 hover:bg-stone-800/80 transition-all border border-transparent hover:border-stone-700/50"
                     title="Search"
                 >
@@ -119,7 +136,7 @@
                     title="Notifications"
                 >
                     <svg class="w-4 h-4 text-emerald-400 flex-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
                     </svg>
                     <span>Notifications</span>
                 </a>

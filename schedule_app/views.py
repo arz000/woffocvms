@@ -1,10 +1,11 @@
+from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate,login,logout
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect
 from django.contrib.auth.models import User
 from django.core.paginator import Paginator
-from .models import Member, Activity, Post
+from .models import Member, Activity, Post, Like, Comment
 from .forms import RegistrationForm, ActivityForm, PostForm
 
 
@@ -65,13 +66,24 @@ def logout_user(request):
 
 @login_required
 def main(request):
-   posts = Post.objects.all().order_by('-created_at')
-   post_form = PostForm()
-   context = {'posts': posts,
-              'post_form': post_form
-              } 
-   return render(request, 'main.html', context)
 
+    posts = Post.objects.all().order_by('-created_at')
+    post_form = PostForm()
+
+    for post in posts:
+        post.user_liked = Like.objects.filter(
+            post=post,
+            user=request.user
+        ).exists()
+
+    context = {
+        'posts': posts,
+        'post_form': post_form
+    }
+
+    return render(request, 'main.html', context)
+
+@login_required
 def create_post(request):
    if request.method == 'POST':
       post_form = PostForm(request.POST)
@@ -81,6 +93,58 @@ def create_post(request):
          post.save()
          return redirect('main')
    return redirect('main')
+
+@login_required
+def like_post(request, post_id):
+
+    if request.method != 'POST':
+        return JsonResponse(
+            {'error': 'Invalid request'},
+            status=400
+        )
+
+    post = get_object_or_404(Post, id=post_id)
+    like = Like.objects.filter(
+        user=request.user,
+        post=post
+    )
+
+    if like.exists():
+        like.delete()
+        liked = False
+    else:
+        Like.objects.create(
+            user=request.user,
+            post=post
+        )
+        liked = True
+
+    return JsonResponse({
+        'liked': liked,
+        'likes_count': post.likes.count()
+    })
+
+@login_required
+def create_comment(request, post_id):
+    post = get_object_or_404(Post, id=post_id)
+
+    if request.method == 'POST':
+
+        content = request.POST.get('content')
+
+        comment = Comment.objects.create(
+            post=post,
+            author=request.user,
+            content=content
+        )
+        return JsonResponse({
+            'success': True,
+            'author': comment.author.username,
+            'content': comment.content,
+            'comments_count': post.comments.count()
+        })
+
+    return JsonResponse({'success': False}, status=400)
 
 @login_required
 def profile(request):
@@ -146,9 +210,11 @@ def details(request, id):
 def about_us(request):
     return render(request, 'aboutUs.html')
 
-
 def message(request):
     return render(request, 'message.html')
+
+def search(request):
+    return render(request, 'search.html')
 
 def notification(request):
     return render(request, 'notification.html')

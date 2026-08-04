@@ -10,6 +10,8 @@ urlpatterns = [
 
     path('main/', views.main, name='main'),
     path('create-post/', views.create_post, name='create_post'),
+    path('like-post/<int:post_id>/', views.like_post, name='like_post'),
+    path('comment-post/<int:post_id>/', views.create_comment, name='comment_post'),
     
     path('about_us/', views.about_us, name='about_us'),
 
@@ -23,5 +25,6 @@ urlpatterns = [
     path('view_member/details/<int:id>/', views.details, name='details'),
 
     path('message/', views.message, name='message'),
+    path('search/', views.search, name='search'),
     path('notification/', views.notification, name='notification'),
 ]

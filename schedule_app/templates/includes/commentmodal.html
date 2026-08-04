@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Dashboard</title>
+        <!-- Google Fonts: Inter -->
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+        <!-- Tailwind CSS v4 CDN -->
+        <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    </head>
+    <body class="bg-stone-950 font-['Inter',sans-serif]">
+
+        <!-- commentmodal.html -->
+        <div
+            id="commentModal"
+            onclick="closeCommentModal()"
+            class="hidden fixed inset-0 z-50 flex items-center justify-center bg-stone-950/70 backdrop-blur-md p-4 transition-all duration-300 cursor-pointer"
+        >
+            <!-- Inner Modal Box with Glassmorphism and Glow Effect -->
+            <div 
+                onclick="event.stopPropagation()" 
+                class="bg-stone-900/90 border border-stone-800/80 rounded-3xl w-full max-w-lg p-6 sm:p-8 shadow-2xl shadow-stone-950/80 backdrop-blur-2xl relative cursor-default transition-all"
+            >
+                <!-- Subtle Ambient Glow inside Modal -->
+                <div class="absolute -top-12 -right-12 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+                <div class="flex justify-between items-center mb-5 relative z-10">
+                    <h3 class="font-black text-xl text-stone-100 tracking-tight">Comments</h3>
+                </div>
+
+                <div
+                    id="commentContainer"
+                    class="space-y-3 max-h-96 overflow-y-auto pr-1 text-stone-200 relative z-10"
+                >
+                </div>
+
+                <form
+                    id="commentForm"
+                    method="POST"
+                    class="mt-5 relative z-10"
+                >
+                    {% csrf_token %}
+
+                    <textarea
+                        name="content"
+                        rows="3"
+                        class="w-full bg-stone-950/60 border border-stone-800 text-stone-100 rounded-2xl p-4 text-sm placeholder:text-stone-500 focus:outline-none focus:border-emerald-500/80 focus:ring-1 focus:ring-emerald-500/80 transition-all resize-none"
+                        placeholder="Write a comment..."
+                    ></textarea>
+
+                    <div class="flex justify-end mt-3">
+                        <button
+                            type="submit"
+                            class="bg-emerald-500 hover:bg-emerald-400 text-stone-950 font-black text-xs uppercase tracking-wider px-5 py-3 rounded-xl transition-all duration-200 active:scale-95 shadow-md shadow-emerald-950/30 cursor-pointer"
+                        >
+                            Post Comment
+                        </button>
+                    </div>
+                </form>
+
+            </div>
+
+        </div>
+
+    </body>
+</html>

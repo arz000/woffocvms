@@ -1,5 +1,5 @@
 from django import forms
-from .models import Member, Activity, Post
+from .models import Activity, Post, Comment
 
 class RegistrationForm(forms.Form):
     first_name = forms.CharField(
@@ -99,11 +99,9 @@ class PostForm(forms.ModelForm):
                 'rows': 4,
             }),
         }
-# class Member(forms.Form):
-#     class Meta:
-#         model = Member
 
-#         fields = [
-#             "phone",
-#             "birth_date",
-#         ]
+class CommentForm(forms.ModelForm):
+
+    class Meta:
+        model = Comment
+        fields = ['content']
