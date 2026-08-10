@@ -42,7 +42,8 @@ class RegistrationForm(forms.Form):
     birth_date = forms.DateField(
         widget=forms.DateInput(attrs={
             "class": "form-control",
-            "type": "date"
+            "type": "date",
+            "onclick": "this.showPicker()",
         })
     )
 

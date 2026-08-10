@@ -1,19 +1,5 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dashboard</title>
-    <!-- Google Fonts: Inter -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
-    <!-- Tailwind CSS v4 CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-  </head>
-  <body class="font-['Inter',sans-serif] antialiased bg-stone-900 min-h-screen text-stone-100 selection:bg-emerald-800 selection:text-emerald-100">
-
-    <!-- Top Bar Navigation Header with Menu Toggle -->
+ {% load static %}
+ <!-- Top Bar Navigation Header with Menu Toggle -->
     <header class="bg-stone-900/90 border-b border-stone-800 backdrop-blur-md sticky top-0 z-30 px-4 py-2.5 flex items-center justify-between">
         <!-- Left: Menu Toggle Button -->
         <div class="flex items-center">
@@ -32,26 +18,85 @@
 
         <!-- Top Right Greetings Badge & Notifications -->
         <div class="flex items-center gap-3.5">
-            <!-- Notification Bell Icon Button -->
-            <a 
-                href="{% url 'notification' %}" 
-                class="relative p-2.5 rounded-2xl text-stone-300 hover:text-stone-100 bg-stone-800/40 border border-stone-700/50 hover:bg-stone-800 transition-all focus:outline-none flex items-center justify-center cursor-pointer group shadow-sm active:scale-95"
-                title="Notifications"
-                aria-label="Notifications"
-            >
-                <svg class="w-6 h-6 text-stone-300 group-hover:text-emerald-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                </svg>
-                <!-- Unread Indicator Badge -->
-                <span class="absolute top-1.5 right-1.5 flex h-2.5 w-2.5">
-                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                    <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-                </span>
-            </a>
+            <!-- Notification Bell SVG Button Wrapper -->
+            <div class="relative">
+                <button 
+                    type="button"
+                    onclick="toggleNotifications()"
+                    class="relative p-2.5 rounded-2xl text-stone-300 hover:text-stone-100 bg-stone-800/40 border border-stone-700/50 hover:bg-stone-800 transition-all focus:outline-none flex items-center justify-center cursor-pointer group shadow-sm active:scale-95"
+                    title="Notifications"
+                    aria-label="Notifications"
+                >
+                    <!-- Bell SVG Icon -->
+                    <svg class="w-6 h-6 text-stone-300 group-hover:text-emerald-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                    </svg>
+
+                    <!-- Unread Count Badge Overlay -->
+                    {% if unread_notifications_count %}
+                    <span id="notification-badge" class="absolute -top-1 -right-1 min-w-[20px] h-[20px] px-1 bg-rose-500 text-white font-black text-[10px] rounded-full flex items-center justify-center border-2 border-stone-900 shadow-md animate-pulse">
+                        {{ unread_notifications_count }}
+                    </span>
+                    {% endif %}
+                </button>
+
+                <!-- Notification Dropdown -->
+                <div
+                    id="notificationDropdown"
+                    class="hidden absolute top-14 right-0 w-80 bg-stone-900/95 border border-stone-800 rounded-2xl shadow-2xl backdrop-blur-xl z-50 overflow-hidden"
+                >
+                    <div class="p-4 border-b border-stone-800/80 flex items-center justify-between">
+                        <h3 class="font-black text-sm text-stone-100 tracking-tight">
+                            Notifications
+                        </h3>
+                        <span class="text-[10px] font-bold text-emerald-400 bg-emerald-950/80 border border-emerald-800/60 rounded-full px-2.5 py-0.5">
+                            Recent
+                        </span>
+                    </div>
+
+                    <div class="max-h-96 overflow-y-auto divide-y divide-stone-800/50">
+                        {% for notification in notifications %}
+                            <div class="p-4 hover:bg-stone-800/50 transition-colors">
+                                {% if notification.notification_type == 'post' %}
+                                    <p class="text-xs text-stone-200">
+                                        <span class="font-bold text-emerald-400">
+                                            {{ notification.sender.get_full_name|default:notification.sender.username|upper }}
+                                        </span>
+                                        published a new post.
+                                    </p>
+                                {% elif notification.notification_type == 'comment' %}
+                                    <p class="text-xs text-stone-200">
+                                        <span class="font-bold text-emerald-400">
+                                            {{ notification.sender.get_full_name|default:notification.sender.username|upper }}
+                                        </span>
+                                        commented on a post.
+                                    </p>
+                                {% elif notification.notification_type == 'like' %}
+                                    <p class="text-xs text-stone-200">
+                                        <span class="font-bold text-emerald-400">
+                                            {{ notification.sender.get_full_name|default:notification.sender.username|upper }}
+                                        </span>
+                                        liked a post.
+                                    </p>
+                                {% endif %}
+
+                                <p class="text-[10px] text-stone-500 mt-1 font-medium">
+                                    {{ notification.created_at|timesince }} ago
+                                </p>
+                            </div>
+                        {% empty %}
+                            <div class="p-6 text-center text-xs text-stone-500">
+                                No notifications available.
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
 
             <!-- Greetings Badge -->
             <span class="inline-flex items-center gap-2 px-4 py-2 bg-stone-800/90 border border-stone-700/80 rounded-full shadow-xs text-xs font-semibold text-stone-200">
-                <span>Welcome, <strong class="font-black text-emerald-400">{{ user.username |upper }}</strong></span>
+                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span>Welcome, <strong class="font-black text-emerald-400">{{ user.username|upper }}</strong></span>
             </span>
         </div>
     </header>
@@ -81,73 +126,36 @@
 
             <!-- Navigation Links -->
             <nav class="space-y-1">
-                <!-- Home -->
-                <a 
-                    href="{% url 'main' %}" 
-                    class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold text-stone-300 hover:text-stone-100 hover:bg-stone-800/80 transition-all border border-transparent hover:border-stone-700/50"
-                    title="Home"
-                >
+                <a href="{% url 'main' %}" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold text-stone-300 hover:text-stone-100 hover:bg-stone-800/80 transition-all border border-transparent hover:border-stone-700/50" title="Home">
                     <svg class="w-4 h-4 text-emerald-400 flex-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
                     </svg>
                     <span>Home</span>
                 </a>
 
-                <!-- Profile -->
-                <a 
-                    href="{% url 'profile' %}" 
-                    class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold text-stone-300 hover:text-stone-100 hover:bg-stone-800/80 transition-all border border-transparent hover:border-stone-700/50"
-                    title="Profile"
-                >
+                <a href="{% url 'profile' %}" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold text-stone-300 hover:text-stone-100 hover:bg-stone-800/80 transition-all border border-transparent hover:border-stone-700/50" title="Profile">
                     <div class="w-4 h-4 rounded-full bg-emerald-950 border border-emerald-700 text-[10px] flex items-center justify-center flex-none">
                         👤
                     </div>
                     <span>Profile</span>
                 </a>
 
-                <!-- Messages -->
-                <a 
-                    href="{% url 'message' %}" 
-                    class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold text-stone-300 hover:text-stone-100 hover:bg-stone-800/80 transition-all border border-transparent hover:border-stone-700/50"
-                    title="Messages"
-                >
+                <a href="{% url 'message' %}" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold text-stone-300 hover:text-stone-100 hover:bg-stone-800/80 transition-all border border-transparent hover:border-stone-700/50" title="Messages">
                     <svg class="w-4 h-4 text-emerald-400 flex-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
                     </svg>
                     <span>Messages</span>
                 </a>
 
-                <!-- Search -->
-                <a 
-                    href="{% url 'search' %}" 
-                    class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold text-stone-300 hover:text-stone-100 hover:bg-stone-800/80 transition-all border border-transparent hover:border-stone-700/50"
-                    title="Search"
-                >
+                <a href="{% url 'search' %}" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold text-stone-300 hover:text-stone-100 hover:bg-stone-800/80 transition-all border border-transparent hover:border-stone-700/50" title="Search">
                     <svg class="w-4 h-4 text-emerald-400 flex-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                     </svg>
                     <span>Search</span>
                 </a>
 
-                <!-- Notifications -->
-                <a 
-                    href="{% url 'notification' %}" 
-                    class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold text-stone-300 hover:text-stone-100 hover:bg-stone-800/80 transition-all border border-transparent hover:border-stone-700/50"
-                    title="Notifications"
-                >
-                    <svg class="w-4 h-4 text-emerald-400 flex-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
-                    </svg>
-                    <span>Notifications</span>
-                </a>
-
-                <!-- Members Link -->
                 {% if request.user.is_staff %}
-                <a 
-                    href="{% url 'members' %}" 
-                    class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold text-stone-300 hover:text-stone-100 hover:bg-stone-800/80 transition-all border border-transparent hover:border-stone-700/50"
-                    title="Members"
-                >
+                <a href="{% url 'members' %}" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold text-stone-300 hover:text-stone-100 hover:bg-stone-800/80 transition-all border border-transparent hover:border-stone-700/50" title="Members">
                     <svg class="w-4 h-4 text-emerald-400 flex-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
                     </svg>
@@ -159,7 +167,6 @@
 
         <!-- Bottom Options -->
         <div class="space-y-1 pt-3 border-t border-stone-800 mb-2">
-            <!-- Logout Button -->
             <button 
                 type="button"
                 onclick="openLogoutModal()" 
@@ -172,12 +179,7 @@
                 <span>Logout</span>
             </button>
 
-            <!-- About Club -->
-            <a 
-                href="{% url 'about_us' %}" 
-                class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold text-stone-400 hover:text-stone-200 hover:bg-stone-800/80 transition-all border border-transparent hover:border-stone-700/50"
-                title="About the Club"
-            >
+            <a href="{% url 'about_us' %}" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold text-stone-400 hover:text-stone-200 hover:bg-stone-800/80 transition-all border border-transparent hover:border-stone-700/50" title="About the Club">
                 <svg class="w-4 h-4 text-stone-400 flex-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
@@ -192,15 +194,3 @@
         onclick="toggleSidebar()" 
         class="hidden fixed inset-0 bg-stone-950/60 backdrop-blur-xs z-40 transition-opacity cursor-pointer"
     ></div>
-
-    <script>
-    function toggleSidebar() {
-        const sidebar = document.getElementById("sidebarPanel");
-        const backdrop = document.getElementById("sidebarBackdrop");
-        
-        sidebar.classList.toggle("-translate-x-full");
-        backdrop.classList.toggle("hidden");
-    }
-    </script>
-  </body>
-</html>

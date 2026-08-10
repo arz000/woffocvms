@@ -8,14 +8,14 @@
 {% include 'includes/commentmodal.html' %}
 
 <!-- Full-screen Container -->
-<div class="min-h-screen w-full bg-stone-950 text-stone-100 antialiased flex flex-col relative overflow-x-hidden selection:bg-emerald-500 selection:text-stone-950">
+<div class=" w-full flex-1 flex flex-col bg-stone-950 text-stone-100 antialiased flex flex-col relative overflow-x-hidden selection:bg-emerald-500 selection:text-stone-950">
     
     <!-- Ambient Background Glows -->
     <div class="absolute -top-32 -left-32 w-[35rem] h-[35rem] bg-emerald-500/10 rounded-full blur-[128px] pointer-events-none"></div>
     <div class="absolute -bottom-32 -right-32 w-[35rem] h-[35rem] bg-amber-500/10 rounded-full blur-[128px] pointer-events-none"></div>
 
     <!-- Center Post Feed Area -->
-    <main class="flex-1 min-h-screen py-10 px-4 sm:px-6 flex justify-center relative z-10">
+    <main class="flex-1 py-10 px-4 sm:px-6 flex justify-center relative z-10">
         <div class="w-full max-w-2xl space-y-8">
 
             <!-- "Create New Post" Action Button Banner -->
@@ -34,7 +34,7 @@
 
             {% for post in posts %}
             <!-- Feed Post Card -->
-            <div class="bg-stone-900/60 border border-stone-800/80 rounded-3xl overflow-hidden shadow-2xl shadow-stone-950/80 backdrop-blur-2xl relative z-10 transition-all duration-200 hover:border-stone-700/80">
+            <div class="bg-stone-900/60 border border-stone-800/80 rounded-3xl shadow-2xl shadow-stone-950/80 backdrop-blur-2xl relative z-10 transition-all duration-200 hover:border-stone-700/80">
                 
                 <!-- Post Header -->
                 <div class="p-5 sm:px-6 flex items-center justify-between border-b border-stone-800/60">
@@ -43,7 +43,7 @@
                             {{ post.author|slice:":2" }}
                         </div>
                         <div>
-                            <h4 class="text-sm font-black text-white tracking-tight">{{ post.author }}</h4>
+                            <h4 class="text-sm font-black text-white tracking-tight">{{ post.author.first_name }} {{ post.author.last_name }}</h4>
                             <span class="text-[11px] text-stone-400 font-medium">{{ post.created_at|smart_date }}</span>
                         </div>
                     </div>
@@ -53,7 +53,7 @@
                 </div>
 
                 <!-- Post Content Area -->
-                <div class="bg-stone-950/40 border-y border-stone-800/60 min-h-[12rem] flex flex-col items-center justify-center p-8 sm:p-10 text-center relative overflow-hidden group">
+                <div class="bg-stone-950/40 border-y border-stone-800/60 min-h-[12rem] flex flex-col items-center justify-center p-8 sm:p-10 text-center relative ">
                     <div class="absolute inset-0 bg-gradient-to-b from-emerald-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
                     
                     {% if post.title %}
@@ -112,7 +112,7 @@
                                     d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
                             </svg>
 
-                            <span class="text-xs font-bold" data-post-id="{{ post.id }}">
+                            <span class="comment-count text-xs font-bold" data-post-id="{{ post.id }}">
                                 {{ post.comments.count }}
                             </span>
                         </button>

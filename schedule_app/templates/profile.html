@@ -4,13 +4,13 @@
 {% include 'includes/sidebar.html' %}
 {% include 'includes/logoutmodal.html' %}
 
-<div class="min-h-screen bg-stone-900 text-stone-100 antialiased flex flex-col relative selection:bg-emerald-800 selection:text-emerald-100 transition-colors duration-200">
+<div class="w-full flex-1 flex flex-col bg-stone-900 text-stone-100 antialiased relative selection:bg-emerald-800 selection:text-emerald-100 transition-colors duration-200">
     <main class="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 pt-8 pb-12">
         
         <!-- Dashboard Main Grid Container -->
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
             
-            <!-- LEFT PANEL: Identity Summary & Primary Controls -->
+            <!-- LEFT PANEL: Summary & Controls (Name, Username & Status stay here) -->
             <aside class="lg:col-span-4 bg-gradient-to-b from-emerald-950 via-stone-800 to-stone-800 border border-stone-700/80 rounded-3xl p-6 sm:p-8 shadow-xl space-y-6">
                 <!-- User Profile Header -->
                 <div class="space-y-4">
@@ -59,7 +59,7 @@
                 </div>
             </aside>
 
-            <!-- RIGHT PANEL: Full User Profile Credentials & Details -->
+            <!-- RIGHT PANEL: Detailed Credentials (Name, Username, Role & Status removed below) -->
             <section class="lg:col-span-8 space-y-6">
                 
                 <!-- Profile Header Title -->
@@ -73,21 +73,9 @@
                     </span>
                 </div>
 
-                <!-- Detailed User Information Panel -->
+                <!-- Detailed Information Grid -->
                 <div class="bg-stone-800/90 border border-stone-700/80 rounded-2xl p-6 shadow-sm space-y-6">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
-                        
-                        <!-- Name Field -->
-                        <div class="p-3 bg-stone-900/60 rounded-xl border border-stone-700/60">
-                            <span class="text-[10px] font-extrabold uppercase tracking-wider text-stone-400 block mb-1">Name</span>
-                            <span class="font-bold text-stone-100 text-sm">{{ user.get_full_name|default:user.first_name }}</span>
-                        </div>
-
-                        <!-- Username Field -->
-                        <div class="p-3 bg-stone-900/60 rounded-xl border border-stone-700/60">
-                            <span class="text-[10px] font-extrabold uppercase tracking-wider text-stone-400 block mb-1">Username</span>
-                            <span class="font-bold text-stone-100 text-sm">@{{ user.username }}</span>
-                        </div>
 
                         <!-- Email Field -->
                         <div class="p-3 bg-stone-900/60 rounded-xl border border-stone-700/60">
@@ -99,22 +87,6 @@
                         <div class="p-3 bg-stone-900/60 rounded-xl border border-stone-700/60">
                             <span class="text-[10px] font-extrabold uppercase tracking-wider text-stone-400 block mb-1">Phone</span>
                             <span class="font-bold text-stone-100 text-sm">{{ user.profile.phone|default:"Not provided" }}</span>
-                        </div>
-
-                        <!-- Account Status Field -->
-                        <div class="p-3 bg-stone-900/60 rounded-xl border border-stone-700/60">
-                            <span class="text-[10px] font-extrabold uppercase tracking-wider text-stone-400 block mb-1">Account Status</span>
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-emerald-950 text-emerald-400 border border-emerald-700/60">
-                                {{ user.is_active|yesno:"Active,Inactive" }}
-                            </span>
-                        </div>
-
-                        <!-- Role Field -->
-                        <div class="p-3 bg-stone-900/60 rounded-xl border border-stone-700/60">
-                            <span class="text-[10px] font-extrabold uppercase tracking-wider text-stone-400 block mb-1">Role</span>
-                            <span class="font-bold uppercase text-emerald-400 text-sm">
-                                {{ user.is_staff|yesno:"Administrator,Standard User" }}
-                            </span>
                         </div>
 
                         <!-- Member Since Field -->

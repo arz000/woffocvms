@@ -5,7 +5,7 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect
 from django.contrib.auth.models import User
 from django.core.paginator import Paginator
-from .models import Member, Activity, Post, Like, Comment
+from .models import Member, Activity, Post, Like, Comment, Notification
 from .forms import RegistrationForm, ActivityForm, PostForm
 
 
@@ -28,15 +28,19 @@ def register(request):
          user = User.objects.create_user(
             username=username,
             email=email,
-            password=password,
             first_name=first_name,
             last_name=last_name,
+            password=password,
          )
 
          Member.objects.create(
             user=user,
+            email=email,
+            first_name=first_name,
+            last_name=last_name,
             phone=phone,
             birth_date=birth_date,
+            
          )
 
          return redirect('login_page')
@@ -66,7 +70,6 @@ def logout_user(request):
 
 @login_required
 def main(request):
-
     posts = Post.objects.all().order_by('-created_at')
     post_form = PostForm()
 
@@ -76,23 +79,51 @@ def main(request):
             user=request.user
         ).exists()
 
+    # Query notifications for sidebar / bell dropdown
+    user_notifications = Notification.objects.filter(
+        recipient=request.user
+    ).order_by('-created_at')
+
+    unread_notifications_count = user_notifications.filter(is_read=False).count()
+
     context = {
         'posts': posts,
-        'post_form': post_form
+        'post_form': post_form,
+        'user_notifications': user_notifications,
+        'unread_notifications_count': unread_notifications_count,
     }
 
     return render(request, 'main.html', context)
 
 @login_required
 def create_post(request):
-   if request.method == 'POST':
-      post_form = PostForm(request.POST)
-      if post_form.is_valid():
-         post = post_form.save(commit=False)
-         post.author = request.user
-         post.save()
-         return redirect('main')
-   return redirect('main')
+    if request.method == 'POST':
+        post_form = PostForm(request.POST)
+        if post_form.is_valid():
+            post = post_form.save(commit=False)
+            post.author = request.user
+            post.save()
+
+            # 1. Fetch all users except the author (Admin)
+            users_to_notify = User.objects.exclude(id=request.user.id)
+
+            # 2. Prepare notification objects for bulk insert
+            notifications = [
+                Notification(
+                    recipient=user,
+                    sender=request.user,
+                    post=post,
+                    notification_type='post'
+                )
+            for user in users_to_notify
+        ]
+            
+            # 3. Save all notifications in a single SQL query
+            Notification.objects.bulk_create(notifications)      
+
+        return redirect('main')
+   
+    return redirect('main')
 
 @login_required
 def like_post(request, post_id):
@@ -119,6 +150,15 @@ def like_post(request, post_id):
         )
         liked = True
 
+    # Only send notification when liking
+    if request.user != post.author:
+        Notification.objects.create(
+        recipient=post.author,
+        sender=request.user,
+        post=post,
+        notification_type='like'
+    )
+
     return JsonResponse({
         'liked': liked,
         'likes_count': post.likes.count()
@@ -126,25 +166,71 @@ def like_post(request, post_id):
 
 @login_required
 def create_comment(request, post_id):
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Must be a POST request'}, status=400)
+
     post = get_object_or_404(Post, id=post_id)
+    content = (request.POST.get('content') or request.POST.get('comment') or '').strip()
 
-    if request.method == 'POST':
+    if not content:
+        return JsonResponse({'success': False, 'error': 'Comment content cannot be empty'}, status=400)
 
-        content = request.POST.get('content')
+    comment = Comment.objects.create(
+        post=post,
+        author=request.user,
+        content=content
+    )
+    notifications_to_create = []
 
-        comment = Comment.objects.create(
-            post=post,
-            author=request.user,
-            content=content
+    # 1. Notify Post Author (if not commenting on their own post)
+    if request.user != post.author:
+        notifications_to_create.append(
+            Notification(
+                recipient=post.author,
+                sender=request.user,
+                post=post,
+                notification_type='comment'
+            )
         )
-        return JsonResponse({
-            'success': True,
-            'author': comment.author.username,
-            'content': comment.content,
-            'comments_count': post.comments.count()
-        })
 
-    return JsonResponse({'success': False}, status=400)
+    # 2. Get distinct previous commenter IDs
+    previous_commenter_ids = Comment.objects.filter(post=post)\
+        .exclude(author=request.user)\
+        .exclude(author=post.author)\
+        .values_list('author_id', flat=True)\
+        .distinct()
+
+    # 3. Build notification list using recipient_id directly (no extra User query)
+    for user_id in previous_commenter_ids:
+        notifications_to_create.append(
+            Notification(
+                recipient_id=user_id,
+                sender=request.user,
+                post=post,
+                notification_type='comment'
+            )
+        )
+        
+    if notifications_to_create:
+        Notification.objects.bulk_create(notifications_to_create)
+
+    return JsonResponse({
+        'success': True,
+        'author': comment.author.username,
+        'content': comment.content,
+        'comments_count': post.comments.count()
+    })
+@login_required
+def mark_notifications_read(request):
+
+    Notification.objects.filter(
+        recipient=request.user,
+        is_read=False
+    ).update(is_read=True)
+
+    return JsonResponse({
+        'success': True
+    })
 
 @login_required
 def profile(request):

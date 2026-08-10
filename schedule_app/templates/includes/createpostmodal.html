@@ -1,19 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Dashboard</title>
-        <!-- Google Fonts: Inter -->
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
-        <!-- Tailwind CSS v4 CDN -->
-        <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    </head>
-    <body class="bg-stone-950 font-['Inter',sans-serif] text-stone-100 antialiased selection:bg-emerald-500 selection:text-stone-950">
-
-        <!-- Create Post Modal Container -->
+<!-- Create Post Modal Container -->
         <div
             id="createPostModal"
             class="hidden fixed inset-0 bg-stone-950/80 backdrop-blur-md items-center justify-center z-50 p-4 transition-all duration-300"
@@ -29,17 +14,6 @@
                             Create Post
                         </h2>
                     </div>
-
-                    <button
-                        type="button"
-                        onclick="closeCreatePostModal()"
-                        class="p-1.5 rounded-xl text-stone-400 hover:text-stone-100 hover:bg-stone-800 transition-colors cursor-pointer"
-                        aria-label="Close modal"
-                    >
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                        </svg>
-                    </button>
                 </div>
 
                 <!-- Modal Form -->
@@ -90,6 +64,3 @@
 
             </div>
         </div>
-
-    </body>
-</html>
