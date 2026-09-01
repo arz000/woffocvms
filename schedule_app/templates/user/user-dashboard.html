@@ -1,0 +1,30 @@
+{% extends 'layout/base.html' %}
+
+{% block content %}
+<div class="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-950 transition-colors duration-300">
+    {% include 'layout/user-sidebar.html' %}
+    
+    <div class="flex-1 flex flex-col w-full h-screen overflow-y-auto">
+        <!-- Dashboard Topbar -->
+        {% include 'layout/topbar.html' with page_title="Home Feed" %}
+
+        <!-- Main Content Area -->
+        <main class="flex-1 p-6 sm:p-10">
+            <!-- Empty State for Upcoming Shifts -->
+            <div class="bg-white/40 dark:bg-gray-900/40 backdrop-blur-md rounded-3xl border border-emerald-600/20 dark:border-gray-800 p-12 text-center shadow-sm transition-colors duration-300">
+                <div class="w-20 h-20 mx-auto bg-gray-900/10 dark:bg-gray-800 rounded-full flex items-center justify-center mb-6">
+                    <svg class="w-10 h-10 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                </div>
+                <h2 class="text-xl font-black text-gray-900 dark:text-white transition-colors duration-300">No Upcoming Shifts</h2>
+                <p class="text-gray-600 dark:text-gray-400 mt-2 max-w-sm mx-auto transition-colors duration-300">You don't have any shifts scheduled yet. Check the open shifts to sign up for serving!</p>
+                
+                <button class="mt-8 bg-emerald-600 text-white font-bold py-3 px-6 rounded-xl shadow-md shadow-emerald-600/20 hover:bg-emerald-700 hover:shadow-emerald-600/40 transition-all active:scale-95">
+                    Find Opportunities
+                </button>
+            </div>
+        </main>
+        
+        {% include 'layout/footer.html' %}
+    </div>
+</div>
+{% endblock %}

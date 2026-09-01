@@ -64,7 +64,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
-                'schedule_app.context_processor.notifications',        
+                'schedule_app.context_processors.upcoming_events_count',
             ],
         },
     },
@@ -133,4 +133,4 @@ LOGIN_URL = 'login_page'
 
 LOGIN_REDIRECT_URL = 'main'
 
-LOGOUT_REDIRECT_URL = 'first_page'
+LOGOUT_REDIRECT_URL = 'landing_page'

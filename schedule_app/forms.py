@@ -1,108 +1,122 @@
 from django import forms
-from .models import Activity, Post, Comment
+from django.contrib.auth.models import User
 
-class RegistrationForm(forms.Form):
-    first_name = forms.CharField(
-        widget=forms.TextInput(attrs={
-            "class": "form-control",
-            "placeholder": "First Name"
-        })
-    )
+# Reusable Tailwind classes for inputs
+INPUT_CLASSES = "block w-full rounded-xl border-0 py-3.5 px-4 text-gray-900 shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] ring-1 ring-inset ring-gray-200 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm font-medium bg-gray-50/50 hover:bg-gray-50 transition-all outline-none"
 
-    last_name = forms.CharField(
-        widget=forms.TextInput(attrs={
-            "class": "form-control",
-            "placeholder": "Last Name"
-        })
-    )
-
+class LoginForm(forms.Form):
     username = forms.CharField(
+        label="Username",
         widget=forms.TextInput(attrs={
-            "class": "form-control",
-            "placeholder": "Username",
-            "autocomplete": "username"
-
+            'class': INPUT_CLASSES,
+            'required': True
         })
     )
-
-    email = forms.EmailField(
-        widget=forms.EmailInput(attrs={
-            "class": "form-control",
-            "placeholder": "Email Address"
-        })
-    )
-
-    phone = forms.CharField(
-        widget=forms.TextInput(attrs={
-            "class": "form-control",
-            "placeholder": "Phone Number"
-        })
-    )
-
-    birth_date = forms.DateField(
-        widget=forms.DateInput(attrs={
-            "class": "form-control",
-            "type": "date",
-            "onclick": "this.showPicker()",
-        })
-    )
-
     password = forms.CharField(
+        label="Password",
         widget=forms.PasswordInput(attrs={
-            "class": "form-control",
-            "placeholder": "Password"
+            'class': INPUT_CLASSES,
+            'required': True
+        })
+    )
+    remember_me = forms.BooleanField(
+        required=False,
+        label="Remember for 30 days",
+        widget=forms.CheckboxInput(attrs={
+            'class': 'h-4 w-4 rounded-md border-gray-300 text-blue-600 focus:ring-blue-600 cursor-pointer',
         })
     )
 
 
-class ActivityForm(forms.ModelForm):
-    class Meta:
-        model = Activity
-        fields = [
-            'title',
-            'description',
-            'activity_date',
-        ]
-
-        widgets = {
-            'title': forms.TextInput(attrs={
-                'id': 'titleField',
-                'class': 'form-control',
-                'placeholder': 'Activity Title'
-            }),
-
-            'description': forms.Textarea(attrs={
-                'id': 'descriptionField',
-                'class': 'form-control',
-                'placeholder': 'Description',
-                'rows': 4
-            }),
-
-            'activity_date': forms.DateInput(attrs={
-                'id': 'dateField',
-                'class': 'form-control',
-                'type': 'date'
-            }),
-        }
+class RegisterForm(forms.ModelForm):
+    username = forms.CharField(
+        label="Username",
+        widget=forms.TextInput(attrs={
+            'class': INPUT_CLASSES,
+            'required': True
+        })
+    )
+    first_name = forms.CharField(
+        label="First Name",
+        widget=forms.TextInput(attrs={
+            'class': INPUT_CLASSES,
+            'required': True
+        })
+    )
+    last_name = forms.CharField(
+        label="Last Name",
+        widget=forms.TextInput(attrs={
+            'class': INPUT_CLASSES,
+            'required': True
+        })
+    )
+    email = forms.EmailField(
+        label="Email Address",
+        widget=forms.EmailInput(attrs={
+            'class': INPUT_CLASSES,
+            'required': True
+        })
+    )
+    password = forms.CharField(
+        label="Password",
+        widget=forms.PasswordInput(attrs={
+            'class': INPUT_CLASSES,
+            'required': True
+        })
+    )
     
-class PostForm(forms.ModelForm):
     class Meta:
-        model = Post
-        fields = ['title', 'content']
-        widgets = {
-            'title': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Post Title',
-            }),
-            'content': forms.Textarea(attrs={
-                'class': 'form-control',
-                'placeholder': 'What\'s on your mind?',
-                'rows': 4,
-            }),
-        }
+        model = User
+        fields = ['first_name', 'last_name', 'username', 'email', 'password']
 
-class CommentForm(forms.ModelForm):
 
-    class Meta:
-        model = Comment
-        fields = ['content']
+class UserProfileForm(forms.Form):
+    # Personal Info (from User)
+    first_name = forms.CharField(label="First Name", widget=forms.TextInput(attrs={'class': INPUT_CLASSES}))
+    last_name = forms.CharField(label="Last Name", widget=forms.TextInput(attrs={'class': INPUT_CLASSES}))
+    email = forms.EmailField(label="Email Address", widget=forms.EmailInput(attrs={'class': INPUT_CLASSES}))
+    
+    # Personal Info (from Profile)
+    phone_number = forms.CharField(label="Phone Number", required=False, widget=forms.TextInput(attrs={'class': INPUT_CLASSES}))
+    bio = forms.CharField(label="Bio", required=False, widget=forms.Textarea(attrs={'class': INPUT_CLASSES, 'rows': 4}))
+    
+    # Address Info (from Profile)
+    country = forms.CharField(label="Country", required=False, widget=forms.TextInput(attrs={'class': INPUT_CLASSES}))
+    city_state = forms.CharField(label="City/State", required=False, widget=forms.TextInput(attrs={'class': INPUT_CLASSES}))
+    postal_code = forms.CharField(label="Postal Code", required=False, widget=forms.TextInput(attrs={'class': INPUT_CLASSES}))
+    
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        if self.user:
+            self.fields['first_name'].initial = self.user.first_name
+            self.fields['last_name'].initial = self.user.last_name
+            self.fields['email'].initial = self.user.email
+            
+            profile = getattr(self.user, 'volunteer_profile', None)
+            if profile:
+                self.fields['phone_number'].initial = profile.phone_number
+                self.fields['bio'].initial = profile.bio
+                self.fields['country'].initial = profile.country
+                self.fields['city_state'].initial = profile.city_state
+                self.fields['postal_code'].initial = profile.postal_code
+
+    def save(self):
+        if not self.user:
+            return
+            
+        # Update User
+        self.user.first_name = self.cleaned_data.get('first_name')
+        self.user.last_name = self.cleaned_data.get('last_name')
+        self.user.email = self.cleaned_data.get('email')
+        self.user.save()
+        
+        # Update Profile
+        profile = getattr(self.user, 'volunteer_profile', None)
+        if profile:
+            profile.phone_number = self.cleaned_data.get('phone_number')
+            profile.bio = self.cleaned_data.get('bio')
+            profile.country = self.cleaned_data.get('country')
+            profile.city_state = self.cleaned_data.get('city_state')
+            profile.postal_code = self.cleaned_data.get('postal_code')
+            profile.save()

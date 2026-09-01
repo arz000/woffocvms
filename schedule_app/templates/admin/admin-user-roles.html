@@ -1,0 +1,84 @@
+{% extends 'layout/base.html' %}
+
+{% block content %}
+<div class="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-950 transition-colors duration-300">
+    {% include 'layout/admin-sidebar.html' %}
+    
+    <div class="flex-1 flex flex-col w-full h-screen overflow-y-auto">
+        <!-- Dashboard Topbar -->
+        {% include 'layout/topbar.html' with page_title="User Roles" %}
+        
+        <!-- Main Content Area -->
+        <main x-data="{ manageModalOpen: false, selectedRole: '', roleTheme: '', editModalOpen: false, editRoleId: null, editRoleName: '', editRoleDesc: '', editRoleTheme: '', editRoleCapabilities: [] }" class="flex-1 p-4 sm:p-6 lg:p-8 flex flex-col min-h-0 relative">
+            <!-- Header Controls -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 shrink-0">
+                <div>
+                    <h2 class="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white tracking-tight">Roles & Permissions</h2>
+                    <p class="text-gray-500 dark:text-gray-400 mt-1 text-sm font-medium">Manage system access levels and department permissions.</p>
+                </div>
+                
+                <div class="flex items-center gap-2 sm:gap-3">
+                    <button class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-md shadow-emerald-600/20 transition-all active:scale-95 flex items-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                        Create Role
+                    </button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-10">
+                {% for role in roles %}
+                <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+                    <div class="absolute top-0 left-0 w-1.5 h-full bg-{{ role.theme }}-500"></div>
+                    <div class="flex justify-between items-start mb-4 pl-2">
+                        <div>
+                            <h3 class="text-xl font-black text-gray-900 dark:text-white flex items-center gap-2">
+                                {{ role.name }}
+                                <span class="bg-{{ role.theme }}-100 text-{{ role.theme }}-700 dark:bg-{{ role.theme }}-900/30 dark:text-{{ role.theme }}-400 text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-wider">{{ role.badge }}</span>
+                            </h3>
+                            <p class="text-gray-500 dark:text-gray-400 text-sm mt-1">{{ role.description }}</p>
+                        </div>
+                        <button @click="
+                            editRoleId = {{ role.id }};
+                            editRoleName = '{{ role.name|escapejs }}'; 
+                            editRoleDesc = '{{ role.description|escapejs }}'; 
+                            editRoleTheme = '{{ role.theme }}'; 
+                            editRoleCapabilities = [{% for cap in role.capabilities.all %}{{ cap.id }}{% if not forloop.last %}, {% endif %}{% endfor %}];
+                            editModalOpen = true;
+                        " class="p-2 text-gray-400 hover:text-{{ role.theme }}-600 transition-colors">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                        </button>
+                    </div>
+                    
+                    <div class="pl-2 mb-6">
+                        <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Capabilities</h4>
+                        <div class="flex flex-wrap gap-2">
+                            {% for cap in role.capabilities.all %}
+                            <span class="px-2.5 py-1 rounded bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-xs font-bold">{{ cap.name }}</span>
+                            {% empty %}
+                            <span class="text-xs text-gray-500 italic">No capabilities assigned</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                    <div class="pl-2 pt-4 border-t border-gray-100 dark:border-gray-800 flex justify-between items-center">
+                        <div class="flex items-center gap-3">
+                            <div class="flex -space-x-2">
+                                <div class="w-8 h-8 rounded-full bg-gray-50 border-2 border-white dark:border-gray-900 border-dashed flex items-center justify-center text-gray-300 dark:text-gray-600">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                                </div>
+                            </div>
+                            <span class="text-sm font-bold text-gray-400 dark:text-gray-500">{{ role.volunteers.count }} Users</span>
+                        </div>
+                        <button @click="selectedRole = '{{ role.name|escapejs }}'; roleTheme = '{{ role.theme }}'; manageModalOpen = true" class="text-sm font-bold text-gray-500 hover:text-{{ role.theme }}-600 transition-colors">Manage Access</button>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Modals -->
+            {% include 'admin/modals/manage-role-access.html' %}
+            {% include 'admin/modals/edit-role.html' %}
+        </main>
+    </div>
+</div>
+{% endblock %}

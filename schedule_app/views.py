@@ -1,307 +1,281 @@
-from django.http import JsonResponse
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth import authenticate,login,logout
-from django.contrib.auth.decorators import login_required
-from django.shortcuts import redirect
+from django.shortcuts import render, redirect
+from django.http import HttpResponse
+from django.db.models import Q
+from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
 from django.contrib.auth.models import User
-from django.core.paginator import Paginator
-from .models import Member, Activity, Post, Like, Comment, Notification
-from .forms import RegistrationForm, ActivityForm, PostForm
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse
+import json
+from datetime import date
+from .forms import LoginForm, RegisterForm, UserProfileForm
+from .models import Role, Capability, Event, Shift, Ministry, VolunteerProfile
 
-
-# Create your views here.
-def first_page(request):
-   return render(request, 'firstpage.html')
-
-def register(request):
-   if request.method == 'POST':
-      form = RegistrationForm(request.POST)
-      if form.is_valid():
-         first_name = form.cleaned_data["first_name"]
-         last_name = form.cleaned_data["last_name"]
-         username = form.cleaned_data["username"]
-         email = form.cleaned_data["email"]
-         phone = form.cleaned_data["phone"]
-         birth_date = form.cleaned_data["birth_date"]
-         password = form.cleaned_data["password"]
-
-         user = User.objects.create_user(
-            username=username,
-            email=email,
-            first_name=first_name,
-            last_name=last_name,
-            password=password,
-         )
-
-         Member.objects.create(
-            user=user,
-            email=email,
-            first_name=first_name,
-            last_name=last_name,
-            phone=phone,
-            birth_date=birth_date,
+# --- PUBLIC VIEWS ---
+def login_view(request):
+    """Handles user authentication and renders the login page."""
+    form = LoginForm(request.POST or None)
+    
+    if request.method == 'POST' and form.is_valid():
+        u = form.cleaned_data.get('username')
+        p = form.cleaned_data.get('password')
+        user = authenticate(request, username=u, password=p)
+        
+        if user is not None:
+            auth_login(request, user)
+            # Redirect superusers to admin dashboard, else user dashboard
+            if user.is_superuser or user.is_staff:
+                return redirect('admin_dashboard')
+            return redirect('user_dashboard')
+        else:
+            messages.error(request, 'Invalid username or password.')
             
-         )
+    return render(request, 'public/login.html', {'form': form})
 
-         return redirect('login_page')
-   else:
-      form = RegistrationForm()
-
-   return render(request, "register.html", {"form": form})
-
-def login_page(request):
-   if request.method == "POST":
-      username = request.POST["username"]
-      password = request.POST["password"]
-
-      user = authenticate(request,username=username,password=password)
-
-      if user is not None:
-         login(request, user)
-         return redirect("main")
-      return render(request, 'login.html', {'error': 'Invalid username or password'})   
-   
-   return render(request, 'login.html')
-
-def logout_user(request):
-    if request.method == "POST":
-        logout(request)
-    return render(request, "firstpage.html")
-
-@login_required
-def main(request):
-    posts = Post.objects.all().order_by('-created_at')
-    post_form = PostForm()
-
-    for post in posts:
-        post.user_liked = Like.objects.filter(
-            post=post,
-            user=request.user
-        ).exists()
-
-    # Query notifications for sidebar / bell dropdown
-    user_notifications = Notification.objects.filter(
-        recipient=request.user
-    ).order_by('-created_at')
-
-    unread_notifications_count = user_notifications.filter(is_read=False).count()
-
-    context = {
-        'posts': posts,
-        'post_form': post_form,
-        'user_notifications': user_notifications,
-        'unread_notifications_count': unread_notifications_count,
-    }
-
-    return render(request, 'main.html', context)
-
-@login_required
-def create_post(request):
-    if request.method == 'POST':
-        post_form = PostForm(request.POST)
-        if post_form.is_valid():
-            post = post_form.save(commit=False)
-            post.author = request.user
-            post.save()
-
-            # 1. Fetch all users except the author (Admin)
-            users_to_notify = User.objects.exclude(id=request.user.id)
-
-            # 2. Prepare notification objects for bulk insert
-            notifications = [
-                Notification(
-                    recipient=user,
-                    sender=request.user,
-                    post=post,
-                    notification_type='post'
-                )
-            for user in users_to_notify
-        ]
-            
-            # 3. Save all notifications in a single SQL query
-            Notification.objects.bulk_create(notifications)      
-
-        return redirect('main')
-   
-    return redirect('main')
-
-@login_required
-def like_post(request, post_id):
-
-    if request.method != 'POST':
-        return JsonResponse(
-            {'error': 'Invalid request'},
-            status=400
-        )
-
-    post = get_object_or_404(Post, id=post_id)
-    like = Like.objects.filter(
-        user=request.user,
-        post=post
-    )
-
-    if like.exists():
-        like.delete()
-        liked = False
-    else:
-        Like.objects.create(
-            user=request.user,
-            post=post
-        )
-        liked = True
-
-    # Only send notification when liking
-    if request.user != post.author:
-        Notification.objects.create(
-        recipient=post.author,
-        sender=request.user,
-        post=post,
-        notification_type='like'
-    )
-
-    return JsonResponse({
-        'liked': liked,
-        'likes_count': post.likes.count()
-    })
-
-@login_required
-def create_comment(request, post_id):
-    if request.method != 'POST':
-        return JsonResponse({'success': False, 'error': 'Must be a POST request'}, status=400)
-
-    post = get_object_or_404(Post, id=post_id)
-    content = (request.POST.get('content') or request.POST.get('comment') or '').strip()
-
-    if not content:
-        return JsonResponse({'success': False, 'error': 'Comment content cannot be empty'}, status=400)
-
-    comment = Comment.objects.create(
-        post=post,
-        author=request.user,
-        content=content
-    )
-    notifications_to_create = []
-
-    # 1. Notify Post Author (if not commenting on their own post)
-    if request.user != post.author:
-        notifications_to_create.append(
-            Notification(
-                recipient=post.author,
-                sender=request.user,
-                post=post,
-                notification_type='comment'
-            )
-        )
-
-    # 2. Get distinct previous commenter IDs
-    previous_commenter_ids = Comment.objects.filter(post=post)\
-        .exclude(author=request.user)\
-        .exclude(author=post.author)\
-        .values_list('author_id', flat=True)\
-        .distinct()
-
-    # 3. Build notification list using recipient_id directly (no extra User query)
-    for user_id in previous_commenter_ids:
-        notifications_to_create.append(
-            Notification(
-                recipient_id=user_id,
-                sender=request.user,
-                post=post,
-                notification_type='comment'
-            )
+def register_view(request):
+    """Handles user registration and renders the registration page."""
+    form = RegisterForm(request.POST or None)
+    
+    if request.method == 'POST' and form.is_valid():
+        # Create the user using the form data
+        user = User.objects.create_user(
+            username=form.cleaned_data.get('username'),
+            email=form.cleaned_data.get('email'),
+            password=form.cleaned_data.get('password'),
+            first_name=form.cleaned_data.get('first_name'),
+            last_name=form.cleaned_data.get('last_name')
         )
         
-    if notifications_to_create:
-        Notification.objects.bulk_create(notifications_to_create)
-
-    return JsonResponse({
-        'success': True,
-        'author': comment.author.username,
-        'content': comment.content,
-        'comments_count': post.comments.count()
-    })
-@login_required
-def mark_notifications_read(request):
-
-    Notification.objects.filter(
-        recipient=request.user,
-        is_read=False
-    ).update(is_read=True)
-
-    return JsonResponse({
-        'success': True
-    })
-
-@login_required
-def profile(request):
-    member = get_object_or_404(Member, user=request.user)
-    context = {'member': member}
-    return render(request, 'profile.html', context)
-
-@login_required
-def myactivity(request):
-    if request.method == 'POST':
-        form = ActivityForm(request.POST)
-
-        if form.is_valid():
-            activity = form.save(commit=False)
-            activity.member = request.user.member
-            activity.save()
-            return redirect('myactivity')
+        messages.success(request, 'Account created successfully! Please sign in.')
+        return redirect('login')
         
-    else:
-        form = ActivityForm()
+    return render(request, 'public/register.html', {'form': form})
 
-    activities = Activity.objects.filter(member=request.user.member).order_by('-created_at')
+def logout_view(request):
+    """Handles user logout and clears any leftover session messages."""
+    # Clear messages so they don't leak onto the login page
+    storage = messages.get_messages(request)
+    storage.used = True
+    auth_logout(request)
+    return redirect('landing_page')
 
-    paginator = Paginator(activities, 3)
+# --- USER VIEWS ---
 
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-
+@login_required
+def user_profile_view(request):
+    """Renders the detailed user profile page (Tailwind Admin style)."""
+    form = UserProfileForm(request.POST or None, user=request.user)
+    
+    if request.method == 'POST' and form.is_valid():
+        form.save()
+        messages.success(request, 'Profile updated successfully.')
+        return redirect('user_profile')
+        
     context = {
         'form': form,
-        'page_obj': page_obj,
     }
+    return render(request, 'shared/my-profile.html', context)
 
-    return render(request, 'activity.html', context)
 
-def edit_activity(request, id):
-   activity = get_object_or_404(Activity, id=id, member=request.user.member)
-   if request.method == "POST":
-      form = ActivityForm(request.POST, instance=activity)
-      if form.is_valid():
-         form.save()
-         return redirect("myactivity")
-   return redirect("myactivity")
+def user_dashboard_view(request):
+    """Renders the main dashboard for authenticated users."""
+    if not request.user.is_authenticated:
+        return redirect('login')
+    return render(request, 'user/user-dashboard.html')
 
-@login_required
-def delete_activity(request, id):
-    activity = get_object_or_404(Activity,id=id,member=request.user.member)
-    if request.method == "POST":
-        activity.delete()
-    return redirect("myactivity")
+# --- ADMIN VIEWS ---
+def admin_dashboard_view(request):
+    """Renders the dashboard for staff/admin members."""
+    if not request.user.is_authenticated or not (request.user.is_staff or request.user.is_superuser):
+        return redirect('login')
 
-@login_required
-def members(request):
-    mymembers = Member.objects.select_related('user').all()
-    context = {'mymembers': mymembers}
-    return render(request, 'members.html', context)
+    from datetime import date as _date
+    total_volunteers   = VolunteerProfile.objects.count()
+    total_departments  = Ministry.objects.count()
+    upcoming_events    = Event.objects.filter(date__gte=_date.today()).order_by('date')
+    open_shifts        = Shift.objects.filter(volunteer__isnull=True).count()
+    next_event         = upcoming_events.first()
+    next_event_open_shifts = Shift.objects.filter(event=next_event, volunteer__isnull=True).count() if next_event else 0
 
-def details(request, id):
-  mymembers = Member.objects.select_related('user').get(id=id)
-  context = {'mymembers': mymembers}
-  return render(request, 'details.html', context)
+    return render(request, 'admin/admin-dashboard.html', {
+        'total_volunteers':       total_volunteers,
+        'total_departments':      total_departments,
+        'upcoming_count':         upcoming_events.count(),
+        'open_shifts':            open_shifts,
+        'next_event':             next_event,
+        'next_event_open_shifts': next_event_open_shifts,
+        'recent_events':          upcoming_events[:5],
+    })
 
-def about_us(request):
-    return render(request, 'aboutUs.html')
+def admin_schedule_view(request):
+    """Renders the calendar schedule view for admins."""
+    if not request.user.is_authenticated or not (request.user.is_staff or request.user.is_superuser):
+        return redirect('login')
+    
+    events = Event.objects.all()
+    events_data = [{
+        'id': e.id,
+        'title': f"{e.start_time.strftime('%I:%M %p')} - {e.name}",
+        'date': e.date.isoformat(),
+    } for e in events]
+    
+    return render(request, 'admin/admin-schedule.html', {
+        'events_json': json.dumps(events_data)
+    })
 
-def message(request):
-    return render(request, 'message.html')
+def admin_service_view(request):
+    """Renders the Service management view."""
+    if not request.user.is_authenticated or not (request.user.is_staff or request.user.is_superuser):
+        return redirect('login')
+    
+    upcoming_events = Event.objects.filter(date__gte=date.today()).order_by('date').prefetch_related('shifts__ministry', 'shifts__volunteer')
+    
+    return render(request, 'admin/admin-service.html', {
+        'upcoming_events': upcoming_events
+    })
 
-def search(request):
-    return render(request, 'search.html')
+def admin_departments_view(request):
+    """Renders the main departments page and handles department creation/editing."""
+    if not request.user.is_authenticated or not (request.user.is_staff or request.user.is_superuser):
+        return redirect('login')
+    
+    if request.method == 'POST':
+        ministry_id = request.POST.get('ministry_id')
+        name = request.POST.get('name')
+        description = request.POST.get('description', '')
+        head_id = request.POST.get('head_id')
 
-def notification(request):
-    return render(request, 'notification.html')
+        def _assign_head(ministry, head_id):
+            """Helper: assign head, upgrade role, and auto-add to department members."""
+            if head_id:
+                head_profile = VolunteerProfile.objects.filter(id=head_id).first()
+                if head_profile:
+                    ministry.head = head_profile
+                    # Auto-add as a member of the department
+                    ministry.volunteers.add(head_profile)
+                    # Upgrade role to Department Head if not already staff/superuser
+                    if not (head_profile.user.is_superuser or head_profile.user.is_staff):
+                        dept_head_role, _ = Role.objects.get_or_create(
+                            name="Department Head",
+                            defaults={'badge': 'Head', 'theme': 'emerald', 'description': 'Head of a Ministry'}
+                        )
+                        head_profile.role = dept_head_role
+                        head_profile.save()
+            else:
+                ministry.head = None
 
+        if ministry_id:
+            # Edit existing
+            ministry = Ministry.objects.filter(id=ministry_id).first()
+            if ministry:
+                if name:
+                    ministry.name = name
+                ministry.description = description
+                _assign_head(ministry, head_id)
+                ministry.save()
+                messages.success(request, f'Department "{ministry.name}" updated successfully!')
+        else:
+            # Create new
+            if name:
+                ministry = Ministry.objects.create(name=name, description=description)
+                _assign_head(ministry, head_id)
+                ministry.save()
+                messages.success(request, f'Department "{name}" created successfully!')
+                
+        return redirect('admin_departments')
+        
+    ministries = Ministry.objects.prefetch_related('volunteers', 'head__user').all()
+    all_volunteers = VolunteerProfile.objects.select_related('user').all()
+    
+    return render(request, 'admin/admin-departments.html', {
+        'ministries': ministries,
+        'all_volunteers': all_volunteers
+    })
+
+# JSON endpoint for Alpine.js volunteer autocomplete
+def search_volunteers(request):
+    """Return JSON list of volunteers matching the query for Alpine.js autocomplete."""
+    from django.http import JsonResponse as _JsonResponse
+    q = request.GET.get('q', '').strip()
+    volunteers = VolunteerProfile.objects.select_related('user')
+    if q:
+        volunteers = volunteers.filter(
+            Q(user__first_name__icontains=q) |
+            Q(user__last_name__icontains=q) |
+            Q(user__username__icontains=q)
+        )[:15]
+    results = [
+        {'id': vol.id, 'label': f"{vol.user.get_full_name()} ({vol.user.username})"}
+        for vol in volunteers
+    ]
+    return _JsonResponse({'results': results})
+
+def admin_members_view(request):
+    """Renders the global members list."""
+    if not request.user.is_authenticated or not (request.user.is_staff or request.user.is_superuser):
+        return redirect('login')
+    
+    profiles = VolunteerProfile.objects.all().select_related('user', 'role').prefetch_related('ministries')
+    all_ministries = Ministry.objects.all()
+        
+    return render(request, 'admin/admin-members.html', {'profiles': profiles, 'all_ministries': all_ministries})
+
+def admin_user_roles_view(request):
+    """Renders the User Roles and Permissions management view."""
+    if not request.user.is_authenticated or not (request.user.is_staff or request.user.is_superuser):
+        return redirect('login')
+    
+    roles = Role.objects.prefetch_related('capabilities', 'volunteers__user').all()
+    all_capabilities = Capability.objects.all()
+    
+    return render(request, 'admin/admin-user-roles.html', {
+        'roles': roles,
+        'all_capabilities': all_capabilities
+    })
+
+def api_update_role(request):
+    """API Endpoint to update a role via POST request."""
+    if not request.user.is_authenticated or not (request.user.is_staff or request.user.is_superuser):
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+    
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            role_id = data.get('role_id')
+            name = data.get('name')
+            description = data.get('description')
+            capabilities = data.get('capabilities', [])
+            
+            role = Role.objects.get(id=role_id)
+            if name:
+                role.name = name
+            if description is not None:
+                role.description = description
+                
+            role.capabilities.set(capabilities)
+            role.save()
+            return JsonResponse({'success': True})
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=400)
+    
+    return JsonResponse({'error': 'Invalid method'}, status=405)
+    
+def api_update_ministries(request):
+    """API Endpoint to update a user's ministries via POST request."""
+    if not request.user.is_authenticated or not (request.user.is_staff or request.user.is_superuser):
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+    
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            profile_id = data.get('profile_id')
+            ministry_ids = data.get('ministry_ids', [])
+            
+            profile = VolunteerProfile.objects.get(id=profile_id)
+            profile.ministries.set(ministry_ids)
+            profile.save()
+            return JsonResponse({'success': True})
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=400)
+    
+    return JsonResponse({'error': 'Invalid method'}, status=405)

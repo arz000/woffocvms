@@ -1,0 +1,235 @@
+{% extends 'layout/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-950 transition-colors duration-300">
+    {% if request.user.is_superuser or request.user.is_staff or 'access_admin_panel' in request.user.volunteer_profile.role.capabilities.all|stringformat:'s' %}
+        {% include 'layout/admin-sidebar.html' %}
+    {% else %}
+        {% include 'layout/user-sidebar.html' %}
+    {% endif %}
+    
+    <div class="flex-1 flex flex-col w-full h-screen overflow-y-auto">
+        <!-- Dashboard Topbar -->
+        {% include 'layout/topbar.html' with page_title="User Profile" %}
+        
+        <!-- Main Content Area -->
+        <main class="flex-1 p-4 sm:p-6 lg:p-8 flex flex-col min-h-0 w-full" x-data="{ editModalOpen: {% if form.errors %}true{% else %}false{% endif %} }">
+            
+            {% if messages %}
+            <div class="mb-6 space-y-2">
+                {% for message in messages %}
+                <div class="p-4 rounded-xl text-sm font-semibold bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center gap-3">
+                    <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                    {{ message }}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 pb-10">
+                <!-- Left Column: Profile Card & Danger Zone -->
+                <div class="xl:col-span-1 space-y-6">
+                    
+                    <!-- Profile Card -->
+                    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-6 shadow-sm flex flex-col items-center text-center">
+                        <div class="relative mb-4">
+                            <div class="w-24 h-24 rounded-full bg-emerald-100 dark:bg-emerald-900/40 border-4 border-white dark:border-gray-900 shadow-lg flex items-center justify-center text-3xl font-black text-emerald-600 dark:text-emerald-400 uppercase">
+                                {{ request.user.first_name|first|default:"U" }}{{ request.user.last_name|first }}
+                            </div>
+                        </div>
+                        <h3 class="font-black text-gray-900 dark:text-white text-xl">{{ request.user.get_full_name|default:request.user.username }}</h3>
+                        <p class="text-emerald-600 dark:text-emerald-400 font-bold text-sm mt-1">{{ request.user.volunteer_profile.role.name|default:"Member" }}</p>
+                        {% with depts=request.user.volunteer_profile.ministries.all %}
+                        {% for dept in depts %}
+                        <p class="text-gray-500 dark:text-gray-400 font-medium text-sm">{{ dept.name }}</p>
+                        {% endfor %}
+                        {% endwith %}
+                    </div>
+
+                    <!-- Security Section -->
+                    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-6 shadow-sm">
+                        <h3 class="font-black text-gray-900 dark:text-white text-lg mb-4">Security</h3>
+                        
+                        <div class="space-y-4">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm font-bold text-gray-900 dark:text-white">Change Password</p>
+                                    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Receive real-time notifications and team alerts.</p>
+                                </div>
+                                <button class="px-3 py-1.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-xs font-bold transition-colors">
+                                    Change
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Read-Only Views -->
+                <div class="xl:col-span-2">
+                    
+                    <!-- Profile Details Read-Only -->
+                    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-sm overflow-hidden mb-6">
+                        <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/20">
+                            <h3 class="font-black text-gray-900 dark:text-white text-lg">Profile Details</h3>
+                            <button type="button" @click.prevent.stop="editModalOpen = true" class="flex items-center gap-2 px-3 py-1.5 text-sm font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 dark:text-emerald-400 dark:bg-emerald-900/30 dark:hover:bg-emerald-900/50 rounded-lg transition-colors">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                                Edit Details
+                            </button>
+                        </div>
+                        
+                        <!-- Personal Info Section -->
+                        <div class="p-6">
+                            <h4 class="text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-4">Personal Information</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-8">
+                                <div>
+                                    <p class="text-xs font-bold text-gray-500 tracking-wider mb-1">First Name</p>
+                                    <p class="text-sm font-medium text-gray-900 dark:text-white">{{ request.user.first_name|default:"-" }}</p>
+                                </div>
+                                <div>
+                                    <p class="text-xs font-bold text-gray-500 tracking-wider mb-1">Last Name</p>
+                                    <p class="text-sm font-medium text-gray-900 dark:text-white">{{ request.user.last_name|default:"-" }}</p>
+                                </div>
+                                <div>
+                                    <p class="text-xs font-bold text-gray-500 tracking-wider mb-1">Email Address</p>
+                                    <p class="text-sm font-medium text-gray-900 dark:text-white">{{ request.user.email|default:"-" }}</p>
+                                </div>
+                                <div>
+                                    <p class="text-xs font-bold text-gray-500 tracking-wider mb-1">Phone Number</p>
+                                    <p class="text-sm font-medium text-gray-900 dark:text-white">{{ request.user.volunteer_profile.phone_number|default:"-" }}</p>
+                                </div>
+                                <div class="md:col-span-2">
+                                    <p class="text-xs font-bold text-gray-500 tracking-wider mb-1">Bio</p>
+                                    <p class="text-sm font-medium text-gray-900 dark:text-white">{{ request.user.volunteer_profile.bio|default:"-" }}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="border-t border-gray-100 dark:border-gray-800"></div>
+
+                        <!-- Address Section -->
+                        <div class="p-6">
+                            <h4 class="text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-4">Address</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-8">
+                                <div class="md:col-span-2">
+                                    <p class="text-xs font-bold text-gray-500 tracking-wider mb-1">Country</p>
+                                    <p class="text-sm font-medium text-gray-900 dark:text-white">{{ request.user.volunteer_profile.country|default:"-" }}</p>
+                                </div>
+                                <div>
+                                    <p class="text-xs font-bold text-gray-500 tracking-wider mb-1">City/State</p>
+                                    <p class="text-sm font-medium text-gray-900 dark:text-white">{{ request.user.volunteer_profile.city_state|default:"-" }}</p>
+                                </div>
+                                <div>
+                                    <p class="text-xs font-bold text-gray-500 tracking-wider mb-1">Postal Code</p>
+                                    <p class="text-sm font-medium text-gray-900 dark:text-white">{{ request.user.volunteer_profile.postal_code|default:"-" }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Edit Profile Modal -->
+            <div x-show="editModalOpen" x-cloak class="relative z-50" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+                
+                <!-- Backdrop -->
+                <div x-show="editModalOpen" 
+                     x-transition:enter="ease-out duration-300" 
+                     x-transition:enter-start="opacity-0" 
+                     x-transition:enter-end="opacity-100" 
+                     x-transition:leave="ease-in duration-200" 
+                     x-transition:leave-start="opacity-100" 
+                     x-transition:leave-end="opacity-0" 
+                     class="fixed inset-0 bg-gray-900/75 backdrop-blur-sm transition-opacity"></div>
+                     
+                <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
+                    <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+                        
+                        <!-- Modal Panel -->
+                        <div x-show="editModalOpen" 
+                             @click.away="editModalOpen = false"
+                             x-transition:enter="ease-out duration-300" 
+                             x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" 
+                             x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100" 
+                             x-transition:leave="ease-in duration-200" 
+                             x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" 
+                             x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" 
+                             class="relative transform overflow-hidden bg-white dark:bg-gray-900 rounded-2xl text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-2xl border border-gray-100 dark:border-gray-800">
+                        
+                        <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50 dark:bg-gray-800/50">
+                            <h3 class="text-lg font-black text-gray-900 dark:text-white" id="modal-title">Edit Profile Information</h3>
+                            <button type="button" @click.prevent="editModalOpen = false" class="text-gray-400 hover:text-gray-500 focus:outline-none">
+                                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                            </button>
+                        </div>
+
+                        <form method="POST" action="{% url 'user_profile' %}">
+                            {% csrf_token %}
+                            <div class="px-6 py-6 max-h-[70vh] overflow-y-auto">
+                                
+                                <h4 class="font-bold text-gray-900 dark:text-white mb-4">Personal Info</h4>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                                    <div class="space-y-1.5">
+                                        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300">{{ form.first_name.label }}</label>
+                                        {{ form.first_name }}
+                                        {% if form.first_name.errors %}<p class="text-xs text-red-600">{{ form.first_name.errors.0 }}</p>{% endif %}
+                                    </div>
+                                    <div class="space-y-1.5">
+                                        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300">{{ form.last_name.label }}</label>
+                                        {{ form.last_name }}
+                                        {% if form.last_name.errors %}<p class="text-xs text-red-600">{{ form.last_name.errors.0 }}</p>{% endif %}
+                                    </div>
+                                    <div class="space-y-1.5">
+                                        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300">{{ form.email.label }}</label>
+                                        {{ form.email }}
+                                        {% if form.email.errors %}<p class="text-xs text-red-600">{{ form.email.errors.0 }}</p>{% endif %}
+                                    </div>
+                                    <div class="space-y-1.5">
+                                        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300">{{ form.phone_number.label }}</label>
+                                        {{ form.phone_number }}
+                                        {% if form.phone_number.errors %}<p class="text-xs text-red-600">{{ form.phone_number.errors.0 }}</p>{% endif %}
+                                    </div>
+                                    <div class="space-y-1.5 md:col-span-2">
+                                        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300">{{ form.bio.label }}</label>
+                                        {{ form.bio }}
+                                        {% if form.bio.errors %}<p class="text-xs text-red-600">{{ form.bio.errors.0 }}</p>{% endif %}
+                                    </div>
+                                </div>
+
+                                <h4 class="font-bold text-gray-900 dark:text-white mb-4">Address</h4>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div class="space-y-1.5 md:col-span-2">
+                                        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300">{{ form.country.label }}</label>
+                                        {{ form.country }}
+                                        {% if form.country.errors %}<p class="text-xs text-red-600">{{ form.country.errors.0 }}</p>{% endif %}
+                                    </div>
+                                    <div class="space-y-1.5">
+                                        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300">{{ form.city_state.label }}</label>
+                                        {{ form.city_state }}
+                                        {% if form.city_state.errors %}<p class="text-xs text-red-600">{{ form.city_state.errors.0 }}</p>{% endif %}
+                                    </div>
+                                    <div class="space-y-1.5">
+                                        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300">{{ form.postal_code.label }}</label>
+                                        {{ form.postal_code }}
+                                        {% if form.postal_code.errors %}<p class="text-xs text-red-600">{{ form.postal_code.errors.0 }}</p>{% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 flex justify-end gap-3">
+                                <button type="button" @click="editModalOpen = false" class="px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-bold hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                                    Cancel
+                                </button>
+                                <button type="submit" class="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-md shadow-emerald-600/20 transition-all active:scale-95">
+                                    Save Changes
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+</div>
+{% endblock %}

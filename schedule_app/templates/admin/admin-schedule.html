@@ -1,0 +1,224 @@
+{% extends 'layout/base.html' %}
+
+{% block content %}
+<div class="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-950 transition-colors duration-300" x-data="calendar()" x-init="init()">
+    {% include 'layout/admin-sidebar.html' %}
+    
+    <div class="flex-1 flex flex-col w-full h-screen overflow-y-auto">
+        <!-- Dashboard Topbar -->
+        {% include 'layout/topbar.html' with page_title="Master Schedule" %}
+        <!-- Main Content Area -->
+        <main class="flex-1 p-4 sm:p-6 flex flex-col min-h-0">
+            <!-- Calendar Header Controls -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 shrink-0">
+                <div class="flex items-center gap-4">
+                    <h2 class="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white tracking-tight" x-text="monthNames[month] + ' ' + year"></h2>
+                </div>
+                
+                <div class="flex items-center gap-2 sm:gap-3 flex-wrap sm:flex-nowrap justify-start sm:justify-end">
+                    <!-- Month Switcher -->
+                    <div class="flex items-center bg-white dark:bg-gray-900 rounded-lg p-1 border border-emerald-600/20 dark:border-gray-800 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
+                        <button @click="prev()" class="p-1 sm:p-1.5 text-gray-500 hover:text-emerald-600 dark:hover:text-emerald-400 rounded-md hover:bg-emerald-50 dark:hover:bg-gray-800 transition-colors">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                        </button>
+                        <button @click="goToToday()" class="px-2 py-1 sm:px-3 sm:py-1.5 text-xs sm:text-sm font-bold text-gray-700 dark:text-gray-300 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">Today</button>
+                        <button @click="next()" class="p-1 sm:p-1.5 text-gray-500 hover:text-emerald-600 dark:hover:text-emerald-400 rounded-md hover:bg-emerald-50 dark:hover:bg-gray-800 transition-colors">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </button>
+                    </div>
+
+                    <div class="hidden md:flex bg-emerald-600/10 dark:bg-gray-900 rounded-xl p-1 border border-emerald-600/20 dark:border-gray-800">
+                        <button @click="viewMode = 'month'; updateView()" :class="viewMode === 'month' ? 'text-emerald-700 dark:text-emerald-400 bg-white dark:bg-gray-800 shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400'" class="px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-bold rounded-lg transition-colors">Month</button>
+                        <button @click="viewMode = 'week'; updateView()" :class="viewMode === 'week' ? 'text-emerald-700 dark:text-emerald-400 bg-white dark:bg-gray-800 shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400'" class="px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-bold rounded-lg transition-colors">Week</button>
+                    </div>
+                    
+                    <button class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 sm:px-5 sm:py-2.5 rounded-xl text-sm sm:text-base font-bold shadow-md shadow-emerald-600/20 transition-all active:scale-95 flex items-center gap-1 sm:gap-2">
+                        <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                        Add Event
+                    </button>
+                </div>
+            </div>
+
+            <!-- Full Calendar UI strictly bounded by height -->
+            <div class="bg-white dark:bg-gray-900 border border-emerald-600/20 dark:border-gray-800 rounded-xl sm:rounded-2xl shadow-xl shadow-gray-900/5 flex flex-col flex-1 w-full overflow-hidden min-h-0">
+                <!-- Days of Week Header -->
+                <div class="grid grid-cols-7 border-b border-emerald-600/10 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-950/50 shrink-0">
+                    <template x-for="day in ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']">
+                        <div class="px-2 py-2 sm:px-4 sm:py-3 text-center text-[10px] sm:text-xs font-black uppercase tracking-widest text-gray-400 dark:text-gray-500 truncate" x-text="day"></div>
+                    </template>
+                </div>
+                
+                <!-- Calendar Grid (Dynamic Alpine.js) fits exactly in remaining space -->
+                <div class="grid grid-cols-7 flex-1 bg-gray-200 dark:bg-gray-800 gap-px min-h-0"
+                     :class="viewMode === 'month' ? 'grid-rows-6' : 'grid-rows-1'">
+                    <template x-for="(day, index) in days" :key="index">
+                        <div class="p-1 sm:p-2 group transition-colors relative flex flex-col min-h-0"
+                             :class="{
+                                 'bg-white dark:bg-gray-900 hover:bg-emerald-50/50 dark:hover:bg-gray-800/80': day.isCurrentMonth,
+                                 'bg-gray-50/50 dark:bg-gray-950/50': !day.isCurrentMonth
+                             }">
+                            
+                            <!-- Date Number -->
+                            <div class="flex justify-start">
+                                <template x-if="day.isToday">
+                                    <div class="w-6 h-6 sm:w-7 sm:h-7 bg-emerald-600 rounded-full flex items-center justify-center shadow-md shadow-emerald-600/30 mb-0.5 sm:mb-1">
+                                        <p class="text-xs sm:text-sm font-bold text-white" x-text="day.date"></p>
+                                    </div>
+                                </template>
+                                <template x-if="!day.isToday && day.date !== ''">
+                                    <p class="text-xs sm:text-sm font-bold p-0.5 sm:p-1 mb-0.5 sm:mb-1 transition-colors text-gray-900 dark:text-gray-100 group-hover:text-emerald-600 dark:group-hover:text-emerald-400"
+                                       x-text="day.date"></p>
+                                </template>
+                            </div>
+                            
+                            <!-- Dynamic Events -->
+                            <div class="flex-1 flex flex-col gap-1 mt-0.5 sm:mt-1 overflow-y-auto custom-scrollbar">
+                                <template x-for="event in events.filter(e => e.date === day.fullDate)" :key="event.id">
+                                    <div class="bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 text-[9px] sm:text-xs font-bold px-1 py-0.5 sm:px-2 sm:py-1.5 rounded sm:rounded-md truncate shadow-sm cursor-pointer hover:ring-2 hover:ring-emerald-500 transition-all" x-text="event.title">
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </main>
+        
+        {% include 'layout/footer.html' %}
+    </div>
+</div>
+
+<style>
+/* Hide scrollbar for event container but allow scrolling */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 2px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: rgba(156, 163, 175, 0.5);
+    border-radius: 20px;
+}
+@media (min-width: 640px) {
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 4px;
+    }
+}
+</style>
+
+<script>
+function calendar() {
+    return {
+        viewMode: 'month',
+        activeDate: new Date(),
+        monthNames: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+        days: [],
+        events: {{ events_json|safe|default:"[]" }},
+        
+        get month() { return this.activeDate.getMonth(); },
+        get year() { return this.activeDate.getFullYear(); },
+        
+        init() {
+            this.updateView();
+        },
+        
+        isToday(date, month, year) {
+            const today = new Date();
+            return date === today.getDate() && month === today.getMonth() && year === today.getFullYear();
+        },
+        
+        updateView() {
+            if (this.viewMode === 'month') {
+                this.getDays();
+            } else {
+                this.getWeekDays();
+            }
+        },
+        
+        getDays() {
+            let y = this.year;
+            let m = this.month;
+            let daysInMonth = new Date(y, m + 1, 0).getDate();
+            let dayOfWeek = new Date(y, m, 1).getDay(); // 0-6 (Sun-Sat)
+            
+            let daysArray = [];
+            
+            // Previous month's days (Left completely blank intentionally)
+            for (let i = 1; i <= dayOfWeek; i++) {
+                daysArray.push({
+                    date: '',
+                    isCurrentMonth: false,
+                    isToday: false,
+                    fullDate: ''
+                });
+            }
+            
+            // Current month's days
+            for (let i = 1; i <= daysInMonth; i++) {
+                daysArray.push({
+                    date: i,
+                    isCurrentMonth: true,
+                    isToday: this.isToday(i, m, y),
+                    fullDate: `${y}-${String(m + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`
+                });
+            }
+            
+            // Next month's days (Left completely blank intentionally)
+            let totalCells = 42;
+            let currentCells = daysArray.length;
+            for (let i = 1; i <= totalCells - currentCells; i++) {
+                daysArray.push({
+                    date: '',
+                    isCurrentMonth: false,
+                    isToday: false,
+                    fullDate: ''
+                });
+            }
+            
+            this.days = daysArray;
+        },
+        
+        getWeekDays() {
+            let curr = new Date(this.activeDate);
+            let first = curr.getDate() - curr.getDay(); // First day is the day of the month - the day of the week
+            
+            let daysArray = [];
+            for (let i = 0; i < 7; i++) {
+                let next = new Date(curr.getFullYear(), curr.getMonth(), first + i);
+                daysArray.push({
+                    date: next.getDate(),
+                    isCurrentMonth: next.getMonth() === this.month,
+                    isToday: this.isToday(next.getDate(), next.getMonth(), next.getFullYear()),
+                    fullDate: `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}-${String(next.getDate()).padStart(2, '0')}`
+                });
+            }
+            this.days = daysArray;
+        },
+        
+        next() {
+            if (this.viewMode === 'month') {
+                this.activeDate = new Date(this.year, this.month + 1, 1);
+            } else {
+                this.activeDate = new Date(this.year, this.month, this.activeDate.getDate() + 7);
+            }
+            this.updateView();
+        },
+        
+        prev() {
+            if (this.viewMode === 'month') {
+                this.activeDate = new Date(this.year, this.month - 1, 1);
+            } else {
+                this.activeDate = new Date(this.year, this.month, this.activeDate.getDate() - 7);
+            }
+            this.updateView();
+        },
+        
+        goToToday() {
+            this.activeDate = new Date();
+            this.updateView();
+        }
+    }
+}
+</script>
+{% endblock %}

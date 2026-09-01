@@ -1,0 +1,136 @@
+{% extends 'layout/base.html' %}
+
+{% block content %}
+<div class="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-950 transition-colors duration-300">
+    {% include 'layout/admin-sidebar.html' %}
+
+    <div class="flex-1 flex flex-col w-full h-screen overflow-y-auto">
+        {% include 'layout/topbar.html' with page_title="Admin Overview" %}
+
+        <main class="flex-1 p-4 sm:p-6 lg:p-8">
+
+            <!-- Welcome Banner -->
+            <div class="mb-8">
+                <h2 class="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white tracking-tight">
+                    Welcome back, {{ request.user.get_full_name|default:request.user.username }}!
+                </h2>
+                <p class="text-gray-500 dark:text-gray-400 mt-1 text-sm font-medium">Here's what's happening with the church today.</p>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
+
+                <!-- Total Volunteers -->
+                <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-5 shadow-sm flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                    </div>
+                    <div>
+                        <p class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Total Volunteers</p>
+                        <p class="text-3xl font-black text-gray-900 dark:text-white mt-0.5">{{ total_volunteers }}</p>
+                    </div>
+                </div>
+
+                <!-- Departments -->
+                <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-5 shadow-sm flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+                    </div>
+                    <div>
+                        <p class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Departments</p>
+                        <p class="text-3xl font-black text-gray-900 dark:text-white mt-0.5">{{ total_departments }}</p>
+                    </div>
+                </div>
+
+                <!-- Upcoming Events -->
+                <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-5 shadow-sm flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-xl bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                    </div>
+                    <div>
+                        <p class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Upcoming Events</p>
+                        <p class="text-3xl font-black text-gray-900 dark:text-white mt-0.5">{{ upcoming_count }}</p>
+                    </div>
+                </div>
+
+                <!-- Open Shifts -->
+                <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-5 shadow-sm flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-xl bg-rose-100 dark:bg-rose-900/40 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    </div>
+                    <div>
+                        <p class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Open Shifts</p>
+                        <p class="text-3xl font-black text-gray-900 dark:text-white mt-0.5">{{ open_shifts }}</p>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Bottom Row -->
+            <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+
+                <!-- Next Event -->
+                <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-sm overflow-hidden">
+                    <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+                        <h3 class="font-black text-gray-900 dark:text-white text-base">Next Event</h3>
+                        <a href="{% url 'admin_service' %}" class="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline">View all →</a>
+                    </div>
+                    {% if next_event %}
+                    <div class="p-6">
+                        <div class="flex items-start gap-4">
+                            <div class="w-14 h-14 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 flex flex-col items-center justify-center shrink-0 text-center leading-tight">
+                                <span class="text-xs font-bold uppercase">{{ next_event.date|date:"M" }}</span>
+                                <span class="text-xl font-black">{{ next_event.date|date:"j" }}</span>
+                            </div>
+                            <div>
+                                <p class="font-black text-gray-900 dark:text-white text-lg">{{ next_event.name }}</p>
+                                <p class="text-sm font-medium text-gray-500 dark:text-gray-400 mt-0.5">{{ next_event.start_time|time:"h:i A" }} – {{ next_event.end_time|time:"h:i A" }}</p>
+                                <p class="text-sm font-medium text-gray-500 dark:text-gray-400 mt-1">{{ next_event.shifts.count }} shift{{ next_event.shifts.count|pluralize }} · {{ next_event_open_shifts }} open</p>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="p-10 text-center">
+                        <p class="text-gray-400 dark:text-gray-500 font-medium text-sm">No upcoming events scheduled.</p>
+                        <a href="{% url 'admin_service' %}" class="mt-3 inline-block text-sm font-bold text-emerald-600 dark:text-emerald-400 hover:underline">Create one →</a>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Upcoming Events List -->
+                <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-sm overflow-hidden">
+                    <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+                        <h3 class="font-black text-gray-900 dark:text-white text-base">Upcoming Events</h3>
+                        <a href="{% url 'admin_schedule' %}" class="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline">View schedule →</a>
+                    </div>
+                    {% if recent_events %}
+                    <ul class="divide-y divide-gray-100 dark:divide-gray-800">
+                        {% for event in recent_events %}
+                        <li class="flex items-center gap-4 px-6 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
+                            <div class="w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 flex items-center justify-center text-xs font-black shrink-0">
+                                {{ event.date|date:"j" }}
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="font-bold text-gray-900 dark:text-white text-sm truncate">{{ event.name }}</p>
+                                <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ event.date|date:"F j, Y" }} · {{ event.start_time|time:"h:i A" }}</p>
+                            </div>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 shrink-0">
+                                {{ event.shifts.count }} shifts
+                            </span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <div class="p-10 text-center">
+                        <p class="text-gray-400 dark:text-gray-500 font-medium text-sm">No upcoming events yet.</p>
+                    </div>
+                    {% endif %}
+                </div>
+
+            </div>
+        </main>
+
+        {% include 'layout/footer.html' %}
+    </div>
+</div>
+{% endblock %}

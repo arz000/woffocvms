@@ -1,35 +1,26 @@
 from django.urls import path
+from django.views.generic import RedirectView
 from . import views
 
 urlpatterns = [
-    path('', views.first_page, name='first_page'),
+    # Public Routes
+    path('', RedirectView.as_view(url='/login/', permanent=False), name='landing_page'),
+    path('login/', views.login_view, name='login'),
+    path('register/', views.register_view, name='register'),
+    path('logout/', views.logout_view, name='logout'),
     
-    path('register/', views.register, name='register'),
-    path('login-page/', views.login_page, name='login_page'),
-    path('logout/', views.logout_user, name='logout'),
-
-    # Main Tab
-    path('main/', views.main, name='main'),
-    path('create-post/', views.create_post, name='create_post'),
-    path('like-post/<int:post_id>/', views.like_post, name='like_post'),
-    path('comment-post/<int:post_id>/', views.create_comment, name='comment_post'),
-    path('notifications/read/', views.mark_notifications_read, name='mark_notifications_read'),
-
-    # About Us Tab
-    path('about_us/', views.about_us, name='about_us'),
-
-    # Profile Tab
-    path('profile/', views.profile, name='profile'),
-    path('myactivity/', views.myactivity, name='myactivity'),
-    path('myactivity/edit-activity/<int:id>/', views.edit_activity, name='edit_activity'),
-    path("myactivity/delete-activity/<int:id>/", views.delete_activity, name="delete_activity"),
-
-    # ADMIN(View Member)
-    path('view_member/', views.members, name='members'),
-    path('view_member/details/<int:id>/', views.details, name='details'),
-
-    # Others Tab
-    path('message/', views.message, name='message'),
-    path('search/', views.search, name='search'),
-    path('notification/', views.notification, name='notification'),
+    # User Routes
+    path('user-dashboard/', views.user_dashboard_view, name='user_dashboard'),
+    path('profile/', views.user_profile_view, name='user_profile'),
+    
+    # Admin Routes
+    path('admin-dashboard/', views.admin_dashboard_view, name='admin_dashboard'),
+    path('admin-schedule/', views.admin_schedule_view, name='admin_schedule'),
+    path('admin-service/', views.admin_service_view, name='admin_service'),
+    path('admin-departments/', views.admin_departments_view, name='admin_departments'),
+    path('admin-members/', views.admin_members_view, name='admin_members'),
+    path('admin-user-roles/', views.admin_user_roles_view, name='admin_user_roles'),
+    path('api/update-role/', views.api_update_role, name='api_update_role'),
+    path('search-volunteers/', views.search_volunteers, name='search_volunteers'),
+    path('api/update-ministries/', views.api_update_ministries, name='api_update_ministries'),
 ]

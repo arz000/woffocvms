@@ -1,0 +1,66 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %}Church Volunteer Hub{% endblock %}</title>
+
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+    
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    
+    <!-- HTMX CDN -->
+    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+    
+    <!-- Tailwind CSS v4 CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    
+    <style type="text/tailwindcss">
+      @custom-variant dark (&:where(.dark, .dark *));
+      [x-cloak] { display: none !important; }
+    </style>
+
+    <script>
+        // Prevent flash of wrong theme
+        if (localStorage.getItem('darkMode') === 'true' || (!('darkMode' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    </script>
+  </head>
+  <body x-data="{ 
+            sidebarOpen: false, 
+            sidebarCollapsed: false, 
+            sidebarHover: false, 
+            notificationsOpen: false, 
+            loaded: false,
+            darkMode: document.documentElement.classList.contains('dark'),
+            toggleDarkMode() {
+                this.darkMode = !this.darkMode;
+                if (this.darkMode) {
+                    document.documentElement.classList.add('dark');
+                    localStorage.setItem('darkMode', 'true');
+                } else {
+                    document.documentElement.classList.remove('dark');
+                    localStorage.setItem('darkMode', 'false');
+                }
+            }
+        }" 
+        x-init="setTimeout(() => loaded = true, 50)" 
+        :class="loaded ? 'opacity-100' : 'opacity-0'" 
+        class="min-h-screen flex flex-col font-sans antialiased bg-gray-50 dark:bg-gray-950 text-black dark:text-gray-100 transition-colors duration-300">
+    
+    <main class="flex-1 flex flex-col w-full relative">
+      {% block content %} 
+
+      {% endblock %}
+    </main>
+
+  </body>
+</html>

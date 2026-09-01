@@ -1,140 +1,106 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
-class Member(models.Model):
-      ROLE_CHOICES = [
-        ('ADMIN', 'Administrator'),
-        ('MEMBER', 'Member'),
-    ]  
-      user = models.OneToOneField(User,on_delete=models.CASCADE)
-      
-      role = models.CharField(
-        max_length=10,
-        choices=ROLE_CHOICES,
-        default='MEMBER'
-    )
-      
-      email = models.EmailField(max_length=254, null=True, blank=True)
-      first_name = models.CharField(max_length=30, null=True, blank=True)
-      last_name = models.CharField(max_length=30, null=True, blank=True)
-      phone = models.CharField(max_length=20, null=True, blank=True)
-      birth_date = models.DateField(null=True, blank=True)
-      joined_date = models.DateField(auto_now_add=True, null=True)
-      
-      def __str__(self):
-        return self.user.username
+class Ministry(models.Model):
+    """
+    Represents the different departments or roles volunteers can serve in 
+    (e.g., Worship Team, Ushers, Greeters).
+    """
+    name = models.CharField(max_length=100)
+    description = models.TextField(blank=True)
+    head = models.ForeignKey('VolunteerProfile', on_delete=models.SET_NULL, null=True, blank=True, related_name='headed_ministries')
 
+    def __str__(self):
+        return self.name
     
-class Activity(models.Model):
-    member = models.ForeignKey(Member, on_delete=models.CASCADE, related_name='activities', null=True)
-
-    title = models.CharField(max_length=100)
-    description = models.TextField()
-    activity_date = models.DateField(null=True, blank=True)
-
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
     class Meta:
-        ordering = ['-created_at'] 
+        verbose_name_plural = "Ministries"
+
+
+class Capability(models.Model):
+    """
+    Represents a specific permission or capability in the system.
+    """
+    name = models.CharField(max_length=100)
+    description = models.CharField(max_length=255)
 
     def __str__(self):
-        return self.title
-
-class Post(models.Model):
-    author = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE
-    )
-    title = models.CharField(max_length=150)
-    content = models.TextField()
+        return self.name
     
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
     class Meta:
-        ordering = ["-created_at"]
+        verbose_name_plural = "Capabilities"
+
+
+class Role(models.Model):
+    """
+    Represents a system role (e.g., System Administrator, Volunteer)
+    """
+    name = models.CharField(max_length=100)
+    description = models.TextField(blank=True)
+    badge = models.CharField(max_length=50) # e.g. "Superuser", "Staff"
+    theme = models.CharField(max_length=50) # e.g. "red", "amber", "blue"
+    capabilities = models.ManyToManyField(Capability, blank=True, related_name='roles')
 
     def __str__(self):
-        return self.title
+        return self.name
 
-class Like(models.Model):
-    user = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE
-    )
 
-    post = models.ForeignKey(
-        Post,
-        on_delete=models.CASCADE,
-        related_name='likes'
-    )
-
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        unique_together = ('user', 'post')
-
-    def __str__(self):
-        return f'{self.user.username} likes {self.post.title}'
-
-class Comment(models.Model):
-    post = models.ForeignKey(
-        Post,
-        on_delete=models.CASCADE,
-        related_name='comments'
-    )
-
-    author = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE
-    )
-
-    content = models.TextField()
-
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        ordering = ['created_at']
+class VolunteerProfile(models.Model):
+    """
+    Extends the built-in Django User model to store additional information.
+    """
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='volunteer_profile')
+    phone_number = models.CharField(max_length=20, blank=True)
+    ministries = models.ManyToManyField(Ministry, blank=True, related_name='volunteers')
+    role = models.ForeignKey(Role, on_delete=models.SET_NULL, null=True, blank=True, related_name='volunteers')
+    
+    # Extended Profile Fields
+    bio = models.TextField(blank=True, default="No bio provided.")
+    country = models.CharField(max_length=100, blank=True)
+    city_state = models.CharField(max_length=100, blank=True)
+    postal_code = models.CharField(max_length=20, blank=True)
 
     def __str__(self):
-        return f'{self.author} - {self.post}'
+        return f"{self.user.get_full_name()} ({self.user.username})"
 
 
-class Notification(models.Model):
-    recipient = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name='notifications'
-    )
-
-    sender = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name='sent_notifications'
-    )
-
-    post = models.ForeignKey(
-        Post,
-        on_delete=models.CASCADE,
-        null=True,
-        blank=True
-    )
-
-    notification_type = models.CharField(
-        max_length=20
-    )
-
-    is_read = models.BooleanField(
-        default=False
-    )
-
-    created_at = models.DateTimeField(
-        auto_now_add=True
-    )
-
-    class Meta:
-        ordering = ['-created_at']
+class Event(models.Model):
+    """
+    Represents a specific church service or gathering.
+    """
+    name = models.CharField(max_length=200)
+    date = models.DateField()
+    start_time = models.TimeField()
+    end_time = models.TimeField()
+    description = models.TextField(blank=True)
 
     def __str__(self):
-        return f'{self.sender} to {self.recipient} - {self.notification_type}'
+        return f"{self.name} - {self.date}"
+
+
+class Shift(models.Model):
+    """
+    Represents a specific role that needs to be filled during an Event.
+    """
+    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name='shifts')
+    ministry = models.ForeignKey(Ministry, on_delete=models.CASCADE, related_name='shifts')
+    volunteer = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='shifts')
+    
+    # Optional override times (if a shift needs to start earlier than the event)
+    start_time = models.TimeField(null=True, blank=True)
+    end_time = models.TimeField(null=True, blank=True)
+
+    def __str__(self):
+        status = "Filled" if self.volunteer else "Open"
+        return f"{self.ministry.name} for {self.event.name} ({status})"
+
+@receiver(post_save, sender=User)
+def create_user_profile(sender, instance, created, **kwargs):
+    if created:
+        VolunteerProfile.objects.create(user=instance)
+
+@receiver(post_save, sender=User)
+def save_user_profile(sender, instance, **kwargs):
+    instance.volunteer_profile.save()
