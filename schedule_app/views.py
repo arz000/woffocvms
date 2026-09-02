@@ -124,14 +124,35 @@ def admin_schedule_view(request):
     })
 
 def admin_service_view(request):
-    """Renders the Service management view."""
+    """Renders the Service management view and handles Event creation."""
     if not request.user.is_authenticated or not (request.user.is_staff or request.user.is_superuser):
         return redirect('login')
     
-    upcoming_events = Event.objects.filter(date__gte=date.today()).order_by('date').prefetch_related('shifts__ministry', 'shifts__volunteer')
+    if request.method == 'POST':
+        name = request.POST.get('name')
+        event_type = request.POST.get('event_type')
+        date_str = request.POST.get('date')
+        start_time_str = request.POST.get('start_time')
+        end_time_str = request.POST.get('end_time')
+        description = request.POST.get('description', '')
+
+        if name and event_type and date_str and start_time_str and end_time_str:
+            Event.objects.create(
+                name=name,
+                event_type=event_type,
+                date=date_str,
+                start_time=start_time_str,
+                end_time=end_time_str,
+                description=description
+            )
+        return redirect('admin_service')
+    
+    base_query = Event.objects.filter(date__gte=date.today()).order_by('date').prefetch_related('shifts__ministry', 'shifts__volunteer')
     
     return render(request, 'admin/admin-service.html', {
-        'upcoming_events': upcoming_events
+        'regular_events': base_query.filter(event_type='regular'),
+        'scheduled_events': base_query.filter(event_type='scheduled'),
+        'big_events': base_query.filter(event_type='big'),
     })
 
 def admin_departments_view(request):
@@ -278,4 +299,53 @@ def api_update_ministries(request):
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=400)
     
+    return JsonResponse({'error': 'Invalid method'}, status=405)
+
+def api_assign_role(request):
+    """API Endpoint to assign a user to a role via POST request."""
+    if not request.user.is_authenticated or not (request.user.is_staff or request.user.is_superuser):
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+    
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            role_id = data.get('role_id')
+            user_id = data.get('user_id')
+            
+            role = Role.objects.get(id=role_id)
+            profile = VolunteerProfile.objects.get(id=user_id)
+            profile.role = role
+            profile.save()
+            
+            return JsonResponse({
+                'success': True,
+                'user': {
+                    'id': profile.id,
+                    'name': profile.user.get_full_name() or profile.user.username,
+                    'email': profile.user.email
+                }
+            })
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=400)
+            
+    return JsonResponse({'error': 'Invalid method'}, status=405)
+
+def api_remove_role(request):
+    """API Endpoint to remove a user from a role via POST request."""
+    if not request.user.is_authenticated or not (request.user.is_staff or request.user.is_superuser):
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+    
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            user_id = data.get('user_id')
+            
+            profile = VolunteerProfile.objects.get(id=user_id)
+            profile.role = None
+            profile.save()
+            
+            return JsonResponse({'success': True})
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=400)
+            
     return JsonResponse({'error': 'Invalid method'}, status=405)

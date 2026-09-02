@@ -1,7 +1,8 @@
 {% extends 'layout/base.html' %}
+{% load static %}
 
 {% block content %}
-<div class="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-950 transition-colors duration-300" x-data="calendar()" x-init="init()">
+<div class="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-950 transition-colors duration-300" x-data="calendar({{ events_json|safe|default:'[]' }})" x-init="init()">
     {% include 'layout/admin-sidebar.html' %}
     
     <div class="flex-1 flex flex-col w-full h-screen overflow-y-auto">
@@ -31,11 +32,6 @@
                         <button @click="viewMode = 'month'; updateView()" :class="viewMode === 'month' ? 'text-emerald-700 dark:text-emerald-400 bg-white dark:bg-gray-800 shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400'" class="px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-bold rounded-lg transition-colors">Month</button>
                         <button @click="viewMode = 'week'; updateView()" :class="viewMode === 'week' ? 'text-emerald-700 dark:text-emerald-400 bg-white dark:bg-gray-800 shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400'" class="px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-bold rounded-lg transition-colors">Week</button>
                     </div>
-                    
-                    <button class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 sm:px-5 sm:py-2.5 rounded-xl text-sm sm:text-base font-bold shadow-md shadow-emerald-600/20 transition-all active:scale-95 flex items-center gap-1 sm:gap-2">
-                        <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-                        Add Event
-                    </button>
                 </div>
             </div>
 
@@ -107,118 +103,5 @@
 }
 </style>
 
-<script>
-function calendar() {
-    return {
-        viewMode: 'month',
-        activeDate: new Date(),
-        monthNames: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
-        days: [],
-        events: {{ events_json|safe|default:"[]" }},
-        
-        get month() { return this.activeDate.getMonth(); },
-        get year() { return this.activeDate.getFullYear(); },
-        
-        init() {
-            this.updateView();
-        },
-        
-        isToday(date, month, year) {
-            const today = new Date();
-            return date === today.getDate() && month === today.getMonth() && year === today.getFullYear();
-        },
-        
-        updateView() {
-            if (this.viewMode === 'month') {
-                this.getDays();
-            } else {
-                this.getWeekDays();
-            }
-        },
-        
-        getDays() {
-            let y = this.year;
-            let m = this.month;
-            let daysInMonth = new Date(y, m + 1, 0).getDate();
-            let dayOfWeek = new Date(y, m, 1).getDay(); // 0-6 (Sun-Sat)
-            
-            let daysArray = [];
-            
-            // Previous month's days (Left completely blank intentionally)
-            for (let i = 1; i <= dayOfWeek; i++) {
-                daysArray.push({
-                    date: '',
-                    isCurrentMonth: false,
-                    isToday: false,
-                    fullDate: ''
-                });
-            }
-            
-            // Current month's days
-            for (let i = 1; i <= daysInMonth; i++) {
-                daysArray.push({
-                    date: i,
-                    isCurrentMonth: true,
-                    isToday: this.isToday(i, m, y),
-                    fullDate: `${y}-${String(m + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`
-                });
-            }
-            
-            // Next month's days (Left completely blank intentionally)
-            let totalCells = 42;
-            let currentCells = daysArray.length;
-            for (let i = 1; i <= totalCells - currentCells; i++) {
-                daysArray.push({
-                    date: '',
-                    isCurrentMonth: false,
-                    isToday: false,
-                    fullDate: ''
-                });
-            }
-            
-            this.days = daysArray;
-        },
-        
-        getWeekDays() {
-            let curr = new Date(this.activeDate);
-            let first = curr.getDate() - curr.getDay(); // First day is the day of the month - the day of the week
-            
-            let daysArray = [];
-            for (let i = 0; i < 7; i++) {
-                let next = new Date(curr.getFullYear(), curr.getMonth(), first + i);
-                daysArray.push({
-                    date: next.getDate(),
-                    isCurrentMonth: next.getMonth() === this.month,
-                    isToday: this.isToday(next.getDate(), next.getMonth(), next.getFullYear()),
-                    fullDate: `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}-${String(next.getDate()).padStart(2, '0')}`
-                });
-            }
-            this.days = daysArray;
-        },
-        
-        next() {
-            if (this.viewMode === 'month') {
-                this.activeDate = new Date(this.year, this.month + 1, 1);
-            } else {
-                this.activeDate = new Date(this.year, this.month, this.activeDate.getDate() + 7);
-            }
-            this.updateView();
-        },
-        
-        prev() {
-            if (this.viewMode === 'month') {
-                this.activeDate = new Date(this.year, this.month - 1, 1);
-            } else {
-                this.activeDate = new Date(this.year, this.month, this.activeDate.getDate() - 7);
-            }
-            this.updateView();
-        },
-        
-        goToToday() {
-            this.activeDate = new Date();
-            this.updateView();
-        }
-    }
-}
-</script>
+<script src="{% static 'js/calendar.js' %}"></script>
 {% endblock %}

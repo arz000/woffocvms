@@ -70,7 +70,14 @@ class Event(models.Model):
     """
     Represents a specific church service or gathering.
     """
+    EVENT_TYPES = [
+        ('regular', 'Regular Service'),
+        ('scheduled', 'Scheduled Event'),
+        ('big', 'Big Event'),
+    ]
+
     name = models.CharField(max_length=200)
+    event_type = models.CharField(max_length=50, choices=EVENT_TYPES, default='regular')
     date = models.DateField()
     start_time = models.TimeField()
     end_time = models.TimeField()
