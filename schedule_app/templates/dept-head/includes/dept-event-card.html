@@ -1,0 +1,65 @@
+<div class="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow group relative overflow-hidden">
+    <!-- Theme Accent Line -->
+    <div class="absolute top-0 left-0 w-1 h-full 
+        {% if theme == 'blue' %}bg-blue-500
+        {% elif theme == 'amber' %}bg-amber-500
+        {% elif theme == 'emerald' %}bg-emerald-500
+        {% else %}bg-gray-500{% endif %}"></div>
+
+    <div class="pl-3 flex flex-col h-full">
+        <div class="flex justify-between items-start mb-2">
+            <h4 class="font-bold text-gray-900 dark:text-white text-sm leading-tight">{{ event.name }}</h4>
+        </div>
+        
+        <div class="flex items-center text-xs text-gray-500 dark:text-gray-400 mb-1 gap-1">
+            <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+            <span>{{ event.date|date:"M d, Y" }}</span>
+        </div>
+        
+        <div class="flex items-center text-xs text-gray-500 dark:text-gray-400 mb-3 gap-1">
+            <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            <span>{{ event.start_time|time:"g:i A" }} - {{ event.end_time|time:"g:i A" }}</span>
+        </div>
+
+        <!-- Departments Tags -->
+        <div class="flex flex-wrap gap-1 mb-3">
+            {% for office in event.offices.all %}
+            <span class="bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">{{ office.name }}</span>
+            {% endfor %}
+        </div>
+
+        <!-- Assigned Status + Assign Button -->
+        <div class="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-gray-800 mt-auto">
+            <div class="flex items-center gap-2">
+                <div class="flex -space-x-1.5">
+                    {% for shift in event.shifts.all|slice:":3" %}
+                    {% if shift.volunteer %}
+                    <div class="w-6 h-6 rounded-full border-2 border-white dark:border-gray-900 flex items-center justify-center text-[8px] font-bold uppercase
+                        {% if theme == 'blue' %}bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400
+                        {% elif theme == 'amber' %}bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400
+                        {% else %}bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400{% endif %}" title="{{ shift.volunteer.get_full_name }}">
+                        {{ shift.volunteer.first_name|first }}{{ shift.volunteer.last_name|first }}
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+                <span class="text-[10px] font-bold 
+                    {% if event.filled_count == event.shifts.count and event.shifts.count > 0 %}
+                        {% if theme == 'blue' %}text-blue-600 dark:text-blue-400
+                        {% elif theme == 'amber' %}text-amber-600 dark:text-amber-400
+                        {% else %}text-emerald-600 dark:text-emerald-400{% endif %}
+                    {% else %}text-gray-400 dark:text-gray-500{% endif %}">
+                    {{ event.filled_count }}/{{ event.shifts.count }} filled
+                </span>
+            </div>
+
+            <a href="{% url 'dept_head_event_detail' event.id %}" class="text-white text-[10px] font-bold px-3 py-1.5 rounded-lg transition-all active:scale-95 shadow-sm flex items-center gap-1
+                {% if theme == 'blue' %}bg-blue-500 hover:bg-blue-600 shadow-blue-500/20
+                {% elif theme == 'amber' %}bg-amber-500 hover:bg-amber-600 shadow-amber-500/20
+                {% else %}bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/20{% endif %}">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path></svg>
+                Assign
+            </a>
+        </div>
+    </div>
+</div>
