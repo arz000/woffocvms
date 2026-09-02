@@ -32,22 +32,52 @@ def admin_dashboard_view(request):
     })
 
 def admin_schedule_view(request):
-    """Renders the calendar schedule view for admins."""
+    """Renders the calendar schedule view for admins and department heads."""
     if not check_admin_or_head(request.user):
         return redirect('login')
     
-    events = Event.objects.prefetch_related('offices').all()
-    events_data = [{
-        'id': e.id,
-        'name': e.name,
-        'title': f"{e.start_time.strftime('%I:%M %p')} - {e.name}",
-        'date': e.date.isoformat(),
-        'start_time': e.start_time.strftime('%I:%M %p'),
-        'end_time': e.end_time.strftime('%I:%M %p'),
-        'type': e.event_type,
-        'description': e.description,
-        'offices': [{'id': o.id, 'name': o.name} for o in e.offices.all()],
-    } for e in events]
+    events = Event.objects.prefetch_related('offices', 'shifts__volunteer', 'shifts__ministry', 'shifts__job').all()
+    events_data = []
+    for e in events:
+        all_shifts = list(e.shifts.all())
+        total_shifts = len(all_shifts)
+        filled_shifts = [s for s in all_shifts if s.volunteer_id is not None]
+        unfilled_shifts = [s for s in all_shifts if s.volunteer_id is None]
+        
+        needed_roles_count = {}
+        for s in unfilled_shifts:
+            r_name = s.job.title if s.job else (s.ministry.name if s.ministry else "Volunteer")
+            needed_roles_count[r_name] = needed_roles_count.get(r_name, 0) + 1
+
+        needed_roles = [{'role': r, 'count': c} for r, c in needed_roles_count.items()]
+
+        team = []
+        for s in filled_shifts:
+            if s.volunteer:
+                team.append({
+                    'name': s.volunteer.get_full_name() or s.volunteer.username,
+                    'role': s.job.title if s.job else (s.ministry.name if s.ministry else "Volunteer"),
+                    'ministry': s.ministry.name if s.ministry else "",
+                })
+
+        events_data.append({
+            'id': e.id,
+            'name': e.name,
+            'title': f"{e.start_time.strftime('%I:%M %p')} - {e.name}",
+            'date': e.date.isoformat(),
+            'formatted_date': e.date.strftime('%A, %B %d, %Y'),
+            'start_time': e.start_time.strftime('%I:%M %p'),
+            'end_time': e.end_time.strftime('%I:%M %p'),
+            'time_range': f"{e.start_time.strftime('%I:%M %p')} - {e.end_time.strftime('%I:%M %p')}",
+            'type': e.event_type,
+            'description': e.description,
+            'total_shifts': total_shifts,
+            'filled_count': len(filled_shifts),
+            'needed_count': len(unfilled_shifts),
+            'needed_roles': needed_roles,
+            'team': team,
+            'offices': [{'id': o.id, 'name': o.name} for o in e.offices.all()],
+        })
     
     return render(request, 'admin/admin-schedule.html', {
         'events_json': json.dumps(events_data)
@@ -183,26 +213,58 @@ def admin_departments_view(request):
     })
 
 def admin_members_view(request):
-    """Renders the global members list or a filtered list for Dept Heads."""
-    if not check_admin_or_head(request.user):
+    """Renders the members list for Admins, Dept Heads, or Volunteers in their respective departments."""
+    if not request.user.is_authenticated:
         return redirect('login')
     
     is_staff = request.user.is_staff or request.user.is_superuser
+    profile = getattr(request.user, 'volunteer_profile', None)
     
     if is_staff:
         profiles = VolunteerProfile.objects.all().select_related('user', 'role').prefetch_related('ministries')
-        all_ministries = Ministry.objects.all()
-        return render(request, 'admin/admin-members.html', {'profiles': profiles, 'all_ministries': all_ministries})
-    else:
+        all_ministries = Ministry.objects.all().order_by('name')
+        
+        total_members = profiles.count()
+        assigned_count = profiles.filter(ministries__isnull=False).distinct().count()
+        unassigned_count = profiles.filter(ministries__isnull=True).count()
+        
+        return render(request, 'admin/admin-members.html', {
+            'profiles': profiles,
+            'all_ministries': all_ministries,
+            'total_members': total_members,
+            'assigned_count': assigned_count,
+            'unassigned_count': unassigned_count,
+        })
+    elif profile and profile.headed_ministries.exists():
         # Dept Head
-        profile = request.user.volunteer_profile
         headed_ministries = profile.headed_ministries.all()
-        # Only get volunteers who are part of the ministries this user heads
         profiles = VolunteerProfile.objects.filter(ministries__in=headed_ministries).distinct().select_related('user', 'role').prefetch_related('ministries')
+        
+        total_members = profiles.count()
+        assigned_count = total_members
+        unassigned_count = VolunteerProfile.objects.filter(ministries__isnull=True).count()
         
         return render(request, 'dept-head/dept-head-members.html', {
             'profiles': profiles,
-            'all_ministries': headed_ministries
+            'all_ministries': headed_ministries,
+            'total_members': total_members,
+            'assigned_count': assigned_count,
+            'unassigned_count': unassigned_count,
+        })
+    else:
+        # Volunteer
+        my_ministries = profile.ministries.all() if profile else Ministry.objects.none()
+        if my_ministries.exists():
+            profiles = VolunteerProfile.objects.filter(ministries__in=my_ministries).distinct().select_related('user', 'role').prefetch_related('ministries')
+        else:
+            profiles = VolunteerProfile.objects.filter(id=profile.id) if profile else VolunteerProfile.objects.none()
+            
+        total_members = profiles.count()
+        
+        return render(request, 'volunteer/volunteer-members.html', {
+            'profiles': profiles,
+            'my_ministries': my_ministries,
+            'total_members': total_members,
         })
 
 def admin_user_roles_view(request):

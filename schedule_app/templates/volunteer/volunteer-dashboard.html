@@ -2,25 +2,138 @@
 
 {% block content %}
 <div class="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-950 transition-colors duration-300">
-    {% include 'layout/user-sidebar.html' %}
+    {% include 'layout/volunteer-sidebar.html' %}
     
     <div class="flex-1 flex flex-col w-full h-screen overflow-y-auto">
         <!-- Dashboard Topbar -->
-        {% include 'layout/topbar.html' with page_title="Home Feed" %}
+        {% include 'layout/topbar.html' with page_title="Dashboard" %}
 
         <!-- Main Content Area -->
-        <main class="flex-1 p-6 sm:p-10">
-            <!-- Empty State for Upcoming Shifts -->
-            <div class="bg-white/40 dark:bg-gray-900/40 backdrop-blur-md rounded-3xl border border-emerald-600/20 dark:border-gray-800 p-12 text-center shadow-sm transition-colors duration-300">
-                <div class="w-20 h-20 mx-auto bg-gray-900/10 dark:bg-gray-800 rounded-full flex items-center justify-center mb-6">
-                    <svg class="w-10 h-10 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+        <main class="flex-1 p-4 sm:p-6 lg:p-8">
+            
+            <!-- Welcome Header -->
+            <div class="mb-8">
+                <h1 class="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white tracking-tight">Welcome back, {{ request.user.first_name|default:request.user.username }}!</h1>
+                <p class="text-gray-500 dark:text-gray-400 mt-1 text-sm font-medium">Here's an overview of your serving schedule and upcoming events.</p>
+            </div>
+
+            <!-- Top Stats Cards (3 Columns) -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+                <!-- Upcoming Shifts -->
+                <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl p-5 shadow-sm flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-2xl bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    </div>
+                    <div>
+                        <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Upcoming Shifts</p>
+                        <h3 class="text-2xl font-black text-gray-900 dark:text-white">{{ total_upcoming_shifts }}</h3>
+                    </div>
                 </div>
-                <h2 class="text-xl font-black text-gray-900 dark:text-white transition-colors duration-300">No Upcoming Shifts</h2>
-                <p class="text-gray-600 dark:text-gray-400 mt-2 max-w-sm mx-auto transition-colors duration-300">You don't have any shifts scheduled yet. Check the open shifts to sign up for serving!</p>
-                
-                <button class="mt-8 bg-emerald-600 text-white font-bold py-3 px-6 rounded-xl shadow-md shadow-emerald-600/20 hover:bg-emerald-700 hover:shadow-emerald-600/40 transition-all active:scale-95">
-                    Find Opportunities
-                </button>
+
+                <!-- My Departments -->
+                <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl p-5 shadow-sm flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 flex items-center justify-center shrink-0">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                    </div>
+                    <div>
+                        <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">My Departments</p>
+                        <h3 class="text-2xl font-black text-gray-900 dark:text-white">{{ my_ministries|length }}</h3>
+                    </div>
+                </div>
+
+                <!-- Upcoming Events -->
+                <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl p-5 shadow-sm flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-2xl bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    </div>
+                    <div>
+                        <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Upcoming Events</p>
+                        <h3 class="text-2xl font-black text-gray-900 dark:text-white">{{ upcoming_events|length }}</h3>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Two Column Layout: Left (My Serving Schedule) & Right (Upcoming Events) -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+
+                <!-- Left Column: My Serving Schedule -->
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-xl font-black text-gray-900 dark:text-white">My Serving Schedule</h2>
+                    </div>
+
+                    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl shadow-sm overflow-hidden divide-y divide-gray-100 dark:divide-gray-800">
+                        {% for shift in my_shifts %}
+                        <div class="flex items-center gap-4 px-6 py-4 hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors">
+                            <!-- Date Box -->
+                            <div class="w-12 h-12 rounded-2xl flex flex-col items-center justify-center shrink-0 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-100 dark:border-emerald-900/50">
+                                <span class="text-[9px] font-black uppercase leading-none">{{ shift.event.date|date:"M" }}</span>
+                                <span class="text-base font-black leading-tight mt-0.5">{{ shift.event.date|date:"d" }}</span>
+                            </div>
+                            
+                            <div class="min-w-0 flex-1">
+                                <div class="flex items-center gap-1.5 mb-0.5">
+                                    <span class="bg-emerald-100/80 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold px-2 py-0.5 rounded-md uppercase">
+                                        {{ shift.ministry.name }}
+                                    </span>
+                                </div>
+                                <h3 class="text-sm font-black text-gray-900 dark:text-white truncate">{{ shift.event.name }}</h3>
+                                <p class="text-xs font-medium text-gray-500 dark:text-gray-400">
+                                    {{ shift.start_time|default:shift.event.start_time|time:"g:i A" }} - {{ shift.end_time|default:shift.event.end_time|time:"g:i A" }}
+                                </p>
+                            </div>
+
+                            <span class="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 text-xs font-bold border border-emerald-200 dark:border-emerald-800 shrink-0">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                Confirmed
+                            </span>
+                        </div>
+                        {% empty %}
+                        <div class="px-6 py-12 text-center">
+                            <div class="w-12 h-12 mx-auto bg-gray-100 dark:bg-gray-800 rounded-2xl flex items-center justify-center mb-3 text-gray-400">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                            </div>
+                            <p class="text-sm font-bold text-gray-700 dark:text-gray-300">No upcoming shifts scheduled</p>
+                            <p class="text-xs text-gray-400 mt-1">You have no upcoming serving assignments yet.</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Right Column: Upcoming Events -->
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-xl font-black text-gray-900 dark:text-white">Upcoming Events</h2>
+                    </div>
+
+                    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl shadow-sm overflow-hidden divide-y divide-gray-100 dark:divide-gray-800">
+                        {% for event in upcoming_events %}
+                        <div class="flex items-center gap-4 px-6 py-4 hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors">
+                            <!-- Date Box -->
+                            <div class="w-12 h-12 rounded-2xl flex flex-col items-center justify-center shrink-0 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-100 dark:border-emerald-900/50">
+                                <span class="text-[9px] font-black uppercase leading-none">{{ event.date|date:"M" }}</span>
+                                <span class="text-base font-black leading-tight mt-0.5">{{ event.date|date:"d" }}</span>
+                            </div>
+                            <div class="min-w-0 flex-1">
+                                <p class="text-sm font-black text-gray-900 dark:text-white truncate">{{ event.name }}</p>
+                                <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ event.start_time|time:"g:i A" }} - {{ event.end_time|time:"g:i A" }}</p>
+                            </div>
+                            <span class="text-[10px] font-bold px-2.5 py-1 rounded-xl uppercase tracking-wider shrink-0 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60">
+                                {{ event.get_event_type_display }}
+                            </span>
+                        </div>
+                        {% empty %}
+                        <div class="px-6 py-12 text-center">
+                            <div class="w-12 h-12 mx-auto bg-gray-100 dark:bg-gray-800 rounded-2xl flex items-center justify-center mb-3 text-gray-400">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                            </div>
+                            <p class="text-sm font-bold text-gray-700 dark:text-gray-300">No upcoming events</p>
+                            <p class="text-xs text-gray-400 mt-1">Events will appear here once scheduled.</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
             </div>
         </main>
         

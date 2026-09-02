@@ -2,86 +2,250 @@
 {% load static %}
 
 {% block content %}
-<div class="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-950 transition-colors duration-300" x-data='calendar({{ events_json|safe|default:"[]" }})' x-init="init()">
-    {% if not request.user.is_staff %}
+<style>
+.calendar-events-container {
+    overflow-x: hidden !important;
+    overflow-y: auto;
+    scrollbar-width: thin;
+}
+.calendar-events-container::-webkit-scrollbar {
+    width: 3px;
+    height: 0px !important;
+}
+.calendar-events-container::-webkit-scrollbar-thumb {
+    background: rgba(16, 185, 129, 0.3);
+    border-radius: 4px;
+}
+</style>
+
+<script id="calendar-events-data" type="application/json">
+    {{ events_json|safe|default:"[]" }}
+</script>
+
+<script>
+function calendarApp() {
+    let initialEvents = [];
+    try {
+        const raw = document.getElementById('calendar-events-data')?.textContent;
+        initialEvents = raw ? JSON.parse(raw) : [];
+    } catch (e) {
+        console.error("Error parsing events json:", e);
+        initialEvents = [];
+    }
+
+    return {
+        viewMode: 'month',
+        activeDate: new Date(),
+        monthNames: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+        days: [],
+        events: initialEvents,
+        selectedEvent: null,
+        isDetailsModalOpen: false,
+
+        get month() { return this.activeDate.getMonth(); },
+        get year() { return this.activeDate.getFullYear(); },
+
+        init() {
+            this.updateView();
+        },
+
+        openEventDetails(event) {
+            this.selectedEvent = event;
+            this.isDetailsModalOpen = true;
+        },
+
+        isToday(date, month, year) {
+            const today = new Date();
+            return date === today.getDate() && month === today.getMonth() && year === today.getFullYear();
+        },
+
+        updateView() {
+            if (this.viewMode === 'month') {
+                this.getDays();
+            } else {
+                this.getWeekDays();
+            }
+        },
+
+        getDays() {
+            let y = this.year;
+            let m = this.month;
+            let daysInMonth = new Date(y, m + 1, 0).getDate();
+            let dayOfWeek = new Date(y, m, 1).getDay();
+
+            let daysArray = [];
+
+            // 1. Previous month's trailing empty cells
+            for (let i = 1; i <= dayOfWeek; i++) {
+                daysArray.push({
+                    date: '',
+                    isCurrentMonth: false,
+                    isToday: false,
+                    fullDate: ''
+                });
+            }
+
+            // 2. Current month's days
+            for (let i = 1; i <= daysInMonth; i++) {
+                daysArray.push({
+                    date: i,
+                    isCurrentMonth: true,
+                    isToday: this.isToday(i, m, y),
+                    fullDate: `${y}-${String(m + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`
+                });
+            }
+
+            // 3. Next month's leading empty cells (fill to 42 cells)
+            let totalCells = 42;
+            let currentCells = daysArray.length;
+            for (let i = 1; i <= totalCells - currentCells; i++) {
+                daysArray.push({
+                    date: '',
+                    isCurrentMonth: false,
+                    isToday: false,
+                    fullDate: ''
+                });
+            }
+
+            this.days = daysArray;
+        },
+
+        getWeekDays() {
+            let curr = new Date(this.activeDate);
+            let first = curr.getDate() - curr.getDay();
+
+            let daysArray = [];
+            for (let i = 0; i < 7; i++) {
+                let next = new Date(curr.getFullYear(), curr.getMonth(), first + i);
+                daysArray.push({
+                    date: next.getDate(),
+                    isCurrentMonth: next.getMonth() === this.month,
+                    isToday: this.isToday(next.getDate(), next.getMonth(), next.getFullYear()),
+                    fullDate: `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}-${String(next.getDate()).padStart(2, '0')}`
+                });
+            }
+            this.days = daysArray;
+        },
+
+        next() {
+            if (this.viewMode === 'month') {
+                this.activeDate = new Date(this.year, this.month + 1, 1);
+            } else {
+                this.activeDate = new Date(this.year, this.month, this.activeDate.getDate() + 7);
+            }
+            this.updateView();
+        },
+
+        prev() {
+            if (this.viewMode === 'month') {
+                this.activeDate = new Date(this.year, this.month - 1, 1);
+            } else {
+                this.activeDate = new Date(this.year, this.month, this.activeDate.getDate() - 7);
+            }
+            this.updateView();
+        },
+
+        goToToday() {
+            this.activeDate = new Date();
+            this.updateView();
+        }
+    };
+}
+</script>
+
+<div class="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-950 transition-colors duration-300 select-none" x-data="calendarApp()">
+    {% if request.user.is_superuser or request.user.is_staff or 'access_admin_panel' in request.user.volunteer_profile.role.capabilities.all|stringformat:'s' %}
+        {% include 'layout/admin-sidebar.html' %}
+    {% elif request.user.volunteer_profile.headed_ministries.exists %}
         {% include 'layout/dept-head-sidebar.html' %}
     {% else %}
-        {% include 'layout/admin-sidebar.html' %}
+        {% include 'layout/volunteer-sidebar.html' %}
     {% endif %}
     
-    <div class="flex-1 flex flex-col w-full h-screen overflow-y-auto">
+    <div class="flex-1 flex flex-col w-full h-screen overflow-hidden">
         <!-- Dashboard Topbar -->
         {% include 'layout/topbar.html' with page_title="Calendar of Schedule" %}
+        
         <!-- Main Content Area -->
-        <main class="flex-1 p-4 sm:p-6 flex flex-col min-h-0">
+        <main class="flex-1 p-4 sm:p-6 flex flex-col min-h-0 overflow-hidden space-y-3">
             <!-- Calendar Header Controls -->
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 shrink-0">
-                <div class="flex items-center gap-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
+                <div>
                     <h2 class="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white tracking-tight" x-text="monthNames[month] + ' ' + year"></h2>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Overview of scheduled events and church services.</p>
                 </div>
                 
                 <div class="flex items-center gap-2 sm:gap-3 flex-wrap sm:flex-nowrap justify-start sm:justify-end">
                     <!-- Month Switcher -->
-                    <div class="flex items-center bg-white dark:bg-gray-900 rounded-lg p-1 border border-emerald-600/20 dark:border-gray-800 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
-                        <button @click="prev()" class="p-1 sm:p-1.5 text-gray-500 hover:text-emerald-600 dark:hover:text-emerald-400 rounded-md hover:bg-emerald-50 dark:hover:bg-gray-800 transition-colors">
+                    <div class="flex items-center bg-white dark:bg-gray-900 rounded-2xl p-1 border border-gray-200 dark:border-gray-800 shadow-xs">
+                        <button @click="prev()" class="p-1.5 text-gray-500 hover:text-emerald-600 dark:hover:text-emerald-400 rounded-xl hover:bg-emerald-50 dark:hover:bg-gray-800 transition-colors">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
                         </button>
-                        <button @click="goToToday()" class="px-2 py-1 sm:px-3 sm:py-1.5 text-xs sm:text-sm font-bold text-gray-700 dark:text-gray-300 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">Today</button>
-                        <button @click="next()" class="p-1 sm:p-1.5 text-gray-500 hover:text-emerald-600 dark:hover:text-emerald-400 rounded-md hover:bg-emerald-50 dark:hover:bg-gray-800 transition-colors">
+                        <button @click="goToToday()" class="px-3 py-1.5 text-xs sm:text-sm font-bold text-gray-700 dark:text-gray-300 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">Today</button>
+                        <button @click="next()" class="p-1.5 text-gray-500 hover:text-emerald-600 dark:hover:text-emerald-400 rounded-xl hover:bg-emerald-50 dark:hover:bg-gray-800 transition-colors">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
                         </button>
                     </div>
 
-                    <div class="hidden md:flex bg-emerald-600/10 dark:bg-gray-900 rounded-xl p-1 border border-emerald-600/20 dark:border-gray-800">
-                        <button @click="viewMode = 'month'; updateView()" :class="viewMode === 'month' ? 'text-emerald-700 dark:text-emerald-400 bg-white dark:bg-gray-800 shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400'" class="px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-bold rounded-lg transition-colors">Month</button>
-                        <button @click="viewMode = 'week'; updateView()" :class="viewMode === 'week' ? 'text-emerald-700 dark:text-emerald-400 bg-white dark:bg-gray-800 shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400'" class="px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-bold rounded-lg transition-colors">Week</button>
+                    <div class="flex bg-emerald-600/10 dark:bg-gray-900 rounded-2xl p-1 border border-emerald-600/20 dark:border-gray-800">
+                        <button @click="viewMode = 'month'; updateView()" :class="viewMode === 'month' ? 'text-emerald-700 dark:text-emerald-400 bg-white dark:bg-gray-800 shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400'" class="px-3 py-1.5 text-xs sm:text-sm font-bold rounded-xl transition-colors">Month</button>
+                        <button @click="viewMode = 'week'; updateView()" :class="viewMode === 'week' ? 'text-emerald-700 dark:text-emerald-400 bg-white dark:bg-gray-800 shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400'" class="px-3 py-1.5 text-xs sm:text-sm font-bold rounded-xl transition-colors">Week</button>
                     </div>
                 </div>
             </div>
 
             <!-- Full Calendar UI strictly bounded by height -->
-            <div class="bg-white dark:bg-gray-900 border border-emerald-600/20 dark:border-gray-800 rounded-xl sm:rounded-2xl shadow-xl shadow-gray-900/5 flex flex-col flex-1 w-full overflow-hidden min-h-0">
+            <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl shadow-xl shadow-gray-900/5 flex flex-col flex-1 w-full overflow-hidden min-h-0">
                 <!-- Days of Week Header -->
-                <div class="grid grid-cols-7 border-b border-emerald-600/10 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-950/50 shrink-0">
+                <div class="grid grid-cols-7 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-950/50 shrink-0">
                     <template x-for="day in ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']">
-                        <div class="px-2 py-2 sm:px-4 sm:py-3 text-center text-[10px] sm:text-xs font-black uppercase tracking-widest text-gray-400 dark:text-gray-500 truncate" x-text="day"></div>
+                        <div class="px-2 py-2.5 text-center text-[10px] sm:text-xs font-black uppercase tracking-widest text-gray-400 dark:text-gray-500 truncate" x-text="day"></div>
                     </template>
                 </div>
                 
-                <!-- Calendar Grid (Dynamic Alpine.js) fits exactly in remaining space -->
+                <!-- Calendar Grid (Dynamic Alpine.js) -->
                 <div class="grid grid-cols-7 flex-1 bg-gray-200 dark:bg-gray-800 gap-px min-h-0"
                      :class="viewMode === 'month' ? 'grid-rows-6' : 'grid-rows-1'">
                     <template x-for="(day, index) in days" :key="index">
-                        <div class="p-1 sm:p-2 group transition-colors relative flex flex-col min-h-0"
+                        <div class="p-1 sm:p-2 group transition-colors relative flex flex-col min-h-0 overflow-hidden w-full min-w-0"
                              :class="{
-                                 'bg-white dark:bg-gray-900 hover:bg-emerald-50/50 dark:hover:bg-gray-800/80': day.isCurrentMonth,
+                                 'bg-white dark:bg-gray-900 hover:bg-emerald-50/30 dark:hover:bg-gray-800/80': day.isCurrentMonth,
                                  'bg-gray-50/50 dark:bg-gray-950/50': !day.isCurrentMonth
                              }">
                             
                             <!-- Date Number -->
-                            <div class="flex justify-start">
+                            <div class="flex justify-start mb-1 shrink-0">
                                 <template x-if="day.isToday">
-                                    <div class="w-6 h-6 sm:w-7 sm:h-7 bg-emerald-600 rounded-full flex items-center justify-center shadow-md shadow-emerald-600/30 mb-0.5 sm:mb-1">
+                                    <div class="w-6 h-6 sm:w-7 sm:h-7 bg-emerald-600 rounded-full flex items-center justify-center shadow-md shadow-emerald-600/30">
                                         <p class="text-xs sm:text-sm font-bold text-white" x-text="day.date"></p>
                                     </div>
                                 </template>
                                 <template x-if="!day.isToday && day.date !== ''">
-                                    <p class="text-xs sm:text-sm font-bold p-0.5 sm:p-1 mb-0.5 sm:mb-1 transition-colors text-gray-900 dark:text-gray-100 group-hover:text-emerald-600 dark:group-hover:text-emerald-400"
+                                    <p class="text-xs sm:text-sm font-bold p-0.5 transition-colors text-gray-900 dark:text-gray-100 group-hover:text-emerald-600 dark:group-hover:text-emerald-400"
                                        x-text="day.date"></p>
                                 </template>
                             </div>
                             
-                            <!-- Dynamic Events -->
-                            <div class="flex-1 flex flex-col gap-1 mt-0.5 sm:mt-1 overflow-y-auto custom-scrollbar">
+                            <!-- Dynamic Events (Colored based on event type) -->
+                            <div class="flex-1 calendar-events-container flex flex-col gap-1 min-h-0 w-full min-w-0 overflow-x-hidden">
                                 <template x-for="event in events.filter(e => e.date === day.fullDate)" :key="event.id">
                                     <div @click="openEventDetails(event)" 
-                                         class="text-[9px] sm:text-xs font-bold px-1 py-0.5 sm:px-2 sm:py-1.5 rounded sm:rounded-md truncate shadow-sm cursor-pointer hover:ring-2 transition-all" 
+                                         class="w-full max-w-full block px-2 py-1.5 rounded-xl text-[10px] font-bold truncate cursor-pointer transition-all border shadow-2xs hover:scale-[1.01] overflow-hidden" 
                                          :class="{
-                                             'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 hover:ring-emerald-500': event.type === 'big',
-                                             'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400 hover:ring-blue-500': event.type === 'regular',
-                                             'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 hover:ring-amber-500': event.type === 'scheduled' || !event.type
+                                             'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/60': event.type === 'regular' || !event.type,
+                                             'bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800/60': event.type === 'scheduled',
+                                             'bg-purple-50 dark:bg-purple-950/40 text-purple-800 dark:text-purple-300 border-purple-200 dark:border-purple-800/60': event.type === 'big'
                                          }"
-                                         x-text="event.title" title="View details">
+                                         title="View details">
+                                        <div class="flex items-center gap-1.5 overflow-hidden">
+                                            <span class="w-1.5 h-1.5 rounded-full shrink-0"
+                                                  :class="{
+                                                      'bg-emerald-500': event.type === 'regular' || !event.type,
+                                                      'bg-amber-500': event.type === 'scheduled',
+                                                      'bg-purple-500': event.type === 'big'
+                                                  }"></span>
+                                            <span x-text="event.name" class="truncate block"></span>
+                                        </div>
                                     </div>
                                 </template>
                             </div>
@@ -90,10 +254,8 @@
                 </div>
             </div>
         </main>
-        
-        {% include 'layout/footer.html' %}
 
-        <!-- Event Details Modal -->
+        <!-- Enhanced Event Details Modal -->
         <div x-show="isDetailsModalOpen" 
              x-transition:enter="transition ease-out duration-300"
              x-transition:enter-start="opacity-0"
@@ -106,71 +268,137 @@
             
             <div @click.away="isDetailsModalOpen = false" 
                  x-show="isDetailsModalOpen"
-                 x-transition:enter="transition ease-out duration-300 delay-100"
+                 x-transition:enter="transition ease-out duration-300"
                  x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
                  x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
                  x-transition:leave="transition ease-in duration-200"
                  x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
                  x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-                 class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-gray-100 dark:border-gray-800 flex flex-col relative">
+                 class="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden border border-gray-200 dark:border-gray-800 flex flex-col relative max-h-[85vh]">
                 
                 <template x-if="selectedEvent">
-                    <div>
-                        <!-- Header -->
-                        <div class="px-6 py-5 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between sticky top-0 bg-white dark:bg-gray-900">
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-full flex items-center justify-center border"
-                                     :class="{
-                                         'bg-emerald-50 border-emerald-100 text-emerald-600': selectedEvent.type === 'big',
-                                         'bg-blue-50 border-blue-100 text-blue-600': selectedEvent.type === 'regular',
-                                         'bg-amber-50 border-amber-100 text-amber-600': selectedEvent.type === 'scheduled' || (!selectedEvent.type || selectedEvent.type === 'undefined')
-                                     }">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    <div class="flex flex-col flex-1 min-h-0 overflow-hidden">
+                        <!-- Header Banner -->
+                        <div class="p-6 border-b border-gray-100 dark:border-gray-800 relative shrink-0"
+                             :class="{
+                                 'bg-gradient-to-br from-emerald-500/10 via-transparent to-transparent': selectedEvent.type === 'regular' || !selectedEvent.type,
+                                 'bg-gradient-to-br from-amber-500/10 via-transparent to-transparent': selectedEvent.type === 'scheduled',
+                                 'bg-gradient-to-br from-purple-500/10 via-transparent to-transparent': selectedEvent.type === 'big'
+                             }">
+                            <div class="flex items-start justify-between gap-4">
+                                <div class="flex items-start gap-3.5">
+                                    <div class="w-12 h-12 rounded-2xl flex items-center justify-center font-bold shrink-0 border shadow-sm"
+                                         :class="{
+                                             'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800': selectedEvent.type === 'regular' || !selectedEvent.type,
+                                             'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800': selectedEvent.type === 'scheduled',
+                                             'bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800': selectedEvent.type === 'big'
+                                         }">
+                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                    </div>
+                                    <div>
+                                        <span class="inline-block text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider mb-2 border"
+                                              :class="{
+                                                  'bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200 border-emerald-300 dark:border-emerald-700': selectedEvent.type === 'regular' || !selectedEvent.type,
+                                                  'bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-200 border-amber-300 dark:border-amber-700': selectedEvent.type === 'scheduled',
+                                                  'bg-purple-100 dark:bg-purple-900/60 text-purple-800 dark:text-purple-200 border-purple-300 dark:border-purple-700': selectedEvent.type === 'big'
+                                              }"
+                                              x-text="selectedEvent.type === 'regular' ? 'Regular Service' : (selectedEvent.type === 'scheduled' ? 'Scheduled Event' : (selectedEvent.type === 'big' ? 'Big Event' : 'Event'))"></span>
+                                        <h3 class="text-xl font-black text-gray-900 dark:text-white leading-tight" x-text="selectedEvent.name"></h3>
+                                    </div>
                                 </div>
-                                <div>
-                                    <h3 class="text-xl font-black text-gray-900 dark:text-white" x-text="selectedEvent.name"></h3>
-                                </div>
+
+                                <button @click="isDetailsModalOpen = false" class="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 p-2 rounded-2xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                </button>
                             </div>
-                            <button @click="isDetailsModalOpen = false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800">
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                            </button>
                         </div>
                         
                         <!-- Body -->
-                        <div class="p-6 space-y-5">
-                            <div class="flex items-start gap-3">
-                                <div class="w-8 h-8 rounded-full bg-gray-50 dark:bg-gray-800 flex items-center justify-center shrink-0 mt-0.5">
-                                    <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        <div class="p-6 space-y-4 overflow-y-auto flex-1 custom-scrollbar">
+                            <!-- Date & Time Row -->
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <!-- Date Card -->
+                                <div class="bg-gray-50 dark:bg-gray-950 p-4 rounded-2xl border border-gray-100 dark:border-gray-800/80">
+                                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                                        <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                        Event Date
+                                    </p>
+                                    <p class="text-xs font-black text-gray-900 dark:text-white" x-text="selectedEvent.formatted_date || selectedEvent.date"></p>
                                 </div>
-                                <div>
-                                    <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-0.5">Date & Time</p>
-                                    <p class="text-sm font-medium text-gray-900 dark:text-white" x-text="selectedEvent.date + ' • ' + (selectedEvent.start_time || '') + ' - ' + (selectedEvent.end_time || '')"></p>
+
+                                <!-- Time Card -->
+                                <div class="bg-gray-50 dark:bg-gray-950 p-4 rounded-2xl border border-gray-100 dark:border-gray-800/80">
+                                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                                        <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                        Scheduled Time
+                                    </p>
+                                    <p class="text-xs font-black text-gray-900 dark:text-white" x-text="selectedEvent.time_range || (selectedEvent.start_time + ' - ' + selectedEvent.end_time)"></p>
                                 </div>
                             </div>
-                            
-                            <div class="flex items-start gap-3 pt-2 border-t border-gray-100 dark:border-gray-800">
-                                <div class="w-8 h-8 rounded-full bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center shrink-0 mt-0.5">
-                                    <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
-                                </div>
-                                <div>
-                                    <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">Notified Departments</p>
+
+                            <!-- Roles Needed for this Specific Event -->
+                            <template x-if="selectedEvent.needed_count > 0">
+                                <div class="bg-emerald-50/60 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/70 p-4 rounded-2xl">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <p class="text-[10px] font-black text-emerald-800 dark:text-emerald-300 uppercase tracking-wider">
+                                            Volunteers Needed (<span x-text="selectedEvent.needed_count"></span>)
+                                        </p>
+                                        <span class="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/50 px-2 py-0.5 rounded-md">
+                                            <span x-text="selectedEvent.filled_count + '/' + selectedEvent.total_shifts"></span> Filled
+                                        </span>
+                                    </div>
                                     <div class="flex flex-wrap gap-1.5">
-                                        <template x-if="selectedEvent.offices && selectedEvent.offices.length > 0">
-                                            <template x-for="office in selectedEvent.offices">
-                                                <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300" x-text="office.name || office"></span>
-                                            </template>
-                                        </template>
-                                        <template x-if="!selectedEvent.offices || selectedEvent.offices.length === 0">
-                                            <span class="text-sm text-gray-400 italic">None</span>
+                                        <template x-for="(item, idx) in selectedEvent.needed_roles" :key="idx">
+                                            <span class="inline-flex items-center gap-1.5 bg-white dark:bg-gray-800 text-emerald-900 dark:text-emerald-200 text-xs font-bold px-3 py-1.5 rounded-xl border border-emerald-200 dark:border-emerald-700/60 shadow-2xs">
+                                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                                <span x-text="item.role"></span>
+                                                <template x-if="item.count > 1">
+                                                    <span class="text-[10px] bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 px-1.5 py-0.2 rounded-md" x-text="item.count + ' needed'"></span>
+                                                </template>
+                                            </span>
                                         </template>
                                     </div>
                                 </div>
+                            </template>
+
+                            <template x-if="selectedEvent.total_shifts > 0 && selectedEvent.needed_count === 0">
+                                <div class="bg-gray-50 dark:bg-gray-950/60 border border-gray-100 dark:border-gray-800 p-3.5 rounded-2xl flex items-center justify-between">
+                                    <div class="flex items-center gap-2">
+                                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                                        <p class="text-xs font-bold text-gray-700 dark:text-gray-300">All shifts filled for this event</p>
+                                    </div>
+                                    <span class="text-[10px] font-black text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30 px-2.5 py-1 rounded-xl">
+                                        <span x-text="selectedEvent.total_shifts + '/' + selectedEvent.total_shifts"></span> Filled
+                                    </span>
+                                </div>
+                            </template>
+
+                            <!-- Serving Volunteers Preview -->
+                            <template x-if="selectedEvent.team && selectedEvent.team.length > 0">
+                                <div class="bg-gray-50 dark:bg-gray-950 p-4 rounded-2xl border border-gray-100 dark:border-gray-800/80">
+                                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Team Serving</p>
+                                    <div class="flex flex-wrap gap-1.5">
+                                        <template x-for="(member, idx) in selectedEvent.team" :key="idx">
+                                            <span class="inline-flex items-center gap-1.5 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-xs font-bold px-2.5 py-1 rounded-xl border border-gray-200 dark:border-gray-700 shadow-2xs">
+                                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                                <span x-text="member.name"></span>
+                                                <span class="text-[10px] text-gray-400 font-normal" x-text="'(' + member.role + ')'"></span>
+                                            </span>
+                                        </template>
+                                    </div>
+                                </div>
+                            </template>
+
+                            <!-- Description Section -->
+                            <div class="bg-gray-50 dark:bg-gray-950 p-4 rounded-2xl border border-gray-100 dark:border-gray-800/80">
+                                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Description</p>
+                                <p class="text-xs text-gray-700 dark:text-gray-300 leading-relaxed" x-text="selectedEvent.description || 'No description provided.'"></p>
                             </div>
                         </div>
                         
                         <!-- Footer Actions -->
-                        <div class="px-6 py-4 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-100 dark:border-gray-800 flex justify-end rounded-b-2xl">
-                            <button @click="isDetailsModalOpen = false" class="px-5 py-2.5 text-sm font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-xl transition-colors bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm">
+                        <div class="px-6 py-4 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-100 dark:border-gray-800 flex justify-end rounded-b-3xl shrink-0">
+                            <button @click="isDetailsModalOpen = false" class="px-6 py-2 text-xs font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-2xl transition-colors bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-xs">
                                 Close
                             </button>
                         </div>
@@ -180,25 +408,4 @@
         </div>
     </div>
 </div>
-
-<style>
-/* Hide scrollbar for event container but allow scrolling */
-.custom-scrollbar::-webkit-scrollbar {
-    width: 2px;
-}
-.custom-scrollbar::-webkit-scrollbar-track {
-    background: transparent;
-}
-.custom-scrollbar::-webkit-scrollbar-thumb {
-    background-color: rgba(156, 163, 175, 0.5);
-    border-radius: 20px;
-}
-@media (min-width: 640px) {
-    .custom-scrollbar::-webkit-scrollbar {
-        width: 4px;
-    }
-}
-</style>
-
-<script src="{% static 'js/calendar.js' %}"></script>
 {% endblock %}

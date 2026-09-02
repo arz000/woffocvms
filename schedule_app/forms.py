@@ -2,7 +2,7 @@ from django import forms
 from django.contrib.auth.models import User
 
 # Reusable Tailwind classes for inputs
-INPUT_CLASSES = "block w-full rounded-xl border-0 py-3.5 px-4 text-gray-900 shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] ring-1 ring-inset ring-gray-200 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm font-medium bg-gray-50/50 hover:bg-gray-50 transition-all outline-none"
+INPUT_CLASSES = "block w-full rounded-2xl border border-gray-200 dark:border-gray-800 py-3 px-4 text-gray-900 dark:text-white placeholder:text-gray-400 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm font-medium bg-gray-50/60 dark:bg-gray-950/60 hover:bg-gray-50 dark:hover:bg-gray-950 transition-all outline-none"
 
 class LoginForm(forms.Form):
     username = forms.CharField(
