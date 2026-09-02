@@ -25,14 +25,7 @@
       [x-cloak] { display: none !important; }
     </style>
 
-    <script>
-        // Prevent flash of wrong theme
-        if (localStorage.getItem('darkMode') === 'true' || (!('darkMode' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-            document.documentElement.classList.add('dark');
-        } else {
-            document.documentElement.classList.remove('dark');
-        }
-    </script>
+    <script src="{% static 'js/theme.js' %}"></script>
   </head>
   <body x-data="{ 
             sidebarOpen: false, 

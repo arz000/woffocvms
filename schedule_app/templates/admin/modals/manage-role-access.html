@@ -46,18 +46,49 @@
                         <!-- Add User Section -->
                         <div class="mb-8">
                             <h4 class="text-sm font-bold text-gray-900 dark:text-white mb-3">Add User to Role</h4>
-                            <div class="flex gap-3">
+                            <div class="flex gap-3" x-data="{ searchQuery: '', searchResults: [], searchTimeout: null, selectedUserId: null }">
                                 <div class="relative flex-1">
                                     <svg class="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                                    <input type="text" placeholder="Search by name or email..." class="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:border-transparent transition-all"
+                                    <input type="text" x-model="searchQuery"
+                                           @input="clearTimeout(searchTimeout); searchTimeout = setTimeout(async () => {
+                                                if (searchQuery.length < 2) { searchResults = []; return; }
+                                                const res = await fetch(`/search-volunteers/?q=${searchQuery}`);
+                                                const data = await res.json();
+                                                searchResults = data.results;
+                                           }, 300)"
+                                           placeholder="Search by name or username..." class="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:border-transparent transition-all"
                                            :class="{
                                                'focus:ring-red-500/20': roleTheme === 'red',
                                                'focus:ring-amber-500/20': roleTheme === 'amber',
                                                'focus:ring-blue-500/20': roleTheme === 'blue',
                                                'focus:ring-emerald-500/20': roleTheme === 'emerald'
                                            }">
+                                           
+                                    <!-- Autocomplete dropdown -->
+                                    <div x-show="searchResults.length > 0" @click.away="searchResults = []" class="absolute z-50 w-full mt-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+                                        <template x-for="res in searchResults" :key="res.id">
+                                            <div @click="selectedUserId = res.id; searchQuery = res.label; searchResults = []" class="px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer text-sm font-medium text-gray-900 dark:text-gray-100 border-b border-gray-100 dark:border-gray-800 last:border-0 transition-colors" x-text="res.label"></div>
+                                        </template>
+                                    </div>
                                 </div>
-                                <button class="px-4 py-2.5 text-white rounded-xl text-sm font-bold shadow-md transition-all active:scale-95"
+                                <button @click="
+                                    if (!selectedUserId) return;
+                                    fetch('/api/assign-role/', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+                                        body: JSON.stringify({ role_id: selectedRoleId, user_id: selectedUserId })
+                                    }).then(res => res.json()).then(data => {
+                                        if (data.success) {
+                                            if (!roleUsers.find(u => u.id === data.user.id)) {
+                                                roleUsers.push(data.user);
+                                            }
+                                            searchQuery = '';
+                                            selectedUserId = null;
+                                        } else {
+                                            alert('Error: ' + data.error);
+                                        }
+                                    });
+                                " class="px-4 py-2.5 text-white rounded-xl text-sm font-bold shadow-md transition-all active:scale-95"
                                         :class="{
                                             'bg-red-600 hover:bg-red-700 shadow-red-600/20': roleTheme === 'red',
                                             'bg-amber-600 hover:bg-amber-700 shadow-amber-600/20': roleTheme === 'amber',
@@ -73,18 +104,55 @@
                         <div>
                             <div class="flex justify-between items-center mb-4">
                                 <h4 class="text-sm font-bold text-gray-900 dark:text-white">Current Users</h4>
-                                <span class="bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 text-xs font-bold px-2.5 py-1 rounded-full">0 Assigned</span>
+                                <span class="bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 text-xs font-bold px-2.5 py-1 rounded-full" x-text="`${roleUsers.length} Assigned`"></span>
                             </div>
                             
                             <div class="space-y-3">
                                 <!-- Empty State -->
-                                <div class="py-12 flex flex-col items-center justify-center text-center bg-gray-50/50 dark:bg-gray-950/20 rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-800">
+                                <div x-show="roleUsers.length === 0" class="py-12 flex flex-col items-center justify-center text-center bg-gray-50/50 dark:bg-gray-950/20 rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-800">
                                     <div class="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-3">
                                         <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
                                     </div>
                                     <h5 class="text-sm font-bold text-gray-900 dark:text-white">No Users Assigned</h5>
                                     <p class="text-xs font-medium text-gray-500 mt-1 max-w-[200px] mx-auto">Use the search bar above to assign users to this role.</p>
                                 </div>
+                                
+                                <!-- User List -->
+                                <template x-for="user in roleUsers" :key="user.id">
+                                    <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-950 rounded-xl border border-gray-100 dark:border-gray-800">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-10 h-10 rounded-full bg-white dark:bg-gray-900 flex items-center justify-center shadow-sm text-gray-700 dark:text-gray-300 font-bold"
+                                                 :class="{
+                                                     'text-red-600': roleTheme === 'red',
+                                                     'text-amber-600': roleTheme === 'amber',
+                                                     'text-blue-600': roleTheme === 'blue',
+                                                     'text-emerald-600': roleTheme === 'emerald'
+                                                 }"
+                                                 x-text="user.name.charAt(0).toUpperCase()">
+                                            </div>
+                                            <div>
+                                                <p class="text-sm font-bold text-gray-900 dark:text-white" x-text="user.name"></p>
+                                                <p class="text-xs font-medium text-gray-500" x-text="user.email"></p>
+                                            </div>
+                                        </div>
+                                        <button @click="
+                                            if (!confirm('Are you sure you want to remove this user from the role?')) return;
+                                            fetch('/api/remove-role/', {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+                                                body: JSON.stringify({ user_id: user.id })
+                                            }).then(res => res.json()).then(data => {
+                                                if (data.success) {
+                                                    roleUsers = roleUsers.filter(u => u.id !== user.id);
+                                                } else {
+                                                    alert('Error: ' + data.error);
+                                                }
+                                            });
+                                        " class="text-gray-400 hover:text-red-500 transition-colors p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10" title="Remove User">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                        </button>
+                                    </div>
+                                </template>
                             </div>
                         </div>
                     </div>

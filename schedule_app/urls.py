@@ -21,6 +21,8 @@ urlpatterns = [
     path('admin-members/', views.admin_members_view, name='admin_members'),
     path('admin-user-roles/', views.admin_user_roles_view, name='admin_user_roles'),
     path('api/update-role/', views.api_update_role, name='api_update_role'),
+    path('api/assign-role/', views.api_assign_role, name='api_assign_role'),
+    path('api/remove-role/', views.api_remove_role, name='api_remove_role'),
     path('search-volunteers/', views.search_volunteers, name='search_volunteers'),
     path('api/update-ministries/', views.api_update_ministries, name='api_update_ministries'),
 ]
