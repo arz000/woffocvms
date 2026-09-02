@@ -94,6 +94,7 @@ class Shift(models.Model):
     """
     event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name='shifts')
     ministry = models.ForeignKey(Ministry, on_delete=models.CASCADE, related_name='shifts')
+    job = models.ForeignKey('DepartmentJob', on_delete=models.SET_NULL, null=True, blank=True, related_name='shifts')
     volunteer = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='shifts')
     
     # Optional override times (if a shift needs to start earlier than the event)
@@ -103,6 +104,45 @@ class Shift(models.Model):
     def __str__(self):
         status = "Filled" if self.volunteer else "Open"
         return f"{self.ministry.name} for {self.event.name} ({status})"
+
+
+class DepartmentJob(models.Model):
+    """
+    Represents specific job positions / roles within a Department / Ministry
+    (e.g., Cameraman, Projector Operator, Sound Engineer, Lead Singer).
+    """
+    title = models.CharField(max_length=100)
+    description = models.TextField(blank=True)
+    ministry = models.ForeignKey(Ministry, on_delete=models.CASCADE, related_name='jobs')
+    team_leader = models.ForeignKey(VolunteerProfile, on_delete=models.SET_NULL, null=True, blank=True, related_name='led_jobs')
+    assigned_volunteers = models.ManyToManyField(VolunteerProfile, blank=True, related_name='assigned_jobs')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.title} ({self.ministry.name})"
+
+    class Meta:
+        ordering = ['title']
+        verbose_name = "Department Job"
+        verbose_name_plural = "Department Jobs"
+
+
+class Unavailability(models.Model):
+    """
+    Represents dates when a volunteer is unavailable/cannot serve (Blackout Dates).
+    """
+    volunteer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='unavailabilities')
+    start_date = models.DateField()
+    end_date = models.DateField(null=True, blank=True)
+    reason = models.CharField(max_length=255, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.volunteer.get_full_name() or self.volunteer.username} unavailable on {self.start_date}"
+
+    class Meta:
+        verbose_name_plural = "Unavailabilities"
+        ordering = ['start_date']
 
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):

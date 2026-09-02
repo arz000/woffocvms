@@ -6,17 +6,48 @@ from schedule_app.models import Role, VolunteerProfile
 def search_volunteers(request):
     """Return JSON list of volunteers matching the query for Alpine.js autocomplete."""
     q = request.GET.get('q', '').strip()
+    event_date = request.GET.get('date', '').strip()
+    
     volunteers = VolunteerProfile.objects.select_related('user')
+    
+    # If caller is Dept Head, restrict to only members of their headed ministries
+    if request.user.is_authenticated and not (request.user.is_staff or request.user.is_superuser):
+        profile = getattr(request.user, 'volunteer_profile', None)
+        if profile and profile.headed_ministries.exists():
+            volunteers = volunteers.filter(ministries__in=profile.headed_ministries.all()).distinct()
+    
     if q:
         volunteers = volunteers.filter(
             Q(user__first_name__icontains=q) |
             Q(user__last_name__icontains=q) |
             Q(user__username__icontains=q)
         )[:15]
-    results = [
-        {'id': vol.id, 'label': f"{vol.user.get_full_name()} ({vol.user.username})"}
-        for vol in volunteers
-    ]
+    
+    from schedule_app.models import Unavailability
+    results = []
+    for vol in volunteers:
+        full_name = vol.user.get_full_name() or vol.user.username
+        label = full_name
+        is_unavailable = False
+        unavail_reason = ""
+        
+        if event_date:
+            unavail = Unavailability.objects.filter(
+                Q(start_date=event_date) | Q(start_date__lte=event_date, end_date__gte=event_date),
+                volunteer=vol.user
+            ).first()
+            
+            if unavail:
+                is_unavailable = True
+                unavail_reason = unavail.reason or "Unavailable"
+                label = f"🚫 {full_name} ({unavail_reason})"
+                
+        results.append({
+            'id': vol.id,
+            'label': label,
+            'is_unavailable': is_unavailable,
+            'unavail_reason': unavail_reason
+        })
     return JsonResponse({'results': results})
 
 def api_update_role(request):
@@ -58,7 +89,14 @@ def api_update_role(request):
     
 def api_update_ministries(request):
     """API Endpoint to update a user's ministries via POST request."""
-    if not request.user.is_authenticated or not (request.user.is_staff or request.user.is_superuser):
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+        
+    is_staff = request.user.is_staff or request.user.is_superuser
+    profile = getattr(request.user, 'volunteer_profile', None)
+    is_head = profile and profile.headed_ministries.exists()
+    
+    if not (is_staff or is_head):
         return JsonResponse({'error': 'Unauthorized'}, status=403)
     
     if request.method == 'POST':
@@ -67,9 +105,17 @@ def api_update_ministries(request):
             profile_id = data.get('profile_id')
             ministry_ids = data.get('ministry_ids', [])
             
-            profile = VolunteerProfile.objects.get(id=profile_id)
-            profile.ministries.set(ministry_ids)
-            profile.save()
+            target_profile = VolunteerProfile.objects.get(id=profile_id)
+            if is_staff:
+                target_profile.ministries.set(ministry_ids)
+            elif is_head:
+                head_min_ids = set(profile.headed_ministries.values_list('id', flat=True))
+                current_min_ids = set(target_profile.ministries.values_list('id', flat=True))
+                unrelated_min_ids = current_min_ids - head_min_ids
+                valid_assigned = set(int(m) for m in ministry_ids if int(m) in head_min_ids)
+                target_profile.ministries.set(unrelated_min_ids | valid_assigned)
+                
+            target_profile.save()
             return JsonResponse({'success': True})
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=400)

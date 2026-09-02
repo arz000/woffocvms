@@ -1,0 +1,189 @@
+{% extends 'layout/base.html' %}
+
+{% block content %}
+<div class="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-950 transition-colors duration-300">
+    {% include 'layout/volunteer-sidebar.html' %}
+    
+    <div class="flex-1 flex flex-col w-full h-screen overflow-y-auto">
+        <!-- Topbar -->
+        {% include 'layout/topbar.html' with page_title="Open Shifts & Opportunities" %}
+
+        <!-- Main Content Area -->
+        <main class="flex-1 p-4 sm:p-6 lg:p-8">
+            <!-- Messages / Alerts -->
+            {% if messages %}
+            <div class="mb-6 space-y-2">
+                {% for message in messages %}
+                <div class="p-4 rounded-2xl flex items-center gap-3 text-sm font-bold shadow-sm {% if message.tags == 'success' %}bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800{% else %}bg-blue-50 dark:bg-blue-950/50 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800{% endif %}">
+                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <span>{{ message }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- Header -->
+            <div class="mb-8">
+                <h1 class="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white tracking-tight">Open Shifts & Serving Opportunities 🙋</h1>
+                <p class="text-gray-500 dark:text-gray-400 mt-1 text-sm font-medium">Browse unfilled volunteer slots across upcoming events and sign up to serve.</p>
+            </div>
+
+            <!-- Claimed Shifts (If Any) -->
+            {% if my_claimed_shifts %}
+            <div class="mb-10">
+                <div class="flex items-center gap-2 mb-4">
+                    <div class="w-2.5 h-2.5 rounded-full bg-emerald-500"></div>
+                    <h2 class="text-xl font-black text-gray-900 dark:text-white">Your Claimed Shifts ({{ my_claimed_shifts.count }})</h2>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {% for shift in my_claimed_shifts %}
+                    <div class="bg-white dark:bg-gray-900 border border-emerald-200 dark:border-emerald-900/50 rounded-2xl p-5 shadow-sm relative overflow-hidden flex flex-col justify-between">
+                        <div class="absolute top-0 left-0 right-0 h-1 bg-emerald-500"></div>
+                        <div>
+                            <div class="flex items-center justify-between gap-2 mb-2">
+                                <span class="bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                                    {{ shift.ministry.name }}
+                                </span>
+                                <span class="text-xs font-bold text-gray-400">{{ shift.event.date|date:"M d, Y" }}</span>
+                            </div>
+                            <h3 class="text-base font-bold text-gray-900 dark:text-white mb-1">{{ shift.event.name }}</h3>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">⏰ {{ shift.start_time|default:shift.event.start_time|time:"g:i A" }} - {{ shift.end_time|default:shift.event.end_time|time:"g:i A" }}</p>
+                        </div>
+
+                        <div class="pt-3 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
+                            <span class="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                Confirmed Slot
+                            </span>
+
+                            <form method="POST" onsubmit="return confirm('Are you sure you want to cancel this shift?');">
+                                {% csrf_token %}
+                                <input type="hidden" name="shift_id" value="{{ shift.id }}">
+                                <input type="hidden" name="action" value="cancel">
+                                <button type="submit" class="text-xs font-bold text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:underline">
+                                    Cancel
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Department Open Shifts -->
+            {% if my_ministries %}
+            <div class="mb-10">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-2">
+                        <div class="w-2.5 h-2.5 rounded-full bg-emerald-500"></div>
+                        <h2 class="text-xl font-black text-gray-900 dark:text-white">Opportunities In Your Departments</h2>
+                    </div>
+                    <span class="text-xs font-bold text-gray-400">{{ dept_open_shifts.count }} Slots Available</span>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                    {% for shift in dept_open_shifts %}
+                    <div class="bg-white dark:bg-gray-900 border border-emerald-100 dark:border-gray-800 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between group">
+                        <div>
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">
+                                    {{ shift.ministry.name }}
+                                </span>
+                                <span class="text-xs font-bold text-gray-400 dark:text-gray-500">{{ shift.event.date|date:"M d, Y" }}</span>
+                            </div>
+
+                            <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-1.5 leading-snug">{{ shift.event.name }}</h3>
+                            <div class="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 mb-4">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                <span>{{ shift.start_time|default:shift.event.start_time|time:"g:i A" }} - {{ shift.end_time|default:shift.event.end_time|time:"g:i A" }}</span>
+                            </div>
+                        </div>
+
+                        <div class="pt-4 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between mt-auto">
+                            <span class="text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider bg-amber-50 dark:bg-amber-900/20 px-2 py-0.5 rounded">
+                                Unfilled Slot
+                            </span>
+
+                            <form method="POST">
+                                {% csrf_token %}
+                                <input type="hidden" name="shift_id" value="{{ shift.id }}">
+                                <input type="hidden" name="action" value="signup">
+                                <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-2 px-3.5 rounded-xl shadow-md shadow-emerald-600/20 transition-all active:scale-95 flex items-center gap-1.5">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                                    Sign Up
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="col-span-full bg-white dark:bg-gray-900 rounded-2xl border border-dashed border-gray-200 dark:border-gray-800 p-8 text-center">
+                        <p class="text-sm font-bold text-gray-600 dark:text-gray-400">All shifts in your departments are currently filled!</p>
+                        <p class="text-xs text-gray-400 mt-1">Check back later or check other church opportunities below.</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- All Other Open Shifts -->
+            <div>
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-2">
+                        <div class="w-2.5 h-2.5 rounded-full bg-emerald-500"></div>
+                        <h2 class="text-xl font-black text-gray-900 dark:text-white">All Church Open Opportunities</h2>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                    {% for shift in all_open_shifts %}
+                    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between group">
+                        <div>
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">
+                                    {{ shift.ministry.name }}
+                                </span>
+                                <span class="text-xs font-bold text-gray-400 dark:text-gray-500">{{ shift.event.date|date:"M d, Y" }}</span>
+                            </div>
+
+                            <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-1.5 leading-snug">{{ shift.event.name }}</h3>
+                            <div class="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 mb-4">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                <span>{{ shift.start_time|default:shift.event.start_time|time:"g:i A" }} - {{ shift.end_time|default:shift.event.end_time|time:"g:i A" }}</span>
+                            </div>
+                        </div>
+
+                        <div class="pt-4 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between mt-auto">
+                            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                                Slot Open
+                            </span>
+
+                            <form method="POST">
+                                {% csrf_token %}
+                                <input type="hidden" name="shift_id" value="{{ shift.id }}">
+                                <input type="hidden" name="action" value="signup">
+                                <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-2 px-3.5 rounded-xl shadow-md shadow-emerald-600/20 transition-all active:scale-95 flex items-center gap-1.5">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                                    Sign Up
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="col-span-full bg-white dark:bg-gray-900 rounded-2xl border border-dashed border-gray-200 dark:border-gray-800 p-12 text-center">
+                        <div class="w-14 h-14 mx-auto bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4 text-emerald-600">
+                            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                        </div>
+                        <h3 class="text-base font-bold text-gray-900 dark:text-white">No Open Shifts Right Now</h3>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 max-w-sm mx-auto">All volunteer slots across upcoming events have been filled. Great job team!</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </main>
+        
+        {% include 'layout/footer.html' %}
+    </div>
+</div>
+{% endblock %}

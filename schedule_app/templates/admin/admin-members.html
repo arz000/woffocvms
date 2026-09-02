@@ -1,7 +1,12 @@
 {% extends 'layout/base.html' %}
 
 {% block content %}
-<div class="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-950 transition-colors duration-300">
+<div class="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-950 transition-colors duration-300"
+     x-data="membersApp([
+         {% for m in all_ministries %}
+         { id: {{ m.id }}, name: '{{ m.name|escapejs }}' },
+         {% endfor %}
+     ])">
     {% if not request.user.is_staff %}
         {% include 'layout/dept-head-sidebar.html' %}
     {% else %}
@@ -9,50 +14,77 @@
     {% endif %}
     
     <div class="flex-1 flex flex-col w-full h-screen overflow-y-auto">
-        <!-- Dashboard Topbar -->
+        <!-- Topbar -->
         {% include 'layout/topbar.html' with page_title="Members" %}
         
         <!-- Main Content Area -->
-        <main class="flex-1 p-4 sm:p-6 lg:p-8 flex flex-col min-h-0">
+        <main class="flex-1 p-4 sm:p-6 lg:p-8 flex flex-col min-h-0 space-y-6">
             <!-- Header Controls -->
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 shrink-0">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0">
                 <div>
-                    <h2 class="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white tracking-tight">Members Directory</h2>
-                    <p class="text-gray-500 dark:text-gray-400 mt-1 text-sm font-medium">Manage all registered volunteers, staff, and members across the system.</p>
-                </div>
-                
-                <div class="flex items-center gap-2 sm:gap-3">
-                    <button class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 hover:text-emerald-600 dark:hover:text-emerald-400 px-4 py-2.5 rounded-xl text-sm font-bold shadow-sm transition-all active:scale-95 flex items-center gap-2">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path></svg>
-                        Filter
-                    </button>
+                    <h1 class="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white tracking-tight">Members Directory</h1>
+                    <p class="text-gray-500 dark:text-gray-400 mt-1 text-sm font-medium">Manage volunteers and assign department memberships across the system.</p>
                 </div>
             </div>
 
             <!-- Team Stats Overview -->
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8 shrink-0">
-                <!-- Stat 1 -->
-                <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-4 shadow-sm flex items-center gap-4">
-                    <div class="w-12 h-12 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 shrink-0">
+                <!-- Total Members -->
+                <div class="bg-white dark:bg-gray-900 border border-emerald-100 dark:border-gray-800 rounded-3xl p-5 shadow-sm flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold shrink-0">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
                     </div>
                     <div>
-                        <p class="text-xs font-bold text-gray-500 uppercase tracking-wider">Total Members</p>
-                        <h3 class="text-2xl font-black text-gray-900 dark:text-white">{{ profiles|length }}</h3>
+                        <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Total Members</p>
+                        <h3 class="text-2xl font-black text-gray-900 dark:text-white">{{ total_members|default:profiles|length }}</h3>
+                    </div>
+                </div>
+
+                <!-- Total Assigned -->
+                <div class="bg-white dark:bg-gray-900 border border-emerald-100 dark:border-gray-800 rounded-3xl p-5 shadow-sm flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold shrink-0">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </div>
+                    <div>
+                        <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Total Assigned</p>
+                        <h3 class="text-2xl font-black text-gray-900 dark:text-white">{{ assigned_count|default:"0" }}</h3>
+                    </div>
+                </div>
+
+                <!-- Needs Assignment -->
+                <div class="bg-white dark:bg-gray-900 border border-emerald-100 dark:border-gray-800 rounded-3xl p-5 shadow-sm flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-gray-800 text-slate-600 dark:text-gray-400 flex items-center justify-center font-bold shrink-0">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                    </div>
+                    <div>
+                        <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Needs Assignment</p>
+                        <h3 class="text-2xl font-black text-gray-900 dark:text-white">{{ unassigned_count|default:"0" }}</h3>
+                    </div>
+                </div>
+
+                <!-- Departments -->
+                <div class="bg-white dark:bg-gray-900 border border-emerald-100 dark:border-gray-800 rounded-3xl p-5 shadow-sm flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold shrink-0">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                    </div>
+                    <div>
+                        <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Departments</p>
+                        <h3 class="text-2xl font-black text-gray-900 dark:text-white">{{ all_ministries|length }}</h3>
                     </div>
                 </div>
             </div>
 
             <!-- Team Members Table -->
-            <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-sm overflow-hidden mb-10">
+            <div class="bg-white dark:bg-gray-900 border border-emerald-100 dark:border-gray-800 rounded-3xl shadow-sm overflow-hidden mb-10">
                 <div class="overflow-x-auto">
                     <table class="w-full text-left border-collapse">
                         <thead>
                             <tr class="bg-gray-50/50 dark:bg-gray-800/20 border-b border-gray-100 dark:border-gray-800">
-                                <th class="px-6 py-4 text-xs font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest whitespace-nowrap">Member Name</th>
-                                <th class="px-6 py-4 text-xs font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest whitespace-nowrap">Email Address</th>
-                                <th class="px-6 py-4 text-xs font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest whitespace-nowrap">Phone Number</th>
-                                <th class="px-6 py-4 text-xs font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest whitespace-nowrap">Department</th>
+                                <th class="px-6 py-4 text-xs font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Member Name</th>
+                                <th class="px-6 py-4 text-xs font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Email Address</th>
+                                <th class="px-6 py-4 text-xs font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Phone Number</th>
+                                <th class="px-6 py-4 text-xs font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Assigned Departments</th>
+                                <th class="px-6 py-4 text-xs font-black text-gray-400 uppercase tracking-widest whitespace-nowrap text-right">Action</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
@@ -60,35 +92,51 @@
                             <tr class="hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors group">
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="flex items-center gap-4">
-                                        <div class="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/40 border-2 border-white dark:border-gray-900 shadow-sm flex items-center justify-center text-sm font-black text-emerald-600 dark:text-emerald-400 uppercase shrink-0">
-                                            {{ profile.user.first_name|first|default:"U" }}{{ profile.user.last_name|first }}
+                                        <div class="w-10 h-10 rounded-2xl bg-emerald-100 dark:bg-emerald-900/40 border border-emerald-200 dark:border-emerald-800 shadow-sm flex items-center justify-center text-sm font-black text-emerald-700 dark:text-emerald-300 uppercase shrink-0">
+                                            {{ profile.user.first_name|first|default:profile.user.username|first|upper }}
                                         </div>
                                         <div>
                                             <p class="font-bold text-gray-900 dark:text-white">{{ profile.user.get_full_name|default:profile.user.username }}</p>
-                                            <p class="text-xs font-semibold text-emerald-600 dark:text-emerald-400">{{ profile.role.name|default:"Member" }}</p>
+                                            <p class="text-xs font-semibold text-emerald-600 dark:text-emerald-400">{{ profile.role.name|default:"Volunteer" }}</p>
                                         </div>
                                     </div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="flex items-center gap-2 text-sm font-medium text-gray-600 dark:text-gray-400">
-                                        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
-                                        {{ profile.user.email|default:"-" }}
+                                    <div class="flex items-center gap-2 text-xs font-medium text-gray-600 dark:text-gray-400">
+                                        {{ profile.user.email|default:"—" }}
                                     </div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="flex items-center gap-2 text-sm font-medium text-gray-600 dark:text-gray-400">
-                                        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
-                                        {{ profile.phone_number|default:"-" }}
+                                    <div class="flex items-center gap-2 text-xs font-medium text-gray-600 dark:text-gray-400">
+                                        {{ profile.phone_number|default:"—" }}
                                     </div>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
+                                <td class="px-6 py-4">
                                     <div class="flex flex-wrap gap-1.5">
                                         {% for ministry in profile.ministries.all %}
-                                        <span class="bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider">{{ ministry.name }}</span>
+                                        <span class="bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold px-2 py-0.5 rounded-md border border-emerald-100 dark:border-emerald-900/30">
+                                            {{ ministry.name }}
+                                        </span>
                                         {% empty %}
-                                        <span class="bg-gray-50 dark:bg-gray-800/50 text-gray-400 dark:text-gray-500 text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider">Unassigned</span>
+                                        <span class="bg-gray-50 dark:bg-gray-800/50 text-gray-400 text-[10px] font-bold px-2 py-0.5 rounded-md">
+                                            Unassigned
+                                        </span>
                                         {% endfor %}
                                     </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-right">
+                                    <button type="button" 
+                                            @click="openAssignModal({
+                                                id: {{ profile.id }},
+                                                name: '{{ profile.user.get_full_name|default:profile.user.username|escapejs }}',
+                                                email: '{{ profile.user.email|escapejs }}',
+                                                role: '{{ profile.role.name|default:"Volunteer"|escapejs }}',
+                                                ministry_ids: [{% for m in profile.ministries.all %}{{ m.id }}{% if not forloop.last %},{% endif %}{% endfor %}]
+                                            })"
+                                            class="inline-flex items-center gap-1.5 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 shadow-xs">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                                        Assign
+                                    </button>
                                 </td>
                             </tr>
                             {% endfor %}
@@ -96,7 +144,144 @@
                     </table>
                 </div>
             </div>
+
+            <!-- Assign Department Modal -->
+            <div x-show="assignModalOpen" x-cloak class="relative z-50" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+                <div x-show="assignModalOpen" 
+                     x-transition:enter="ease-out duration-300"
+                     x-transition:enter-start="opacity-0"
+                     x-transition:enter-end="opacity-100"
+                     x-transition:leave="ease-in duration-200"
+                     x-transition:leave-start="opacity-100"
+                     x-transition:leave-end="opacity-0"
+                     class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity" 
+                     @click="assignModalOpen = false"></div>
+
+                <div class="fixed inset-0 z-10 w-screen overflow-y-auto pointer-events-none">
+                    <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+                        <div x-show="assignModalOpen"
+                             x-transition:enter="ease-out duration-300"
+                             x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                             x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
+                             x-transition:leave="ease-in duration-200"
+                             x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
+                             x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                             class="relative transform rounded-3xl bg-white dark:bg-gray-900 text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-lg pointer-events-auto border border-emerald-100 dark:border-gray-800">
+
+                            <!-- Modal Header -->
+                            <div class="px-6 py-5 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center rounded-t-3xl">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 flex items-center justify-center text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-black text-gray-900 dark:text-white text-lg tracking-tight">Assign Department</h3>
+                                        <p class="text-xs font-medium text-gray-500" x-text="selectedProfile ? ('For ' + selectedProfile.name) : ''"></p>
+                                    </div>
+                                </div>
+                                <button type="button" @click="assignModalOpen = false" class="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                </button>
+                            </div>
+
+                            <!-- Modal Body: Department Selection Checkboxes -->
+                            <div class="px-6 py-6 space-y-4">
+                                <p class="text-xs font-bold uppercase tracking-wider text-gray-400">Select departments for this member:</p>
+
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-64 overflow-y-auto custom-scrollbar p-1">
+                                    <template x-for="ministry in allMinistries" :key="ministry.id">
+                                        <button type="button"
+                                                @click="toggleMinistry(ministry.id)"
+                                                :class="selectedMinistries.includes(ministry.id) 
+                                                    ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-500 text-emerald-900 dark:text-emerald-200 ring-1 ring-emerald-500 shadow-xs' 
+                                                    : 'bg-gray-50 dark:bg-gray-800/60 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-emerald-50/40'"
+                                                class="flex items-center justify-between p-3.5 rounded-2xl border text-xs font-bold transition-all text-left">
+                                            <span x-text="ministry.name" class="truncate"></span>
+                                            <div class="w-5 h-5 rounded-lg border flex items-center justify-center shrink-0 transition-colors"
+                                                 :class="selectedMinistries.includes(ministry.id) 
+                                                    ? 'bg-emerald-600 border-emerald-600 text-white' 
+                                                    : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900'">
+                                                <svg x-show="selectedMinistries.includes(ministry.id)" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                                            </div>
+                                        </button>
+                                    </template>
+                                </div>
+                            </div>
+
+                            <!-- Modal Footer -->
+                            <div class="px-6 py-4 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-100 dark:border-gray-800 flex items-center justify-end gap-3 rounded-b-3xl">
+                                <button type="button" @click="assignModalOpen = false" class="px-4 py-2.5 rounded-xl font-bold text-xs text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all">Cancel</button>
+                                <button type="button" 
+                                        @click="saveMinistries()" 
+                                        :disabled="isSaving"
+                                        class="px-5 py-2.5 rounded-xl font-bold text-xs text-white bg-emerald-600 hover:bg-emerald-700 shadow-md shadow-emerald-600/20 active:scale-95 transition-all flex items-center gap-2">
+                                    <span x-show="!isSaving">Confirm</span>
+                                    <span x-show="isSaving">Saving...</span>
+                                </button>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+
         </main>
+        
+        {% include 'layout/footer.html' %}
     </div>
 </div>
+
+<script>
+function membersApp(allMinistries) {
+    return {
+        allMinistries: allMinistries || [],
+        assignModalOpen: false,
+        selectedProfile: null,
+        selectedMinistries: [],
+        isSaving: false,
+
+        openAssignModal(profile) {
+            this.selectedProfile = profile;
+            this.selectedMinistries = profile.ministry_ids ? [...profile.ministry_ids] : [];
+            this.assignModalOpen = true;
+        },
+
+        toggleMinistry(id) {
+            if (this.selectedMinistries.includes(id)) {
+                this.selectedMinistries = this.selectedMinistries.filter(m => m !== id);
+            } else {
+                this.selectedMinistries.push(id);
+            }
+        },
+
+        async saveMinistries() {
+            if (!this.selectedProfile) return;
+            this.isSaving = true;
+            try {
+                const res = await fetch("{% url 'api_update_ministries' %}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({
+                        profile_id: this.selectedProfile.id,
+                        ministry_ids: this.selectedMinistries
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    window.location.reload();
+                } else {
+                    alert(data.error || 'Failed to update department assignment.');
+                }
+            } catch (e) {
+                alert('Error saving department assignment.');
+            } finally {
+                this.isSaving = false;
+            }
+        }
+    };
+}
+</script>
 {% endblock %}

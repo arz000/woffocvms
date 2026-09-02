@@ -8,156 +8,273 @@
         {% include 'layout/topbar.html' with page_title="Assign Volunteers" %}
         
         <main class="flex-1 p-4 sm:p-6 lg:p-8">
-            <!-- Back Link -->
-            <a href="{% url 'dept_head_events' %}" class="inline-flex items-center gap-2 text-sm font-bold text-gray-500 dark:text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors mb-6">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-                Back to Events
-            </a>
+            <!-- Messages / Alerts -->
+            {% if messages %}
+            <div class="mb-6 space-y-2">
+                {% for message in messages %}
+                <div class="p-4 rounded-2xl flex items-center gap-3 text-sm font-bold shadow-sm {% if message.tags == 'success' %}bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800{% else %}bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800{% endif %}">
+                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <span>{{ message }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
 
             <!-- Event Header Card -->
-            <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-sm p-6 mb-6">
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl shadow-sm p-6 mb-8 relative overflow-hidden">
+                <div class="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-emerald-500 to-teal-600"></div>
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
                     <div>
                         <div class="flex items-center gap-3 mb-2">
-                            <span class="text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider
-                                {% if event.event_type == 'regular' %}bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400
-                                {% elif event.event_type == 'scheduled' %}bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400
-                                {% else %}bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400{% endif %}">
+                            <span class="text-[10px] font-black px-2.5 py-1 rounded-xl uppercase tracking-wider
+                                {% if event.event_type == 'regular' %}bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/50
+                                {% elif event.event_type == 'scheduled' %}bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/50
+                                {% else %}bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800/50{% endif %}">
                                 {{ event.get_event_type_display }}
                             </span>
                         </div>
                         <h1 class="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white tracking-tight">{{ event.name }}</h1>
-                        <div class="flex items-center gap-4 mt-2 text-sm text-gray-500 dark:text-gray-400">
-                            <div class="flex items-center gap-1.5">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                                <span class="font-medium">{{ event.date|date:"F d, Y" }}</span>
+                        <div class="flex items-center flex-wrap gap-3 mt-3 text-sm text-gray-500 dark:text-gray-400">
+                            <div class="flex items-center gap-2 bg-gray-50 dark:bg-gray-800/60 px-3 py-1.5 rounded-xl border border-gray-100 dark:border-gray-800">
+                                <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                <span class="font-bold text-gray-900 dark:text-white">{{ event.date|date:"F d, Y" }}</span>
                             </div>
-                            <div class="flex items-center gap-1.5">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                <span class="font-medium">{{ event.start_time|time:"g:i A" }} - {{ event.end_time|time:"g:i A" }}</span>
+                            <div class="flex items-center gap-2 bg-gray-50 dark:bg-gray-800/60 px-3 py-1.5 rounded-xl border border-gray-100 dark:border-gray-800">
+                                <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                <span class="font-bold text-gray-900 dark:text-white">{{ event.start_time|time:"g:i A" }} - {{ event.end_time|time:"g:i A" }}</span>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Shift Assignments by Ministry -->
-            {% for ministry_name, shifts in shifts_by_ministry.items %}
-            <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-sm overflow-hidden mb-6">
-                <!-- Ministry Header -->
-                <div class="px-6 py-4 bg-gray-50 dark:bg-gray-800/30 border-b border-gray-100 dark:border-gray-800 flex items-center gap-3">
-                    <div class="w-9 h-9 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
-                    </div>
-                    <div>
-                        <h3 class="font-bold text-gray-900 dark:text-white">{{ ministry_name }}</h3>
-                        <p class="text-xs text-gray-500">{{ shifts|length }} shift{{ shifts|length|pluralize }}</p>
-                    </div>
-                </div>
-
-                <!-- Shifts List -->
-                <div class="divide-y divide-gray-100 dark:divide-gray-800">
-                    {% for shift in shifts %}
-                    <div class="px-6 py-4 flex items-center justify-between gap-4">
-                        <div class="flex items-center gap-4 flex-1">
-                            <div class="text-xs font-bold text-gray-400 uppercase w-16 shrink-0">Slot {{ forloop.counter }}</div>
-                            
-                            {% if shift.volunteer %}
-                            <!-- Filled Shift -->
-                            <div class="flex items-center gap-3 flex-1">
-                                <div class="w-9 h-9 rounded-full bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase shrink-0">
-                                    {{ shift.volunteer.first_name|first }}{{ shift.volunteer.last_name|first }}
-                                </div>
-                                <div>
-                                    <p class="text-sm font-bold text-gray-900 dark:text-white">{{ shift.volunteer.get_full_name }}</p>
-                                    <p class="text-xs text-gray-500">Assigned</p>
-                                </div>
+            <!-- Department Roles & Assignments -->
+            <div class="space-y-8">
+                {% for m_data in ministries_data %}
+                <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl shadow-sm overflow-hidden">
+                    <!-- Ministry Section Header -->
+                    <div class="px-6 py-5 bg-gray-50/80 dark:bg-gray-800/40 border-b border-gray-100 dark:border-gray-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div class="flex items-center gap-3.5">
+                            <div class="w-10 h-10 rounded-2xl bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 flex items-center justify-center font-bold shrink-0">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
                             </div>
-                            <div class="flex items-center gap-2">
-                                <span class="bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">Assigned</span>
-                                <!-- Remove Button -->
-                                <form method="POST" class="inline">
-                                    {% csrf_token %}
-                                    <input type="hidden" name="shift_id" value="{{ shift.id }}">
-                                    <input type="hidden" name="action" value="remove">
-                                    <button type="submit" class="text-gray-400 hover:text-red-500 p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors" title="Remove volunteer">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                                    </button>
-                                </form>
+                            <div>
+                                <h2 class="text-xl font-black text-gray-900 dark:text-white">{{ m_data.ministry.name }}</h2>
+                                <p class="text-xs font-semibold text-gray-400 mt-0.5">
+                                    {{ m_data.filled_roles_count }} of {{ m_data.total_jobs }} roles staffed ({{ m_data.total_assigned_count }} volunteer{{ m_data.total_assigned_count|pluralize }} assigned)
+                                </p>
                             </div>
-                            {% else %}
-                            <!-- Empty Shift -->
-                            <div x-data="{ 
-                                open: false, 
-                                query: '', 
-                                items: [],
-                                doSearch() {
-                                    if (this.query.trim() === '') { this.items = []; return; }
-                                    fetch('{% url 'search_volunteers' %}?q=' + encodeURIComponent(this.query))
-                                        .then(r => r.json())
-                                        .then(data => { this.items = data.results; });
-                                }
-                            }" class="flex items-center gap-3 flex-1">
-                                <div class="w-9 h-9 rounded-full border-2 border-dashed border-gray-300 dark:border-gray-600 flex items-center justify-center text-gray-400 shrink-0">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-                                </div>
-                                
-                                <template x-if="!open">
-                                    <button @click="open = true" type="button" class="text-sm font-bold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 transition-colors flex items-center gap-1.5">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path></svg>
-                                        Assign Volunteer
-                                    </button>
-                                </template>
+                        </div>
 
-                                <template x-if="open">
-                                    <div class="flex-1 relative" @click.away="open = false">
-                                        <form method="POST" x-ref="assignForm" class="flex items-center gap-2">
-                                            {% csrf_token %}
-                                            <input type="hidden" name="shift_id" value="{{ shift.id }}">
-                                            <input type="hidden" name="volunteer_id" x-ref="volId" value="">
-                                            <input type="hidden" name="action" value="assign">
-                                            
-                                            <div class="relative flex-1">
-                                                <input type="text" x-model="query" @input.debounce.300ms="doSearch()" 
-                                                    placeholder="Search volunteer..." autocomplete="off"
-                                                    class="block w-full py-2 px-3 rounded-xl border-0 bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-white text-sm ring-1 ring-inset ring-gray-200 dark:ring-gray-800 focus:ring-2 focus:ring-emerald-500 placeholder:text-gray-400">
-                                                
-                                                <!-- Dropdown -->
-                                                <div x-show="items.length > 0" class="absolute z-50 left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl shadow-2xl overflow-hidden max-h-48 overflow-y-auto">
-                                                    <template x-for="item in items" :key="item.id">
-                                                        <div @click="$refs.volId.value = item.id; $refs.assignForm.submit();" 
-                                                            class="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-emerald-50 dark:hover:bg-emerald-900/20 text-sm text-gray-700 dark:text-gray-300 border-b border-gray-50 dark:border-gray-700/50 last:border-0 transition-colors">
-                                                            <div class="w-7 h-7 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 flex items-center justify-center text-xs font-bold" x-text="item.label.charAt(0).toUpperCase()"></div>
-                                                            <span class="font-bold" x-text="item.label"></span>
-                                                        </div>
-                                                    </template>
-                                                </div>
-                                            </div>
-                                            <button type="button" @click="open = false" class="text-gray-400 hover:text-gray-600 p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                                            </button>
-                                        </form>
+                        <a href="{% url 'dept_head_jobs' %}" class="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline inline-flex items-center gap-1.5 self-start sm:self-auto">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                            Manage Roles
+                        </a>
+                    </div>
+
+                    <!-- Roles List -->
+                    {% if m_data.job_rows %}
+                    <div class="divide-y divide-gray-100 dark:divide-gray-800">
+                        {% for row in m_data.job_rows %}
+                        <div class="p-6 hover:bg-gray-50/40 dark:hover:bg-gray-800/20 transition-colors" x-data="{ modalOpen: false }">
+                            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+                                <!-- Role Info -->
+                                <div class="flex items-start gap-4 min-w-[240px]">
+                                    <div class="w-11 h-11 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-100 dark:border-emerald-900/50">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
                                     </div>
-                                </template>
+                                    <div>
+                                        <div class="flex items-center gap-2 flex-wrap">
+                                            <h3 class="text-base font-black text-gray-900 dark:text-white">{{ row.job.title }}</h3>
+                                        </div>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ row.job.description|default:"Standard department serving role." }}</p>
+                                    </div>
+                                </div>
+
+                                <!-- Assigned Volunteers Preview & Assign Button -->
+                                <div class="flex flex-col sm:flex-row sm:items-center justify-end gap-4 flex-1">
+                                    <!-- Assigned Volunteers Pills -->
+                                    <div class="flex flex-wrap items-center gap-1.5">
+                                        {% for v in row.assigned_volunteers %}
+                                        <span class="inline-flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 text-xs font-bold px-3 py-1.5 rounded-2xl border border-emerald-200 dark:border-emerald-800 shadow-2xs">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                            {{ v.get_full_name|default:v.username }}
+                                        </span>
+                                        {% empty %}
+                                        <span class="text-xs text-gray-400 dark:text-gray-500 italic">No volunteers assigned yet</span>
+                                        {% endfor %}
+                                    </div>
+
+                                    <!-- Open Modal Button -->
+                                    <button type="button" 
+                                            @click="modalOpen = true" 
+                                            class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-2.5 px-4 rounded-2xl shadow-md shadow-emerald-600/20 transition-all active:scale-95 flex items-center gap-2 shrink-0">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                                        {% if row.assigned_volunteers %}Manage Assignment{% else %}Assign Volunteers{% endif %}
+                                    </button>
+                                </div>
                             </div>
 
-                            <span class="bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">Open</span>
-                            {% endif %}
+                            <!-- Assignment Modal -->
+                            <div x-show="modalOpen" 
+                                 x-cloak 
+                                 class="relative z-50" 
+                                 aria-labelledby="modal-title" 
+                                 role="dialog" 
+                                 aria-modal="true">
+                                <!-- Backdrop -->
+                                <div x-show="modalOpen"
+                                     x-transition:enter="ease-out duration-300"
+                                     x-transition:enter-start="opacity-0"
+                                     x-transition:enter-end="opacity-100"
+                                     x-transition:leave="ease-in duration-200"
+                                     x-transition:leave-start="opacity-100"
+                                     x-transition:leave-end="opacity-0"
+                                     class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity"></div>
+
+                                <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
+                                    <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
+                                        <div x-show="modalOpen"
+                                             x-transition:enter="ease-out duration-300"
+                                             x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                                             x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
+                                             x-transition:leave="ease-in duration-200"
+                                             x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
+                                             x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                                             @click.away="modalOpen = false"
+                                             class="relative transform overflow-hidden rounded-3xl bg-white dark:bg-gray-900 text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-2xl border border-gray-100 dark:border-gray-800">
+                                            
+                                            <!-- Modal Form -->
+                                            <form method="POST">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="job_id" value="{{ row.job.id }}">
+                                                <input type="hidden" name="action" value="save_assignments">
+
+                                                <!-- Modal Header -->
+                                                <div class="px-6 py-5 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+                                                    <div>
+                                                        <div class="flex items-center gap-2">
+                                                            <h3 class="text-lg font-black text-gray-900 dark:text-white" id="modal-title">
+                                                                Assign to {{ row.job.title }}
+                                                            </h3>
+                                                        </div>
+                                                    </div>
+                                                    <button type="button" @click="modalOpen = false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-2 rounded-2xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                                    </button>
+                                                </div>
+
+                                                <!-- Modal Body: Scrollable Checkbox List -->
+                                                <div class="px-6 py-5 max-h-[60vh] overflow-y-auto custom-scrollbar">
+                                                    <div class="flex items-center justify-between mb-3">
+                                                        <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">
+                                                            Department Volunteers
+                                                        </span>
+                                                        <span class="text-xs text-emerald-600 dark:text-emerald-400 font-bold">
+                                                            {{ row.available_count }} Available
+                                                        </span>
+                                                    </div>
+
+                                                    <div class="space-y-2.5">
+                                                        {% for cand in row.candidates %}
+                                                        {% if cand.is_available %}
+                                                        <!-- Available Volunteer Checkbox Card -->
+                                                        <label class="flex items-center gap-3.5 p-3.5 rounded-2xl border transition-all cursor-pointer select-none {% if cand.is_assigned %}bg-emerald-50/70 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-800 text-emerald-950 dark:text-emerald-200 shadow-2xs{% else %}bg-gray-50/60 dark:bg-gray-950/60 border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 hover:border-emerald-300 dark:hover:border-emerald-700{% endif %}">
+                                                            <input type="checkbox" 
+                                                                   name="volunteer_ids" 
+                                                                   value="{{ cand.id }}" 
+                                                                   {% if cand.is_assigned %}checked{% endif %}
+                                                                   class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-gray-300 dark:border-gray-700">
+                                                            
+                                                            <div class="w-8 h-8 rounded-xl bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 flex items-center justify-center text-xs font-bold shrink-0">
+                                                                {{ cand.name|first|upper }}
+                                                            </div>
+                                                            
+                                                            <div class="min-w-0 flex-1">
+                                                                <p class="text-sm font-bold truncate leading-tight">{{ cand.name }}</p>
+                                                                {% if cand.is_preferred %}
+                                                                <span class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 leading-none">Role Member</span>
+                                                                {% endif %}
+                                                            </div>
+
+                                                            <span class="bg-emerald-100/80 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold px-2 py-0.5 rounded-md shrink-0">
+                                                                Available
+                                                            </span>
+                                                        </label>
+                                                        {% else %}
+                                                        <!-- Unavailable Volunteer Card (Disabled) -->
+                                                        <div class="flex items-center gap-3.5 p-3.5 rounded-2xl border border-gray-200/60 dark:border-gray-800/40 bg-gray-100/40 dark:bg-gray-900/30 opacity-50 cursor-not-allowed select-none">
+                                                            <input type="checkbox" disabled class="w-4 h-4 rounded text-gray-400 border-gray-300 dark:border-gray-700 cursor-not-allowed">
+                                                            
+                                                            <div class="w-8 h-8 rounded-xl bg-gray-200 dark:bg-gray-700 text-gray-500 flex items-center justify-center text-xs font-bold shrink-0">
+                                                                {{ cand.name|first|upper }}
+                                                            </div>
+                                                            
+                                                            <div class="min-w-0 flex-1">
+                                                                <p class="text-sm font-bold text-gray-500 dark:text-gray-400 truncate leading-tight">{{ cand.name }}</p>
+                                                                <span class="text-[10px] text-gray-400 truncate block">Blocked: {{ cand.unavail_reason }}</span>
+                                                            </div>
+
+                                                            <span class="bg-gray-200 dark:bg-gray-800 text-gray-600 dark:text-gray-400 text-[10px] font-bold px-2 py-0.5 rounded-md shrink-0">
+                                                                Unavailable
+                                                            </span>
+                                                        </div>
+                                                        {% endif %}
+                                                        {% empty %}
+                                                        <div class="p-6 text-center text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-950 rounded-2xl border border-dashed border-gray-200 dark:border-gray-800">
+                                                            <p class="font-bold text-gray-700 dark:text-gray-300 mb-1">No members assigned to this role</p>
+                                                            <p class="text-[11px] text-gray-400 mb-3">Assign volunteers to this role in Department Roles first.</p>
+                                                            <a href="{% url 'dept_head_jobs' %}" class="inline-flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-bold hover:underline">
+                                                                Manage Department Roles →
+                                                            </a>
+                                                        </div>
+                                                        {% endfor %}
+                                                    </div>
+                                                </div>
+
+                                                <!-- Modal Footer -->
+                                                <div class="px-6 py-4 bg-gray-50 dark:bg-gray-800/40 border-t border-gray-100 dark:border-gray-800 flex items-center justify-end gap-3">
+                                                    <button type="button" 
+                                                            @click="modalOpen = false" 
+                                                            class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-bold py-2.5 px-5 rounded-2xl text-xs hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                                                        Cancel
+                                                    </button>
+                                                    <button type="submit" 
+                                                            class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-6 rounded-2xl shadow-md shadow-emerald-600/20 text-xs transition-all active:scale-95 flex items-center gap-1.5">
+                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                                        Confirm
+                                                    </button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
+                        {% endfor %}
                     </div>
-                    {% endfor %}
+                    {% else %}
+                    <!-- Empty Roles State -->
+                    <div class="p-12 text-center">
+                        <div class="w-14 h-14 mx-auto bg-gray-100 dark:bg-gray-800 rounded-2xl flex items-center justify-center mb-4 text-gray-400">
+                            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                        </div>
+                        <h3 class="text-base font-black text-gray-900 dark:text-white mb-1">No Roles Created For {{ m_data.ministry.name }}</h3>
+                        <p class="text-xs text-gray-400 mb-5 max-w-sm mx-auto">Create specific jobs (e.g. Cameraman, Projector, Sound Engineer) to start scheduling volunteers for this event.</p>
+                        <a href="{% url 'dept_head_jobs' %}" class="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-2.5 px-4 rounded-xl shadow-md shadow-emerald-600/20 transition-all active:scale-95">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                            Create Department Roles
+                        </a>
+                    </div>
+                    {% endif %}
                 </div>
-            </div>
-            {% empty %}
-            <!-- No Shifts -->
-            <div class="bg-white/40 dark:bg-gray-900/40 backdrop-blur-md rounded-3xl border border-gray-200 dark:border-gray-800 p-16 text-center shadow-sm">
-                <div class="w-20 h-20 mx-auto bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-6">
-                    <svg class="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                {% empty %}
+                <div class="bg-white dark:bg-gray-900 rounded-3xl border border-dashed border-gray-200 dark:border-gray-800 p-16 text-center">
+                    <h3 class="text-xl font-black text-gray-900 dark:text-white mb-2">No Departments Assigned</h3>
+                    <p class="text-gray-400 text-xs">You are not currently set as the department head for any ministries.</p>
                 </div>
-                <h3 class="text-xl font-black text-gray-900 dark:text-white mb-2">No Shifts Created</h3>
-                <p class="text-gray-500 dark:text-gray-400 text-sm max-w-sm mx-auto">No shift slots have been created for this event yet. Contact an admin to set up shifts for your department.</p>
+                {% endfor %}
             </div>
-            {% endfor %}
         </main>
         
         {% include 'layout/footer.html' %}

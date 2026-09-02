@@ -2,137 +2,260 @@
 {% load static %}
 
 {% block content %}
-<div class="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-950 transition-colors duration-300">
+<div class="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-950 transition-colors duration-300" 
+     x-data="{ editModalOpen: {% if form.errors %}true{% else %}false{% endif %}, pwdModalOpen: false }">
     {% if request.user.is_superuser or request.user.is_staff or 'access_admin_panel' in request.user.volunteer_profile.role.capabilities.all|stringformat:'s' %}
         {% include 'layout/admin-sidebar.html' %}
+    {% elif request.user.volunteer_profile.headed_ministries.exists %}
+        {% include 'layout/dept-head-sidebar.html' %}
     {% else %}
-        {% include 'layout/user-sidebar.html' %}
+        {% include 'layout/volunteer-sidebar.html' %}
     {% endif %}
     
     <div class="flex-1 flex flex-col w-full h-screen overflow-y-auto">
-        <!-- Dashboard Topbar -->
-        {% include 'layout/topbar.html' with page_title="User Profile" %}
+        <!-- Topbar -->
+        {% include 'layout/topbar.html' with page_title="My Profile" %}
         
         <!-- Main Content Area -->
-        <main class="flex-1 p-4 sm:p-6 lg:p-8 flex flex-col min-h-0 w-full" x-data="{ editModalOpen: {% if form.errors %}true{% else %}false{% endif %} }">
+        <main class="flex-1 p-4 sm:p-6 lg:p-8 flex flex-col min-h-0 w-full space-y-6">
             
+            <!-- Toast Notifications -->
             {% if messages %}
-            <div class="mb-6 space-y-2">
+            <div class="space-y-2">
                 {% for message in messages %}
-                <div class="p-4 rounded-xl text-sm font-semibold bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center gap-3">
-                    <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                    {{ message }}
+                <div class="p-4 rounded-2xl text-xs font-bold {% if message.tags == 'error' %}bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700{% else %}bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800{% endif %} flex items-center justify-between shadow-sm">
+                    <div class="flex items-center gap-2.5">
+                        <span class="w-2 h-2 rounded-full {% if message.tags == 'error' %}bg-slate-500{% else %}bg-emerald-500{% endif %}"></span>
+                        <span>{{ message }}</span>
+                    </div>
                 </div>
                 {% endfor %}
             </div>
             {% endif %}
 
-            <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 pb-10">
-                <!-- Left Column: Profile Card & Danger Zone -->
-                <div class="xl:col-span-1 space-y-6">
-                    
-                    <!-- Profile Card -->
-                    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-6 shadow-sm flex flex-col items-center text-center">
-                        <div class="relative mb-4">
-                            <div class="w-24 h-24 rounded-full bg-emerald-100 dark:bg-emerald-900/40 border-4 border-white dark:border-gray-900 shadow-lg flex items-center justify-center text-3xl font-black text-emerald-600 dark:text-emerald-400 uppercase">
-                                {{ request.user.first_name|first|default:"U" }}{{ request.user.last_name|first }}
+            <!-- Profile Hero Banner Card -->
+            <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl p-6 sm:p-8 shadow-xl shadow-gray-900/5 relative overflow-hidden">
+                <div class="absolute -right-16 -top-16 w-64 h-64 rounded-full bg-emerald-500/5 dark:bg-emerald-500/10 blur-3xl pointer-events-none"></div>
+                <div class="absolute -left-16 -bottom-16 w-64 h-64 rounded-full bg-emerald-600/5 dark:bg-emerald-600/10 blur-3xl pointer-events-none"></div>
+
+                <div class="relative flex flex-col md:flex-row items-center md:items-start justify-between gap-6">
+                    <div class="flex flex-col sm:flex-row items-center sm:items-start gap-5 text-center sm:text-left">
+                        <!-- Avatar -->
+                        <div class="relative">
+                            <div class="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl bg-gradient-to-br from-emerald-500 to-emerald-700 text-white shadow-lg shadow-emerald-600/30 flex items-center justify-center text-3xl sm:text-4xl font-black uppercase tracking-tight border-4 border-white dark:border-gray-900">
+                                {{ request.user.first_name|first|default:request.user.username|first }}{{ request.user.last_name|first }}
+                            </div>
+                            <span class="absolute bottom-1 right-1 w-5 h-5 rounded-full bg-emerald-500 border-2 border-white dark:border-gray-900 shadow-sm" title="Active"></span>
+                        </div>
+
+                        <!-- Name and Role Info -->
+                        <div class="space-y-1.5 pt-1">
+                            <div class="flex items-center gap-2.5 flex-wrap justify-center sm:justify-start">
+                                <h1 class="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white tracking-tight">
+                                    {{ request.user.get_full_name|default:request.user.username }}
+                                </h1>
+                                <span class="bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200 text-[11px] font-black px-3 py-1 rounded-full uppercase tracking-wider border border-emerald-300 dark:border-emerald-700">
+                                    {{ request.user.volunteer_profile.role.name|default:"Volunteer Member" }}
+                                </span>
+                            </div>
+                            <p class="text-xs sm:text-sm font-semibold text-gray-500 dark:text-gray-400">
+                                @{{ request.user.username }} • <span class="text-emerald-600 dark:text-emerald-400">{{ request.user.email }}</span>
+                            </p>
+                            
+                            <!-- Department Tags -->
+                            <div class="flex items-center gap-1.5 flex-wrap pt-1 justify-center sm:justify-start">
+                                {% if my_ministries %}
+                                    {% for dept in my_ministries %}
+                                    <span class="inline-flex items-center gap-1.5 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-xs font-bold px-3 py-1 rounded-xl border border-gray-200 dark:border-gray-700">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                        {{ dept.name }}
+                                    </span>
+                                    {% endfor %}
+                                {% else %}
+                                    <span class="text-xs font-medium text-gray-400 dark:text-gray-500">No departments assigned yet</span>
+                                {% endif %}
                             </div>
                         </div>
-                        <h3 class="font-black text-gray-900 dark:text-white text-xl">{{ request.user.get_full_name|default:request.user.username }}</h3>
-                        <p class="text-emerald-600 dark:text-emerald-400 font-bold text-sm mt-1">{{ request.user.volunteer_profile.role.name|default:"Member" }}</p>
-                        {% with depts=request.user.volunteer_profile.ministries.all %}
-                        {% for dept in depts %}
-                        <p class="text-gray-500 dark:text-gray-400 font-medium text-sm">{{ dept.name }}</p>
-                        {% endfor %}
-                        {% endwith %}
                     </div>
 
-                    <!-- Security Section -->
-                    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-6 shadow-sm">
-                        <h3 class="font-black text-gray-900 dark:text-white text-lg mb-4">Security</h3>
-                        
-                        <div class="space-y-4">
-                            <div class="flex items-center justify-between">
-                                <div>
-                                    <p class="text-sm font-bold text-gray-900 dark:text-white">Change Password</p>
-                                    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Receive real-time notifications and team alerts.</p>
+                    <!-- Action Buttons -->
+                    <div class="flex items-center gap-2.5 shrink-0">
+                        <button type="button" @click="editModalOpen = true" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-600/20 transition-all active:scale-95">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                            Edit Profile
+                        </button>
+                        <button type="button" @click="pwdModalOpen = true" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-bold text-xs border border-gray-200 dark:border-gray-700 transition-all shadow-xs active:scale-95">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                            Password
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Stats Divider Row -->
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 mt-8 pt-6 border-t border-gray-100 dark:border-gray-800/80">
+                    <div class="bg-gray-50/80 dark:bg-gray-950/60 p-4 rounded-2xl border border-gray-100 dark:border-gray-800/60">
+                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">Upcoming Shifts</p>
+                        <p class="text-xl sm:text-2xl font-black text-gray-900 dark:text-white">{{ upcoming_shifts_count }}</p>
+                    </div>
+                    <div class="bg-gray-50/80 dark:bg-gray-950/60 p-4 rounded-2xl border border-gray-100 dark:border-gray-800/60">
+                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">Total Shifts Served</p>
+                        <p class="text-xl sm:text-2xl font-black text-emerald-600 dark:text-emerald-400">{{ total_shifts_served }}</p>
+                    </div>
+                    <div class="bg-gray-50/80 dark:bg-gray-950/60 p-4 rounded-2xl border border-gray-100 dark:border-gray-800/60 col-span-2 sm:col-span-1">
+                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">Departments</p>
+                        <p class="text-xl sm:text-2xl font-black text-gray-900 dark:text-white">{{ my_ministries|length }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Profile Details Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 pb-12">
+                <!-- Left Details: Personal & Location -->
+                <div class="lg:col-span-2 space-y-6">
+                    
+                    <!-- Personal Information Card -->
+                    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl p-6 sm:p-7 shadow-xl shadow-gray-900/5 space-y-5">
+                        <div class="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 pb-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 flex items-center justify-center border border-emerald-200 dark:border-emerald-800">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
                                 </div>
-                                <button class="px-3 py-1.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-xs font-bold transition-colors">
-                                    Change
-                                </button>
+                                <div>
+                                    <h2 class="text-base font-black text-gray-900 dark:text-white">Personal Information</h2>
+                                    <p class="text-xs text-gray-400 dark:text-gray-500">Your basic profile details and contact information.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div class="bg-gray-50 dark:bg-gray-950 p-4 rounded-2xl border border-gray-100 dark:border-gray-800/80">
+                                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">First Name</p>
+                                <p class="text-xs font-black text-gray-900 dark:text-white">{{ request.user.first_name|default:"Not specified" }}</p>
+                            </div>
+
+                            <div class="bg-gray-50 dark:bg-gray-950 p-4 rounded-2xl border border-gray-100 dark:border-gray-800/80">
+                                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Last Name</p>
+                                <p class="text-xs font-black text-gray-900 dark:text-white">{{ request.user.last_name|default:"Not specified" }}</p>
+                            </div>
+
+                            <div class="bg-gray-50 dark:bg-gray-950 p-4 rounded-2xl border border-gray-100 dark:border-gray-800/80">
+                                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Email Address</p>
+                                <p class="text-xs font-black text-gray-900 dark:text-white truncate">{{ request.user.email|default:"Not specified" }}</p>
+                            </div>
+
+                            <div class="bg-gray-50 dark:bg-gray-950 p-4 rounded-2xl border border-gray-100 dark:border-gray-800/80">
+                                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Phone Number</p>
+                                <p class="text-xs font-black text-gray-900 dark:text-white">{{ request.user.volunteer_profile.phone_number|default:"Not specified" }}</p>
+                            </div>
+
+                            <div class="bg-gray-50 dark:bg-gray-950 p-4 rounded-2xl border border-gray-100 dark:border-gray-800/80 sm:col-span-2">
+                                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Bio / About Me</p>
+                                <p class="text-xs text-gray-700 dark:text-gray-300 leading-relaxed font-medium">
+                                    {{ request.user.volunteer_profile.bio|default:"No bio added yet. Click Edit Profile to tell others about yourself." }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Address & Location Card -->
+                    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl p-6 sm:p-7 shadow-xl shadow-gray-900/5 space-y-5">
+                        <div class="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 pb-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 flex items-center justify-center border border-emerald-200 dark:border-emerald-800">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                                </div>
+                                <div>
+                                    <h2 class="text-base font-black text-gray-900 dark:text-white">Location Details</h2>
+                                    <p class="text-xs text-gray-400 dark:text-gray-500">Address and residency information.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div class="bg-gray-50 dark:bg-gray-950 p-4 rounded-2xl border border-gray-100 dark:border-gray-800/80">
+                                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Country</p>
+                                <p class="text-xs font-black text-gray-900 dark:text-white">{{ request.user.volunteer_profile.country|default:"Philippines" }}</p>
+                            </div>
+
+                            <div class="bg-gray-50 dark:bg-gray-950 p-4 rounded-2xl border border-gray-100 dark:border-gray-800/80">
+                                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">City / State</p>
+                                <p class="text-xs font-black text-gray-900 dark:text-white">{{ request.user.volunteer_profile.city_state|default:"Not specified" }}</p>
+                            </div>
+
+                            <div class="bg-gray-50 dark:bg-gray-950 p-4 rounded-2xl border border-gray-100 dark:border-gray-800/80">
+                                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Postal Code</p>
+                                <p class="text-xs font-black text-gray-900 dark:text-white">{{ request.user.volunteer_profile.postal_code|default:"Not specified" }}</p>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Right Column: Read-Only Views -->
-                <div class="xl:col-span-2">
-                    
-                    <!-- Profile Details Read-Only -->
-                    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-sm overflow-hidden mb-6">
-                        <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/20">
-                            <h3 class="font-black text-gray-900 dark:text-white text-lg">Profile Details</h3>
-                            <button type="button" @click.prevent.stop="editModalOpen = true" class="flex items-center gap-2 px-3 py-1.5 text-sm font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 dark:text-emerald-400 dark:bg-emerald-900/30 dark:hover:bg-emerald-900/50 rounded-lg transition-colors">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
-                                Edit Details
+                <!-- Right Details: Departments & Roles Sidebar -->
+                <div class="space-y-6">
+                    <!-- Assigned Departments Card -->
+                    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl p-6 shadow-xl shadow-gray-900/5 space-y-4">
+                        <div class="flex items-center gap-3 border-b border-gray-100 dark:border-gray-800 pb-4">
+                            <div class="w-10 h-10 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 flex items-center justify-center border border-emerald-200 dark:border-emerald-800">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                            </div>
+                            <div>
+                                <h2 class="text-base font-black text-gray-900 dark:text-white">Assigned Ministries</h2>
+                                <p class="text-xs text-gray-400 dark:text-gray-500">Your serving departments.</p>
+                            </div>
+                        </div>
+
+                        <div class="space-y-2.5">
+                            {% for dept in my_ministries %}
+                            <div class="p-4 rounded-2xl bg-gray-50 dark:bg-gray-950/70 border border-gray-100 dark:border-gray-800/80 flex items-start justify-between gap-3">
+                                <div>
+                                    <h3 class="text-xs font-black text-gray-900 dark:text-white">{{ dept.name }}</h3>
+                                    <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">
+                                        {% if dept.head %}
+                                        Led by {{ dept.head.user.get_full_name|default:dept.head.user.username }}
+                                        {% else %}
+                                        Church Department
+                                        {% endif %}
+                                    </p>
+                                </div>
+                                <span class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2.5 py-1 rounded-xl border border-emerald-200 dark:border-emerald-800/60 shrink-0">
+                                    Active
+                                </span>
+                            </div>
+                            {% empty %}
+                            <div class="p-6 text-center rounded-2xl bg-gray-50 dark:bg-gray-950 border border-dashed border-gray-200 dark:border-gray-800">
+                                <p class="text-xs text-gray-400 dark:text-gray-500 font-medium">No department assignments yet.</p>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Account Security Quick Box -->
+                    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl p-6 shadow-xl shadow-gray-900/5 space-y-4">
+                        <div class="flex items-center gap-3 border-b border-gray-100 dark:border-gray-800 pb-4">
+                            <div class="w-10 h-10 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 flex items-center justify-center border border-emerald-200 dark:border-emerald-800">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                            </div>
+                            <div>
+                                <h2 class="text-base font-black text-gray-900 dark:text-white">Security</h2>
+                                <p class="text-xs text-gray-400 dark:text-gray-500">Account password and security.</p>
+                            </div>
+                        </div>
+
+                        <div class="p-4 rounded-2xl bg-gray-50 dark:bg-gray-950/70 border border-gray-100 dark:border-gray-800/80 flex items-center justify-between">
+                            <div>
+                                <p class="text-xs font-bold text-gray-900 dark:text-white">Password</p>
+                                <p class="text-[11px] text-gray-400 dark:text-gray-500">Last updated recently</p>
+                            </div>
+                            <button type="button" @click="pwdModalOpen = true" class="px-3.5 py-1.5 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl text-xs font-bold transition-colors border border-gray-200 dark:border-gray-700 shadow-xs">
+                                Change
                             </button>
-                        </div>
-                        
-                        <!-- Personal Info Section -->
-                        <div class="p-6">
-                            <h4 class="text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-4">Personal Information</h4>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-8">
-                                <div>
-                                    <p class="text-xs font-bold text-gray-500 tracking-wider mb-1">First Name</p>
-                                    <p class="text-sm font-medium text-gray-900 dark:text-white">{{ request.user.first_name|default:"-" }}</p>
-                                </div>
-                                <div>
-                                    <p class="text-xs font-bold text-gray-500 tracking-wider mb-1">Last Name</p>
-                                    <p class="text-sm font-medium text-gray-900 dark:text-white">{{ request.user.last_name|default:"-" }}</p>
-                                </div>
-                                <div>
-                                    <p class="text-xs font-bold text-gray-500 tracking-wider mb-1">Email Address</p>
-                                    <p class="text-sm font-medium text-gray-900 dark:text-white">{{ request.user.email|default:"-" }}</p>
-                                </div>
-                                <div>
-                                    <p class="text-xs font-bold text-gray-500 tracking-wider mb-1">Phone Number</p>
-                                    <p class="text-sm font-medium text-gray-900 dark:text-white">{{ request.user.volunteer_profile.phone_number|default:"-" }}</p>
-                                </div>
-                                <div class="md:col-span-2">
-                                    <p class="text-xs font-bold text-gray-500 tracking-wider mb-1">Bio</p>
-                                    <p class="text-sm font-medium text-gray-900 dark:text-white">{{ request.user.volunteer_profile.bio|default:"-" }}</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="border-t border-gray-100 dark:border-gray-800"></div>
-
-                        <!-- Address Section -->
-                        <div class="p-6">
-                            <h4 class="text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-4">Address</h4>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-8">
-                                <div class="md:col-span-2">
-                                    <p class="text-xs font-bold text-gray-500 tracking-wider mb-1">Country</p>
-                                    <p class="text-sm font-medium text-gray-900 dark:text-white">{{ request.user.volunteer_profile.country|default:"-" }}</p>
-                                </div>
-                                <div>
-                                    <p class="text-xs font-bold text-gray-500 tracking-wider mb-1">City/State</p>
-                                    <p class="text-sm font-medium text-gray-900 dark:text-white">{{ request.user.volunteer_profile.city_state|default:"-" }}</p>
-                                </div>
-                                <div>
-                                    <p class="text-xs font-bold text-gray-500 tracking-wider mb-1">Postal Code</p>
-                                    <p class="text-sm font-medium text-gray-900 dark:text-white">{{ request.user.volunteer_profile.postal_code|default:"-" }}</p>
-                                </div>
-                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
             <!-- Edit Profile Modal -->
-            <div x-show="editModalOpen" x-cloak class="relative z-50" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-                
-                <!-- Backdrop -->
+            <div x-show="editModalOpen" x-cloak class="relative z-50">
                 <div x-show="editModalOpen" 
                      x-transition:enter="ease-out duration-300" 
                      x-transition:enter-start="opacity-0" 
@@ -140,91 +263,170 @@
                      x-transition:leave="ease-in duration-200" 
                      x-transition:leave-start="opacity-100" 
                      x-transition:leave-end="opacity-0" 
-                     class="fixed inset-0 bg-gray-900/75 backdrop-blur-sm transition-opacity"></div>
+                     class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity"
+                     @click="editModalOpen = false"></div>
                      
                 <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
-                    <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+                    <div class="flex min-h-full items-center justify-center p-4 sm:p-6 text-center">
                         
-                        <!-- Modal Panel -->
                         <div x-show="editModalOpen" 
                              @click.away="editModalOpen = false"
                              x-transition:enter="ease-out duration-300" 
-                             x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" 
-                             x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100" 
+                             x-transition:enter-start="opacity-0 scale-95 translate-y-4" 
+                             x-transition:enter-end="opacity-100 scale-100 translate-y-0" 
                              x-transition:leave="ease-in duration-200" 
-                             x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" 
-                             x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" 
-                             class="relative transform overflow-hidden bg-white dark:bg-gray-900 rounded-2xl text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-2xl border border-gray-100 dark:border-gray-800">
+                             x-transition:leave-start="opacity-100 scale-100 translate-y-0" 
+                             x-transition:leave-end="opacity-0 scale-95 translate-y-4" 
+                             class="relative transform overflow-hidden bg-white dark:bg-gray-900 rounded-3xl text-left shadow-2xl transition-all sm:w-full sm:max-w-2xl border border-gray-200 dark:border-gray-800">
                         
-                        <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50 dark:bg-gray-800/50">
-                            <h3 class="text-lg font-black text-gray-900 dark:text-white" id="modal-title">Edit Profile Information</h3>
-                            <button type="button" @click.prevent="editModalOpen = false" class="text-gray-400 hover:text-gray-500 focus:outline-none">
-                                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
-                            </button>
-                        </div>
+                            <div class="px-6 py-5 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-950/50">
+                                <div>
+                                    <h3 class="text-lg font-black text-gray-900 dark:text-white">Edit Profile Details</h3>
+                                    <p class="text-xs text-gray-400 dark:text-gray-500">Update your personal information and address.</p>
+                                </div>
+                                <button type="button" @click="editModalOpen = false" class="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 p-2 rounded-2xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                                </button>
+                            </div>
 
-                        <form method="POST" action="{% url 'user_profile' %}">
-                            {% csrf_token %}
-                            <div class="px-6 py-6 max-h-[70vh] overflow-y-auto">
+                            <form method="POST" action="{% url 'user_profile' %}">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="update_profile">
                                 
-                                <h4 class="font-bold text-gray-900 dark:text-white mb-4">Personal Info</h4>
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-                                    <div class="space-y-1.5">
-                                        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300">{{ form.first_name.label }}</label>
-                                        {{ form.first_name }}
-                                        {% if form.first_name.errors %}<p class="text-xs text-red-600">{{ form.first_name.errors.0 }}</p>{% endif %}
+                                <div class="p-6 max-h-[70vh] overflow-y-auto space-y-6">
+                                    <!-- Personal Info Section -->
+                                    <div>
+                                        <h4 class="text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-3">Personal Info</h4>
+                                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            <div class="space-y-1.5">
+                                                <label class="block text-xs font-bold text-gray-700 dark:text-gray-300">First Name</label>
+                                                {{ form.first_name }}
+                                                {% if form.first_name.errors %}<p class="text-xs text-emerald-600">{{ form.first_name.errors.0 }}</p>{% endif %}
+                                            </div>
+                                            <div class="space-y-1.5">
+                                                <label class="block text-xs font-bold text-gray-700 dark:text-gray-300">Last Name</label>
+                                                {{ form.last_name }}
+                                                {% if form.last_name.errors %}<p class="text-xs text-emerald-600">{{ form.last_name.errors.0 }}</p>{% endif %}
+                                            </div>
+                                            <div class="space-y-1.5">
+                                                <label class="block text-xs font-bold text-gray-700 dark:text-gray-300">Email Address</label>
+                                                {{ form.email }}
+                                                {% if form.email.errors %}<p class="text-xs text-emerald-600">{{ form.email.errors.0 }}</p>{% endif %}
+                                            </div>
+                                            <div class="space-y-1.5">
+                                                <label class="block text-xs font-bold text-gray-700 dark:text-gray-300">Phone Number</label>
+                                                {{ form.phone_number }}
+                                                {% if form.phone_number.errors %}<p class="text-xs text-emerald-600">{{ form.phone_number.errors.0 }}</p>{% endif %}
+                                            </div>
+                                            <div class="space-y-1.5 sm:col-span-2">
+                                                <label class="block text-xs font-bold text-gray-700 dark:text-gray-300">Bio</label>
+                                                {{ form.bio }}
+                                                {% if form.bio.errors %}<p class="text-xs text-emerald-600">{{ form.bio.errors.0 }}</p>{% endif %}
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div class="space-y-1.5">
-                                        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300">{{ form.last_name.label }}</label>
-                                        {{ form.last_name }}
-                                        {% if form.last_name.errors %}<p class="text-xs text-red-600">{{ form.last_name.errors.0 }}</p>{% endif %}
-                                    </div>
-                                    <div class="space-y-1.5">
-                                        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300">{{ form.email.label }}</label>
-                                        {{ form.email }}
-                                        {% if form.email.errors %}<p class="text-xs text-red-600">{{ form.email.errors.0 }}</p>{% endif %}
-                                    </div>
-                                    <div class="space-y-1.5">
-                                        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300">{{ form.phone_number.label }}</label>
-                                        {{ form.phone_number }}
-                                        {% if form.phone_number.errors %}<p class="text-xs text-red-600">{{ form.phone_number.errors.0 }}</p>{% endif %}
-                                    </div>
-                                    <div class="space-y-1.5 md:col-span-2">
-                                        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300">{{ form.bio.label }}</label>
-                                        {{ form.bio }}
-                                        {% if form.bio.errors %}<p class="text-xs text-red-600">{{ form.bio.errors.0 }}</p>{% endif %}
-                                    </div>
-                                </div>
 
-                                <h4 class="font-bold text-gray-900 dark:text-white mb-4">Address</h4>
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div class="space-y-1.5 md:col-span-2">
-                                        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300">{{ form.country.label }}</label>
-                                        {{ form.country }}
-                                        {% if form.country.errors %}<p class="text-xs text-red-600">{{ form.country.errors.0 }}</p>{% endif %}
-                                    </div>
-                                    <div class="space-y-1.5">
-                                        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300">{{ form.city_state.label }}</label>
-                                        {{ form.city_state }}
-                                        {% if form.city_state.errors %}<p class="text-xs text-red-600">{{ form.city_state.errors.0 }}</p>{% endif %}
-                                    </div>
-                                    <div class="space-y-1.5">
-                                        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300">{{ form.postal_code.label }}</label>
-                                        {{ form.postal_code }}
-                                        {% if form.postal_code.errors %}<p class="text-xs text-red-600">{{ form.postal_code.errors.0 }}</p>{% endif %}
+                                    <!-- Address Section -->
+                                    <div class="border-t border-gray-100 dark:border-gray-800 pt-5">
+                                        <h4 class="text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-3">Address</h4>
+                                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            <div class="space-y-1.5 sm:col-span-2">
+                                                <label class="block text-xs font-bold text-gray-700 dark:text-gray-300">Country</label>
+                                                {{ form.country }}
+                                                {% if form.country.errors %}<p class="text-xs text-emerald-600">{{ form.country.errors.0 }}</p>{% endif %}
+                                            </div>
+                                            <div class="space-y-1.5">
+                                                <label class="block text-xs font-bold text-gray-700 dark:text-gray-300">City / State</label>
+                                                {{ form.city_state }}
+                                                {% if form.city_state.errors %}<p class="text-xs text-emerald-600">{{ form.city_state.errors.0 }}</p>{% endif %}
+                                            </div>
+                                            <div class="space-y-1.5">
+                                                <label class="block text-xs font-bold text-gray-700 dark:text-gray-300">Postal Code</label>
+                                                {{ form.postal_code }}
+                                                {% if form.postal_code.errors %}<p class="text-xs text-emerald-600">{{ form.postal_code.errors.0 }}</p>{% endif %}
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                            
-                            <div class="px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 flex justify-end gap-3">
-                                <button type="button" @click="editModalOpen = false" class="px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-bold hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                                    Cancel
+                                
+                                <div class="px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-950/50 flex justify-end gap-3 rounded-b-3xl">
+                                    <button type="button" @click="editModalOpen = false" class="px-5 py-2.5 rounded-2xl border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 text-xs font-bold hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                                        Cancel
+                                    </button>
+                                    <button type="submit" class="px-6 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-600/20 transition-all active:scale-95">
+                                        Confirm
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Password Change Modal -->
+            <div x-show="pwdModalOpen" x-cloak class="relative z-50">
+                <div x-show="pwdModalOpen" 
+                     x-transition:enter="ease-out duration-300" 
+                     x-transition:enter-start="opacity-0" 
+                     x-transition:enter-end="opacity-100" 
+                     x-transition:leave="ease-in duration-200" 
+                     x-transition:leave-start="opacity-100" 
+                     x-transition:leave-end="opacity-0" 
+                     class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity"
+                     @click="pwdModalOpen = false"></div>
+                     
+                <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
+                    <div class="flex min-h-full items-center justify-center p-4 sm:p-6 text-center">
+                        
+                        <div x-show="pwdModalOpen" 
+                             @click.away="pwdModalOpen = false"
+                             x-transition:enter="ease-out duration-300" 
+                             x-transition:enter-start="opacity-0 scale-95 translate-y-4" 
+                             x-transition:enter-end="opacity-100 scale-100 translate-y-0" 
+                             x-transition:leave="ease-in duration-200" 
+                             x-transition:leave-start="opacity-100 scale-100 translate-y-0" 
+                             x-transition:leave-end="opacity-0 scale-95 translate-y-4" 
+                             class="relative transform overflow-hidden bg-white dark:bg-gray-900 rounded-3xl text-left shadow-2xl transition-all sm:w-full sm:max-w-md border border-gray-200 dark:border-gray-800">
+                        
+                            <div class="px-6 py-5 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-950/50">
+                                <div>
+                                    <h3 class="text-lg font-black text-gray-900 dark:text-white">Change Password</h3>
+                                    <p class="text-xs text-gray-400 dark:text-gray-500">Ensure your account uses a secure password.</p>
+                                </div>
+                                <button type="button" @click="pwdModalOpen = false" class="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 p-2 rounded-2xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
                                 </button>
-                                <button type="submit" class="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-md shadow-emerald-600/20 transition-all active:scale-95">
-                                    Save Changes
-                                </button>
                             </div>
-                        </form>
+
+                            <form method="POST" action="{% url 'user_profile' %}">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="change_password">
+                                
+                                <div class="p-6 space-y-4">
+                                    <div class="space-y-1.5">
+                                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300">Current Password</label>
+                                        <input type="password" name="current_password" required class="block w-full rounded-2xl border border-gray-200 dark:border-gray-800 py-3 px-4 text-gray-900 dark:text-white placeholder:text-gray-400 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm font-medium bg-gray-50/60 dark:bg-gray-950/60 transition-all outline-none" placeholder="Enter current password">
+                                    </div>
+                                    <div class="space-y-1.5">
+                                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300">New Password</label>
+                                        <input type="password" name="new_password" required minlength="6" class="block w-full rounded-2xl border border-gray-200 dark:border-gray-800 py-3 px-4 text-gray-900 dark:text-white placeholder:text-gray-400 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm font-medium bg-gray-50/60 dark:bg-gray-950/60 transition-all outline-none" placeholder="At least 6 characters">
+                                    </div>
+                                    <div class="space-y-1.5">
+                                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300">Confirm New Password</label>
+                                        <input type="password" name="confirm_password" required minlength="6" class="block w-full rounded-2xl border border-gray-200 dark:border-gray-800 py-3 px-4 text-gray-900 dark:text-white placeholder:text-gray-400 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm font-medium bg-gray-50/60 dark:bg-gray-950/60 transition-all outline-none" placeholder="Re-enter new password">
+                                    </div>
+                                </div>
+                                
+                                <div class="px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-950/50 flex justify-end gap-3 rounded-b-3xl">
+                                    <button type="button" @click="pwdModalOpen = false" class="px-5 py-2.5 rounded-2xl border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 text-xs font-bold hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                                        Cancel
+                                    </button>
+                                    <button type="submit" class="px-6 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-600/20 transition-all active:scale-95">
+                                        Confirm
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
                 </div>
             </div>
