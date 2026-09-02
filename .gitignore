@@ -23,8 +23,3 @@ staticfiles/
 .vscode/
 *.swp
 *.swo
-
-__pycache__/
-*.pyc
-staticfiles/
-db.sqlite3
