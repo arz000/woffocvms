@@ -1,7 +1,46 @@
 {% extends 'layout/base.html' %}
 
 {% block content %}
-<div x-data="{ addEventModalOpen: false, eventType: 'regular' }" class="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-950 transition-colors duration-300">
+<div x-data="{ 
+    addEventModalOpen: false, 
+    isEditing: false,
+    editEventId: '',
+    eventType: 'regular',
+    eventName: '',
+    eventDate: '',
+    eventStartTime: '',
+    eventEndTime: '',
+    eventDescription: '',
+    eventOffices: [],
+    
+    openCreateModal() {
+        this.isEditing = false;
+        this.editEventId = '';
+        this.eventName = '';
+        this.eventDate = '';
+        this.eventStartTime = '';
+        this.eventEndTime = '';
+        this.eventDescription = '';
+        this.eventOffices = [];
+        this.eventType = 'regular';
+        this.addEventModalOpen = true;
+    },
+    
+    openEditModal(e) {
+        this.isEditing = true;
+        this.editEventId = e.id;
+        this.eventName = e.name;
+        this.eventDate = e.date;
+        this.eventStartTime = e.start_time;
+        this.eventEndTime = e.end_time;
+        this.eventDescription = e.description;
+        this.eventType = e.event_type;
+        this.eventOffices = e.offices.map(String);
+        this.addEventModalOpen = true;
+    }
+}" 
+@open-edit-event.window="openEditModal($event.detail)"
+class="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-950 transition-colors duration-300">
     {% include 'layout/admin-sidebar.html' %}
     
     <div class="flex-1 flex flex-col w-full h-screen overflow-y-auto">
@@ -18,7 +57,7 @@
                 </div>
                 
                 <div class="flex items-center gap-2 sm:gap-3">
-                    <button @click="addEventModalOpen = true" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-md shadow-emerald-600/20 transition-all active:scale-95 flex items-center gap-2">
+                    <button @click="openCreateModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-md shadow-emerald-600/20 transition-all active:scale-95 flex items-center gap-2">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                         Create Event
                     </button>
@@ -124,8 +163,8 @@
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                                 </div>
                                 <div>
-                                    <h3 class="font-black text-gray-900 dark:text-white text-xl tracking-tight" id="modal-title">New Event</h3>
-                                    <p class="text-xs font-medium text-gray-500 mt-0.5">Schedule a service or gathering</p>
+                                    <h3 class="font-black text-gray-900 dark:text-white text-xl tracking-tight" id="modal-title" x-text="isEditing ? 'Edit Event' : 'New Event'"></h3>
+                                    <p class="text-xs font-medium text-gray-500 mt-0.5" x-text="isEditing ? 'Update service details' : 'Schedule a service or gathering'"></p>
                                 </div>
                             </div>
                             <button type="button" @click="addEventModalOpen = false" class="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800">
@@ -134,9 +173,10 @@
                         </div>
                         
                         <div class="px-6 py-6 space-y-6 bg-white dark:bg-gray-900">
+                            <input type="hidden" name="event_id" x-model="editEventId">
                             <div class="space-y-1.5">
                                 <label for="event-name" class="block text-sm font-bold text-gray-700 dark:text-gray-300">Event Name</label>
-                                <input type="text" name="name" id="event-name" required placeholder="e.g. Sunday Morning Service" class="block w-full rounded-xl border-0 bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-white ring-1 ring-inset ring-gray-200 dark:ring-gray-800 focus:ring-2 focus:ring-inset focus:ring-emerald-500 sm:text-sm px-4 py-3 transition-all placeholder:text-gray-400">
+                                <input type="text" name="name" id="event-name" x-model="eventName" required placeholder="e.g. Sunday Morning Service" class="block w-full rounded-xl border-0 bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-white ring-1 ring-inset ring-gray-200 dark:ring-gray-800 focus:ring-2 focus:ring-inset focus:ring-emerald-500 sm:text-sm px-4 py-3 transition-all placeholder:text-gray-400">
                             </div>
 
                             <div class="space-y-2">
@@ -168,31 +208,45 @@
                                 </div>
                             </div>
 
-                            <div class="space-y-1.5">
-                                <label for="event-date" class="block text-sm font-bold text-gray-700 dark:text-gray-300">Date</label>
-                                <input type="date" name="date" id="event-date" required class="block w-full rounded-xl border-0 bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-white ring-1 ring-inset ring-gray-200 dark:ring-gray-800 focus:ring-2 focus:ring-inset focus:ring-emerald-500 sm:text-sm px-4 py-3 transition-all">
-                            </div>
-
-                            <div class="grid grid-cols-2 gap-4">
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                <div class="space-y-1.5">
+                                    <label for="event-date" class="block text-sm font-bold text-gray-700 dark:text-gray-300">Date</label>
+                                    <input type="date" name="date" id="event-date" x-model="eventDate" required class="block w-full rounded-xl border-0 bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-white ring-1 ring-inset ring-gray-200 dark:ring-gray-800 focus:ring-2 focus:ring-inset focus:ring-emerald-500 sm:text-sm px-4 py-3 transition-all">
+                                </div>
                                 <div class="space-y-1.5">
                                     <label for="event-start" class="block text-sm font-bold text-gray-700 dark:text-gray-300">Start Time</label>
-                                    <input type="time" name="start_time" id="event-start" required class="block w-full rounded-xl border-0 bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-white ring-1 ring-inset ring-gray-200 dark:ring-gray-800 focus:ring-2 focus:ring-inset focus:ring-emerald-500 sm:text-sm px-4 py-3 transition-all">
+                                    <input type="time" name="start_time" id="event-start" x-model="eventStartTime" required class="block w-full rounded-xl border-0 bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-white ring-1 ring-inset ring-gray-200 dark:ring-gray-800 focus:ring-2 focus:ring-inset focus:ring-emerald-500 sm:text-sm px-4 py-3 transition-all">
                                 </div>
                                 <div class="space-y-1.5">
                                     <label for="event-end" class="block text-sm font-bold text-gray-700 dark:text-gray-300">End Time</label>
-                                    <input type="time" name="end_time" id="event-end" required class="block w-full rounded-xl border-0 bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-white ring-1 ring-inset ring-gray-200 dark:ring-gray-800 focus:ring-2 focus:ring-inset focus:ring-emerald-500 sm:text-sm px-4 py-3 transition-all">
+                                    <input type="time" name="end_time" id="event-end" x-model="eventEndTime" required class="block w-full rounded-xl border-0 bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-white ring-1 ring-inset ring-gray-200 dark:ring-gray-800 focus:ring-2 focus:ring-inset focus:ring-emerald-500 sm:text-sm px-4 py-3 transition-all">
                                 </div>
                             </div>
 
                             <div class="space-y-1.5">
                                 <label for="event-desc" class="block text-sm font-bold text-gray-700 dark:text-gray-300">Description <span class="font-normal text-gray-400 ml-1">(Optional)</span></label>
-                                <textarea name="description" id="event-desc" rows="3" placeholder="Additional details..." class="block w-full rounded-xl border-0 bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-white ring-1 ring-inset ring-gray-200 dark:ring-gray-800 focus:ring-2 focus:ring-inset focus:ring-emerald-500 sm:text-sm px-4 py-3 transition-all resize-none placeholder:text-gray-400"></textarea>
+                                <textarea name="description" id="event-desc" x-model="eventDescription" rows="3" placeholder="Additional details..." class="block w-full rounded-xl border-0 bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-white ring-1 ring-inset ring-gray-200 dark:ring-gray-800 focus:ring-2 focus:ring-inset focus:ring-emerald-500 sm:text-sm px-4 py-3 transition-all resize-none placeholder:text-gray-400"></textarea>
+                            </div>
+
+                            <div class="space-y-2 pt-2 border-t border-gray-100 dark:border-gray-800">
+                                <label class="block text-sm font-bold text-gray-700 dark:text-gray-300">Notify Departments / Offices <span class="font-normal text-gray-400 ml-1">(Optional)</span></label>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-40 overflow-y-auto custom-scrollbar p-3 border border-gray-200 dark:border-gray-800 rounded-xl bg-gray-50/50 dark:bg-gray-950/50">
+                                    {% for ministry in ministries %}
+                                    <label class="flex items-center gap-3 cursor-pointer group p-1.5 hover:bg-white dark:hover:bg-gray-900 rounded-lg transition-colors border border-transparent hover:border-gray-200 dark:hover:border-gray-700 shadow-sm hover:shadow-md">
+                                        <input type="checkbox" name="offices" value="{{ ministry.id }}" x-model="eventOffices" class="w-4 h-4 text-emerald-600 bg-white border-gray-300 rounded focus:ring-emerald-600 dark:focus:ring-emerald-500 dark:ring-offset-gray-900 focus:ring-2 dark:bg-gray-800 dark:border-gray-700">
+                                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white transition-colors truncate">{{ ministry.name }}</span>
+                                    </label>
+                                    {% empty %}
+                                    <p class="text-xs text-gray-500 italic p-2 col-span-full text-center">No departments created yet.</p>
+                                    {% endfor %}
+                                </div>
+                                <p class="text-[11px] text-gray-500 font-medium">Select departments that should be notified about this event.</p>
                             </div>
                         </div>
                         
                         <div class="px-6 py-4 bg-gray-50 dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800 flex items-center justify-end gap-3 rounded-b-2xl">
                             <button type="button" @click="addEventModalOpen = false" class="px-5 py-2.5 rounded-xl font-bold text-sm text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white transition-all shadow-sm active:scale-95">Cancel</button>
-                            <button type="submit" class="px-5 py-2.5 rounded-xl font-bold text-sm text-white bg-emerald-600 hover:bg-emerald-700 transition-all shadow-md shadow-emerald-600/20 active:scale-95 flex items-center gap-2">Create Event</button>
+                            <button type="submit" class="px-5 py-2.5 rounded-xl font-bold text-sm text-white bg-emerald-600 hover:bg-emerald-700 transition-all shadow-md shadow-emerald-600/20 active:scale-95 flex items-center gap-2" x-text="isEditing ? 'Save Changes' : 'Create Event'"></button>
                         </div>
                     </form>
                 </div>

@@ -82,6 +82,7 @@ class Event(models.Model):
     start_time = models.TimeField()
     end_time = models.TimeField()
     description = models.TextField(blank=True)
+    offices = models.ManyToManyField('Ministry', blank=True, related_name='events')
 
     def __str__(self):
         return f"{self.name} - {self.date}"

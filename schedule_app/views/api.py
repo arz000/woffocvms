@@ -32,11 +32,21 @@ def api_update_role(request):
             description = data.get('description')
             capabilities = data.get('capabilities', [])
             
-            role = Role.objects.get(id=role_id)
-            if name:
-                role.name = name
-            if description is not None:
-                role.description = description
+            if role_id:
+                role = Role.objects.get(id=role_id)
+                if name:
+                    role.name = name
+                if description is not None:
+                    role.description = description
+                role.save()
+            else:
+                if not name:
+                    return JsonResponse({'error': 'Role name is required'}, status=400)
+                role = Role.objects.create(
+                    name=name,
+                    description=description or '',
+                    theme='emerald'
+                )
                 
             role.capabilities.set(capabilities)
             role.save()
@@ -109,6 +119,36 @@ def api_remove_role(request):
             profile.role = None
             profile.save()
             
+            return JsonResponse({'success': True})
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=400)
+            
+    return JsonResponse({'error': 'Invalid method'}, status=405)
+
+def api_delete_record(request):
+    """Global API Endpoint to securely delete any allowed model record."""
+    if not request.user.is_authenticated or not (request.user.is_staff or request.user.is_superuser):
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+        
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            model_name = data.get('model')
+            record_id = data.get('id')
+            
+            # Whitelist of models that can be deleted via this endpoint
+            from schedule_app.models import Ministry, Event, Role
+            ALLOWED_MODELS = {
+                'Ministry': Ministry,
+                'Event': Event,
+                'Role': Role
+            }
+            
+            model_class = ALLOWED_MODELS.get(model_name)
+            if not model_class:
+                return JsonResponse({'error': f'Model {model_name} is not allowed or does not exist.'}, status=400)
+                
+            model_class.objects.filter(id=record_id).delete()
             return JsonResponse({'success': True})
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=400)

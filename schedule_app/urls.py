@@ -12,6 +12,10 @@ urlpatterns = [
     # User Routes
     path('user-dashboard/', views.user_dashboard_view, name='user_dashboard'),
     path('profile/', views.user_profile_view, name='user_profile'),
+
+    # Department Head Routes
+    path('dept-head/events/', views.dept_head_events_view, name='dept_head_events'),
+    path('dept-head/events/<int:event_id>/', views.dept_head_event_detail_view, name='dept_head_event_detail'),
     
     # Admin Routes
     path('admin-dashboard/', views.admin_dashboard_view, name='admin_dashboard'),
@@ -25,4 +29,8 @@ urlpatterns = [
     path('api/remove-role/', views.api_remove_role, name='api_remove_role'),
     path('search-volunteers/', views.search_volunteers, name='search_volunteers'),
     path('api/update-ministries/', views.api_update_ministries, name='api_update_ministries'),
+    path('api/delete-record/', views.api_delete_record, name='api_delete_record'),
+
+
+   
 ]

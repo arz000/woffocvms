@@ -1,0 +1,89 @@
+{% extends 'layout/base.html' %}
+
+{% block content %}
+<div class="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-950 transition-colors duration-300">
+    {% include 'layout/dept-head-sidebar.html' %}
+    
+    <div class="flex-1 flex flex-col w-full h-screen overflow-y-auto">
+        {% include 'layout/topbar.html' with page_title="Service / Events" %}
+        
+        <!-- Main Content Area -->
+        <main class="flex-1 p-4 sm:p-6 lg:p-8 flex flex-col min-h-0">
+            <!-- Header -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 shrink-0">
+                <div>
+                    <h2 class="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white tracking-tight">Service / Events</h2>
+                    <p class="text-gray-500 dark:text-gray-400 mt-1 text-sm font-medium">View upcoming events and manage volunteer assignments for your departments.</p>
+                </div>
+            </div>
+
+            <!-- Events Layout - 3 Columns -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 min-h-0 overflow-y-auto pb-8 custom-scrollbar items-start">
+                
+                <!-- Regular Service Column -->
+                <div class="bg-gray-200/50 dark:bg-gray-800/30 rounded-2xl p-4 flex flex-col gap-4 border border-gray-200 dark:border-gray-800 h-full">
+                    <div class="flex items-center justify-between px-2">
+                        <div class="flex items-center gap-2">
+                            <div class="w-3 h-3 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]"></div>
+                            <h3 class="font-bold text-gray-900 dark:text-white">Regular Service</h3>
+                            <span class="bg-gray-300 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs font-bold px-2 py-0.5 rounded-full ml-1">{{ regular_events|length }}</span>
+                        </div>
+                    </div>
+                    <div class="flex flex-col gap-4 overflow-y-auto custom-scrollbar flex-1 pr-1">
+                        {% for event in regular_events %}
+                            {% include 'dept-head/includes/dept-event-card.html' with event=event theme="blue" %}
+                        {% empty %}
+                            <div class="p-8 text-center bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl">
+                                <p class="text-gray-500 font-medium text-sm">No regular services.</p>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Scheduled Event Column -->
+                <div class="bg-gray-200/50 dark:bg-gray-800/30 rounded-2xl p-4 flex flex-col gap-4 border border-gray-200 dark:border-gray-800 h-full">
+                    <div class="flex items-center justify-between px-2">
+                        <div class="flex items-center gap-2">
+                            <div class="w-3 h-3 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]"></div>
+                            <h3 class="font-bold text-gray-900 dark:text-white">Scheduled Event</h3>
+                            <span class="bg-gray-300 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs font-bold px-2 py-0.5 rounded-full ml-1">{{ scheduled_events|length }}</span>
+                        </div>
+                    </div>
+                    <div class="flex flex-col gap-4 overflow-y-auto custom-scrollbar flex-1 pr-1">
+                        {% for event in scheduled_events %}
+                            {% include 'dept-head/includes/dept-event-card.html' with event=event theme="amber" %}
+                        {% empty %}
+                            <div class="p-8 text-center bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl">
+                                <p class="text-gray-500 font-medium text-sm">No scheduled events.</p>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Big Event Column -->
+                <div class="bg-gray-200/50 dark:bg-gray-800/30 rounded-2xl p-4 flex flex-col gap-4 border border-gray-200 dark:border-gray-800 h-full">
+                    <div class="flex items-center justify-between px-2">
+                        <div class="flex items-center gap-2">
+                            <div class="w-3 h-3 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
+                            <h3 class="font-bold text-gray-900 dark:text-white">Big Event</h3>
+                            <span class="bg-gray-300 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs font-bold px-2 py-0.5 rounded-full ml-1">{{ big_events|length }}</span>
+                        </div>
+                    </div>
+                    <div class="flex flex-col gap-4 overflow-y-auto custom-scrollbar flex-1 pr-1">
+                        {% for event in big_events %}
+                            {% include 'dept-head/includes/dept-event-card.html' with event=event theme="emerald" %}
+                        {% empty %}
+                            <div class="p-8 text-center bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl">
+                                <p class="text-gray-500 font-medium text-sm">No big events.</p>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+            </div>
+        </main>
+        
+        {% include 'layout/footer.html' %}
+    </div>
+</div>
+{% endblock %}

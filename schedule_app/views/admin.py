@@ -4,9 +4,14 @@ from datetime import date
 import json
 from schedule_app.models import Role, Capability, Event, Shift, Ministry, VolunteerProfile
 
+def check_admin_or_head(user):
+    if not user.is_authenticated: return False
+    if user.is_staff or user.is_superuser: return True
+    return hasattr(user, 'volunteer_profile') and user.volunteer_profile.role and user.volunteer_profile.role.name == 'Department Head'
+
 def admin_dashboard_view(request):
     """Renders the dashboard for staff/admin members."""
-    if not request.user.is_authenticated or not (request.user.is_staff or request.user.is_superuser):
+    if not check_admin_or_head(request.user):
         return redirect('login')
 
     total_volunteers   = VolunteerProfile.objects.count()
@@ -28,14 +33,20 @@ def admin_dashboard_view(request):
 
 def admin_schedule_view(request):
     """Renders the calendar schedule view for admins."""
-    if not request.user.is_authenticated or not (request.user.is_staff or request.user.is_superuser):
+    if not check_admin_or_head(request.user):
         return redirect('login')
     
-    events = Event.objects.all()
+    events = Event.objects.prefetch_related('offices').all()
     events_data = [{
         'id': e.id,
+        'name': e.name,
         'title': f"{e.start_time.strftime('%I:%M %p')} - {e.name}",
         'date': e.date.isoformat(),
+        'start_time': e.start_time.strftime('%I:%M %p'),
+        'end_time': e.end_time.strftime('%I:%M %p'),
+        'type': e.event_type,
+        'description': e.description,
+        'offices': [{'id': o.id, 'name': o.name} for o in e.offices.all()],
     } for e in events]
     
     return render(request, 'admin/admin-schedule.html', {
@@ -48,6 +59,7 @@ def admin_service_view(request):
         return redirect('login')
     
     if request.method == 'POST':
+        event_id = request.POST.get('event_id')
         name = request.POST.get('name')
         event_type = request.POST.get('event_type')
         date_str = request.POST.get('date')
@@ -56,22 +68,38 @@ def admin_service_view(request):
         description = request.POST.get('description', '')
 
         if name and event_type and date_str and start_time_str and end_time_str:
-            Event.objects.create(
-                name=name,
-                event_type=event_type,
-                date=date_str,
-                start_time=start_time_str,
-                end_time=end_time_str,
-                description=description
-            )
+            if event_id:
+                event = Event.objects.get(id=event_id)
+                event.name = name
+                event.event_type = event_type
+                event.date = date_str
+                event.start_time = start_time_str
+                event.end_time = end_time_str
+                event.description = description
+                event.save()
+            else:
+                event = Event.objects.create(
+                    name=name,
+                    event_type=event_type,
+                    date=date_str,
+                    start_time=start_time_str,
+                    end_time=end_time_str,
+                    description=description
+                )
+            
+            offices = request.POST.getlist('offices')
+            event.offices.set(offices)
+            
         return redirect('admin_service')
     
-    base_query = Event.objects.filter(date__gte=date.today()).order_by('date').prefetch_related('shifts__ministry', 'shifts__volunteer')
+    base_query = Event.objects.filter(date__gte=date.today()).order_by('date').prefetch_related('shifts__ministry', 'shifts__volunteer', 'offices')
+    ministries = Ministry.objects.all().order_by('name')
     
     return render(request, 'admin/admin-service.html', {
         'regular_events': base_query.filter(event_type='regular'),
         'scheduled_events': base_query.filter(event_type='scheduled'),
         'big_events': base_query.filter(event_type='big'),
+        'ministries': ministries,
     })
 
 def admin_departments_view(request):
@@ -95,10 +123,15 @@ def admin_departments_view(request):
                     ministry.volunteers.add(head_profile)
                     # Upgrade role to Department Head if not already staff/superuser
                     if not (head_profile.user.is_superuser or head_profile.user.is_staff):
-                        dept_head_role, _ = Role.objects.get_or_create(
+                        dept_head_role, created = Role.objects.get_or_create(
                             name="Department Head",
                             defaults={'badge': 'Head', 'theme': 'emerald', 'description': 'Head of a Ministry'}
                         )
+                        if created:
+                            # Auto-assign standard capabilities to the new role
+                            default_caps = Capability.objects.filter(name__in=["Manage Departments", "Manage Volunteers", "Manage Schedule"])
+                            dept_head_role.capabilities.set(default_caps)
+                            
                         head_profile.role = dept_head_role
                         head_profile.save()
             else:
@@ -108,11 +141,28 @@ def admin_departments_view(request):
             # Edit existing
             ministry = Ministry.objects.filter(id=ministry_id).first()
             if ministry:
+                old_head = ministry.head
+                
                 if name:
                     ministry.name = name
                 ministry.description = description
                 _assign_head(ministry, head_id)
                 ministry.save()
+                
+                # If head was changed, check if old head needs downgrading
+                if old_head and ministry.head != old_head:
+                    # Remove the old head from the department entirely
+                    ministry.volunteers.remove(old_head)
+                    
+                    if not Ministry.objects.filter(head=old_head).exists():
+                        if not (old_head.user.is_superuser or old_head.user.is_staff):
+                            volunteer_role, _ = Role.objects.get_or_create(
+                                name="Volunteer",
+                                defaults={'badge': 'Member', 'theme': 'blue', 'description': 'Regular Volunteer'}
+                            )
+                            old_head.role = volunteer_role
+                            old_head.save()
+                            
                 messages.success(request, f'Department "{ministry.name}" updated successfully!')
         else:
             # Create new
@@ -133,14 +183,27 @@ def admin_departments_view(request):
     })
 
 def admin_members_view(request):
-    """Renders the global members list."""
-    if not request.user.is_authenticated or not (request.user.is_staff or request.user.is_superuser):
+    """Renders the global members list or a filtered list for Dept Heads."""
+    if not check_admin_or_head(request.user):
         return redirect('login')
     
-    profiles = VolunteerProfile.objects.all().select_related('user', 'role').prefetch_related('ministries')
-    all_ministries = Ministry.objects.all()
+    is_staff = request.user.is_staff or request.user.is_superuser
+    
+    if is_staff:
+        profiles = VolunteerProfile.objects.all().select_related('user', 'role').prefetch_related('ministries')
+        all_ministries = Ministry.objects.all()
+        return render(request, 'admin/admin-members.html', {'profiles': profiles, 'all_ministries': all_ministries})
+    else:
+        # Dept Head
+        profile = request.user.volunteer_profile
+        headed_ministries = profile.headed_ministries.all()
+        # Only get volunteers who are part of the ministries this user heads
+        profiles = VolunteerProfile.objects.filter(ministries__in=headed_ministries).distinct().select_related('user', 'role').prefetch_related('ministries')
         
-    return render(request, 'admin/admin-members.html', {'profiles': profiles, 'all_ministries': all_ministries})
+        return render(request, 'dept-head/dept-head-members.html', {
+            'profiles': profiles,
+            'all_ministries': headed_ministries
+        })
 
 def admin_user_roles_view(request):
     """Renders the User Roles and Permissions management view."""

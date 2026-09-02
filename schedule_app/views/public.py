@@ -15,9 +15,15 @@ def login_view(request):
         
         if user is not None:
             auth_login(request, user)
-            # Redirect superusers to admin dashboard, else user dashboard
+            
+            # Check for Department Head role
+            is_dept_head = hasattr(user, 'volunteer_profile') and user.volunteer_profile.role and user.volunteer_profile.role.name == 'Department Head'
+            
+            # Redirect superusers and staff to admin dashboard
             if user.is_superuser or user.is_staff:
                 return redirect('admin_dashboard')
+                
+            # Otherwise, regular user dashboard (including Dept Heads)
             return redirect('user_dashboard')
         else:
             messages.error(request, 'Invalid username or password.')
