@@ -1,0 +1,92 @@
+<!-- Global Delete Modal Component -->
+<!-- Listens for the 'open-delete-modal' event globally on the window -->
+<div x-data="{ 
+        isOpen: false, 
+        modelName: '', 
+        recordId: null, 
+        recordTitle: '' 
+    }" 
+    @open-delete-modal.window="
+        isOpen = true; 
+        modelName = $event.detail.model; 
+        recordId = $event.detail.id; 
+        recordTitle = $event.detail.title;
+    "
+    x-show="isOpen" 
+    x-cloak 
+    class="relative z-50" 
+    aria-labelledby="modal-title" 
+    role="dialog" 
+    aria-modal="true">
+
+    <div x-show="isOpen"
+         x-transition:enter="ease-out duration-300"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="ease-in duration-200"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity"
+         @click="isOpen = false"></div>
+
+    <div class="fixed inset-0 z-10 w-screen overflow-y-auto pointer-events-none">
+        <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+            <div x-show="isOpen"
+                 x-transition:enter="ease-out duration-300"
+                 x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                 x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
+                 x-transition:leave="ease-in duration-200"
+                 x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
+                 x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                 class="relative transform rounded-2xl bg-white dark:bg-gray-900 text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-md pointer-events-auto border border-gray-200 dark:border-gray-800">
+
+                <div class="px-8 py-10 bg-white dark:bg-gray-900 rounded-2xl flex flex-col items-center text-center">
+                    
+                    <!-- Red Warning Icon -->
+                    <div class="flex h-16 w-16 items-center justify-center rounded-full bg-red-100 dark:bg-red-500/20 mb-6">
+                        <svg class="h-8 w-8 text-red-500 dark:text-red-400" fill="currentColor" viewBox="0 0 24 24">
+                            <path fill-rule="evenodd" d="M9.401 3.003c1.155-2 4.043-2 5.197 0l7.355 12.748c1.154 2-.29 4.5-2.599 4.5H4.645c-2.309 0-3.752-2.5-2.598-4.5L9.4 3.003zM12 8.25a.75.75 0 01.75.75v3.75a.75.75 0 01-1.5 0V9a.75.75 0 01.75-.75zm0 8.25a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
+                        </svg>
+                    </div>
+                    
+                    <!-- Title & Text -->
+                    <h3 class="text-2xl font-black text-gray-900 dark:text-white mb-2" id="modal-title">Delete Record</h3>
+                    <p class="text-gray-500 dark:text-gray-400 mb-8 text-base">
+                        You're going to delete <span class="font-bold text-gray-900 dark:text-white" x-text="recordTitle"></span>. Are you sure?
+                    </p>
+                    
+                    <!-- Buttons -->
+                    <form id="global-delete-csrf" class="hidden">{% csrf_token %}</form>
+                    <div class="flex items-center justify-center gap-4 w-full">
+                        <button type="button" @click="isOpen = false" class="px-6 py-3 rounded-full font-bold text-gray-700 dark:text-gray-200 bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors active:scale-95 w-1/2">
+                            No, Keep it.
+                        </button>
+                        <button type="button" 
+                                @click="
+                                    fetch('{% url 'api_delete_record' %}', {
+                                        method: 'POST',
+                                        headers: {
+                                            'Content-Type': 'application/json',
+                                            'X-CSRFToken': document.querySelector('#global-delete-csrf input[name=csrfmiddlewaretoken]').value
+                                        },
+                                        body: JSON.stringify({ model: modelName, id: recordId })
+                                    }).then(r => r.json()).then(data => {
+                                        if (data.success) {
+                                            window.location.reload();
+                                        } else {
+                                            alert('Error: ' + data.error);
+                                        }
+                                    }).catch(err => {
+                                        console.error('Delete error:', err);
+                                        alert('Network error occurred.');
+                                    })
+                                " 
+                                class="px-6 py-3 rounded-full font-bold text-white bg-red-500 hover:bg-red-600 transition-colors active:scale-95 w-1/2">
+                            Yes, Delete It!
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -48,6 +48,7 @@ def admin_service_view(request):
         return redirect('login')
     
     if request.method == 'POST':
+        event_id = request.POST.get('event_id')
         name = request.POST.get('name')
         event_type = request.POST.get('event_type')
         date_str = request.POST.get('date')
@@ -56,22 +57,38 @@ def admin_service_view(request):
         description = request.POST.get('description', '')
 
         if name and event_type and date_str and start_time_str and end_time_str:
-            Event.objects.create(
-                name=name,
-                event_type=event_type,
-                date=date_str,
-                start_time=start_time_str,
-                end_time=end_time_str,
-                description=description
-            )
+            if event_id:
+                event = Event.objects.get(id=event_id)
+                event.name = name
+                event.event_type = event_type
+                event.date = date_str
+                event.start_time = start_time_str
+                event.end_time = end_time_str
+                event.description = description
+                event.save()
+            else:
+                event = Event.objects.create(
+                    name=name,
+                    event_type=event_type,
+                    date=date_str,
+                    start_time=start_time_str,
+                    end_time=end_time_str,
+                    description=description
+                )
+            
+            offices = request.POST.getlist('offices')
+            event.offices.set(offices)
+            
         return redirect('admin_service')
     
-    base_query = Event.objects.filter(date__gte=date.today()).order_by('date').prefetch_related('shifts__ministry', 'shifts__volunteer')
+    base_query = Event.objects.filter(date__gte=date.today()).order_by('date').prefetch_related('shifts__ministry', 'shifts__volunteer', 'offices')
+    ministries = Ministry.objects.all().order_by('name')
     
     return render(request, 'admin/admin-service.html', {
         'regular_events': base_query.filter(event_type='regular'),
         'scheduled_events': base_query.filter(event_type='scheduled'),
         'big_events': base_query.filter(event_type='big'),
+        'ministries': ministries,
     })
 
 def admin_departments_view(request):
@@ -95,10 +112,15 @@ def admin_departments_view(request):
                     ministry.volunteers.add(head_profile)
                     # Upgrade role to Department Head if not already staff/superuser
                     if not (head_profile.user.is_superuser or head_profile.user.is_staff):
-                        dept_head_role, _ = Role.objects.get_or_create(
+                        dept_head_role, created = Role.objects.get_or_create(
                             name="Department Head",
                             defaults={'badge': 'Head', 'theme': 'emerald', 'description': 'Head of a Ministry'}
                         )
+                        if created:
+                            # Auto-assign standard capabilities to the new role
+                            default_caps = Capability.objects.filter(name__in=["Manage Departments", "Manage Volunteers", "Manage Schedule"])
+                            dept_head_role.capabilities.set(default_caps)
+                            
                         head_profile.role = dept_head_role
                         head_profile.save()
             else:

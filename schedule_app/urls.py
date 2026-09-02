@@ -25,4 +25,5 @@ urlpatterns = [
     path('api/remove-role/', views.api_remove_role, name='api_remove_role'),
     path('search-volunteers/', views.search_volunteers, name='search_volunteers'),
     path('api/update-ministries/', views.api_update_ministries, name='api_update_ministries'),
+    path('api/delete-record/', views.api_delete_record, name='api_delete_record'),
 ]

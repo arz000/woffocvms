@@ -1,0 +1,38 @@
+<div class="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow group relative overflow-hidden">
+    <!-- Theme Accent Line -->
+    <div class="absolute top-0 left-0 w-1 h-full 
+        {% if theme == 'blue' %}bg-blue-500
+        {% elif theme == 'amber' %}bg-amber-500
+        {% elif theme == 'emerald' %}bg-emerald-500
+        {% else %}bg-gray-500{% endif %}"></div>
+
+    <div class="pl-3 flex flex-col h-full">
+        <div class="flex justify-between items-start mb-2">
+            <h4 class="font-bold text-gray-900 dark:text-white text-sm leading-tight">{{ event.name }}</h4>
+            <div class="flex opacity-0 group-hover:opacity-100 transition-opacity gap-1">
+                <!-- Edit Button -->
+                <button @click="$dispatch('open-edit-event', { id: {{ event.id }}, eventType: '{{ event.event_type|escapejs }}', name: '{{ event.name|escapejs }}', date: '{{ event.date|date:'Y-m-d' }}', startTime: '{{ event.start_time|time:'H:i' }}', endTime: '{{ event.end_time|time:'H:i' }}', description: '{{ event.description|escapejs }}', offices: [{% for o in event.offices.all %}'{{ o.id }}'{% if not forloop.last %},{% endif %}{% endfor %}] })" type="button" class="text-gray-400 hover:text-emerald-500 p-1 rounded hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-colors" title="Edit Event">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                </button>
+                <!-- Delete Button (Global Modal) -->
+                <button @click="$dispatch('open-delete-modal', { model: 'Event', id: {{ event.id }}, title: '{{ event.name|escapejs }}' })" type="button" class="text-gray-400 hover:text-red-500 p-1 rounded hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors" title="Delete Event">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                </button>
+            </div>
+        </div>
+        
+        <div class="flex items-center text-xs text-gray-500 dark:text-gray-400 mb-1 gap-1">
+            <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+            <span>{{ event.date|date:"M d, Y" }}</span>
+        </div>
+        
+        <div class="flex items-center text-xs text-gray-500 dark:text-gray-400 mb-3 gap-1">
+            <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            <span>{{ event.start_time|time:"g:i A" }} - {{ event.end_time|time:"g:i A" }}</span>
+        </div>
+        
+        {% if event.description %}
+            <p class="text-xs text-gray-600 dark:text-gray-400 line-clamp-2 mt-auto">{{ event.description }}</p>
+        {% endif %}
+    </div>
+</div>

@@ -12,6 +12,8 @@ function calendar(initialEvents = []) {
         monthNames: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
         days: [], // Array holding the days to render in the grid
         events: initialEvents, // Events data from Django
+        selectedEvent: null, // The event selected for viewing details
+        isDetailsModalOpen: false, // Whether the details modal is open
         
         // --- Computed Properties ---
         get month() { return this.activeDate.getMonth(); },
@@ -20,6 +22,12 @@ function calendar(initialEvents = []) {
         // --- Initialization ---
         init() {
             this.updateView();
+        },
+        
+        // --- Modal Methods ---
+        openEventDetails(event) {
+            this.selectedEvent = event;
+            this.isDetailsModalOpen = true;
         },
         
         // --- Utility Methods ---
