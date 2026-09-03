@@ -104,10 +104,12 @@ function volunteerCalendarApp() {
             for (let i = firstDayIndex - 1; i >= 0; i--) {
                 const d = new Date(this.year, this.month - 1, prevLastDay - i);
                 const unavailInfo = this.checkUnavailability(d);
+                const isPast = d.getTime() < today.getTime();
                 daysArr.push({
                     date: d,
                     isCurrentMonth: false,
                     isToday: d.getTime() === today.getTime(),
+                    isPast: isPast,
                     isUnavailable: unavailInfo.isUnavailable,
                     unavailReason: unavailInfo.reason,
                     events: this.getEventsForDate(d)
@@ -117,10 +119,12 @@ function volunteerCalendarApp() {
             for (let i = 1; i <= lastDay; i++) {
                 const d = new Date(this.year, this.month, i);
                 const unavailInfo = this.checkUnavailability(d);
+                const isPast = d.getTime() < today.getTime();
                 daysArr.push({
                     date: d,
                     isCurrentMonth: true,
                     isToday: d.getTime() === today.getTime(),
+                    isPast: isPast,
                     isUnavailable: unavailInfo.isUnavailable,
                     unavailReason: unavailInfo.reason,
                     events: this.getEventsForDate(d)
@@ -131,10 +135,12 @@ function volunteerCalendarApp() {
             for (let i = 1; i <= remaining; i++) {
                 const d = new Date(this.year, this.month + 1, i);
                 const unavailInfo = this.checkUnavailability(d);
+                const isPast = d.getTime() < today.getTime();
                 daysArr.push({
                     date: d,
                     isCurrentMonth: false,
                     isToday: d.getTime() === today.getTime(),
+                    isPast: isPast,
                     isUnavailable: unavailInfo.isUnavailable,
                     unavailReason: unavailInfo.reason,
                     events: this.getEventsForDate(d)
@@ -156,10 +162,12 @@ function volunteerCalendarApp() {
                 const d = new Date(startOfWeek);
                 d.setDate(startOfWeek.getDate() + i);
                 const unavailInfo = this.checkUnavailability(d);
+                const isPast = d.getTime() < today.getTime();
                 daysArr.push({
                     date: d,
                     isCurrentMonth: true,
                     isToday: d.getTime() === today.getTime(),
+                    isPast: isPast,
                     isUnavailable: unavailInfo.isUnavailable,
                     unavailReason: unavailInfo.reason,
                     events: this.getEventsForDate(d)
@@ -253,9 +261,10 @@ function volunteerCalendarApp() {
                     <template x-for="(day, index) in days" :key="index">
                         <div class="p-1 sm:p-2 group transition-colors relative flex flex-col min-h-0 overflow-hidden w-full min-w-0"
                              :class="{
-                                 'bg-white dark:bg-gray-900 hover:bg-emerald-50/30 dark:hover:bg-gray-800/80': day.isCurrentMonth && !day.isUnavailable,
-                                 'bg-slate-100/80 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800': day.isUnavailable,
-                                 'bg-gray-50/50 dark:bg-gray-950/50': !day.isCurrentMonth && !day.isUnavailable
+                                 'bg-gray-100/50 dark:bg-gray-950/70 opacity-60 cursor-not-allowed': day.isPast && !day.isToday,
+                                 'bg-slate-100/80 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800': day.isUnavailable && (!day.isPast || day.isToday),
+                                 'bg-white dark:bg-gray-900 hover:bg-emerald-50/30 dark:hover:bg-gray-800/80': day.isCurrentMonth && !day.isUnavailable && (!day.isPast || day.isToday),
+                                 'bg-gray-50/50 dark:bg-gray-950/50': !day.isCurrentMonth && !day.isUnavailable && (!day.isPast || day.isToday)
                              }">
                             
                             <!-- Date Number -->
@@ -263,9 +272,10 @@ function volunteerCalendarApp() {
                                 <span class="text-xs font-black w-6 h-6 flex items-center justify-center rounded-full transition-all"
                                       :class="{
                                           'bg-emerald-600 text-white shadow-sm shadow-emerald-600/30': day.isToday,
-                                          'text-slate-600 dark:text-slate-400': day.isUnavailable && !day.isToday,
-                                          'text-gray-900 dark:text-white': day.isCurrentMonth && !day.isToday && !day.isUnavailable,
-                                          'text-gray-300 dark:text-gray-600': !day.isCurrentMonth
+                                          'text-gray-300 dark:text-gray-600': day.isPast && !day.isToday,
+                                          'text-slate-600 dark:text-slate-400': day.isUnavailable && !day.isToday && !day.isPast,
+                                          'text-gray-900 dark:text-white': day.isCurrentMonth && !day.isToday && !day.isUnavailable && !day.isPast,
+                                          'text-gray-300 dark:text-gray-600': !day.isCurrentMonth && !day.isPast
                                       }"
                                       x-text="day.date.getDate()"></span>
 
@@ -315,6 +325,8 @@ function volunteerCalendarApp() {
                 </div>
             </div>
         </main>
+        
+        {% include 'layout/footer.html' %}
 
         <!-- Enhanced Event Details Modal -->
         <div x-show="modalOpen" x-cloak class="relative z-50">

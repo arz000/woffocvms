@@ -12,6 +12,7 @@
     eventEndTime: '',
     eventDescription: '',
     eventOffices: [],
+    searchQuery: '',
     
     openCreateModal() {
         this.isEditing = false;
@@ -48,17 +49,34 @@ class="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-950 transition-colo
         {% include 'layout/topbar.html' with page_title="Service / Events" %}
         
         <!-- Main Content Area -->
-        <main class="flex-1 p-4 sm:p-6 lg:p-8 flex flex-col min-h-0">
+        <main class="flex-1 p-4 sm:p-6 lg:p-8 flex flex-col space-y-6">
             <!-- Header Controls -->
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 shrink-0">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-2 shrink-0">
                 <div>
                     <h2 class="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white tracking-tight">Event Management</h2>
                     <p class="text-gray-500 dark:text-gray-400 mt-1 text-sm font-medium">Organize and manage upcoming church services and events.</p>
                 </div>
                 
-                <div class="flex items-center gap-2 sm:gap-3">
-                    <button @click="openCreateModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-md shadow-emerald-600/20 transition-all active:scale-95 flex items-center gap-2">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                <div class="flex flex-wrap items-center gap-3">
+                    <!-- Live Search Bar -->
+                    <div class="relative w-full sm:w-72">
+                        <input type="text" 
+                               x-model="searchQuery" 
+                               placeholder="Search..." 
+                               class="w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white text-xs font-semibold rounded-2xl pl-10 pr-8 py-2.5 shadow-xs focus:ring-2 focus:ring-emerald-500 focus:outline-hidden transition-all">
+                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                        </div>
+                        <button type="button" 
+                                x-show="searchQuery" 
+                                @click="searchQuery = ''" 
+                                class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
+                    </div>
+
+                    <button @click="openCreateModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-bold shadow-md shadow-emerald-600/20 transition-all active:scale-95 flex items-center gap-2 shrink-0">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg>
                         Create Event
                     </button>
                 </div>
@@ -130,6 +148,8 @@ class="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-950 transition-colo
             </div>
             
         </main>
+        
+        {% include 'layout/footer.html' %}
     </div>
 
     <!-- Add Event Modal -->
@@ -176,7 +196,7 @@ class="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-950 transition-colo
                             <input type="hidden" name="event_id" x-model="editEventId">
                             <div class="space-y-1.5">
                                 <label for="event-name" class="block text-sm font-bold text-gray-700 dark:text-gray-300">Event Name</label>
-                                <input type="text" name="name" id="event-name" x-model="eventName" required placeholder="e.g. Sunday Morning Service" class="block w-full rounded-xl border-0 bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-white ring-1 ring-inset ring-gray-200 dark:ring-gray-800 focus:ring-2 focus:ring-inset focus:ring-emerald-500 sm:text-sm px-4 py-3 transition-all placeholder:text-gray-400">
+                                <input type="text" name="name" id="event-name" x-model="eventName" required placeholder="Enter event name..." class="block w-full rounded-xl border-0 bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-white ring-1 ring-inset ring-gray-200 dark:ring-gray-800 focus:ring-2 focus:ring-inset focus:ring-emerald-500 sm:text-sm px-4 py-3 transition-all placeholder:text-gray-400">
                             </div>
 
                             <div class="space-y-2">
@@ -211,7 +231,7 @@ class="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-950 transition-colo
                             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                 <div class="space-y-1.5">
                                     <label for="event-date" class="block text-sm font-bold text-gray-700 dark:text-gray-300">Date</label>
-                                    <input type="date" name="date" id="event-date" x-model="eventDate" required class="block w-full rounded-xl border-0 bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-white ring-1 ring-inset ring-gray-200 dark:ring-gray-800 focus:ring-2 focus:ring-inset focus:ring-emerald-500 sm:text-sm px-4 py-3 transition-all">
+                                    <input type="date" name="date" id="event-date" x-model="eventDate" min="{{ today }}" required class="block w-full rounded-xl border-0 bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-white ring-1 ring-inset ring-gray-200 dark:ring-gray-800 focus:ring-2 focus:ring-inset focus:ring-emerald-500 sm:text-sm px-4 py-3 transition-all">
                                 </div>
                                 <div class="space-y-1.5">
                                     <label for="event-start" class="block text-sm font-bold text-gray-700 dark:text-gray-300">Start Time</label>
@@ -225,7 +245,7 @@ class="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-950 transition-colo
 
                             <div class="space-y-1.5">
                                 <label for="event-desc" class="block text-sm font-bold text-gray-700 dark:text-gray-300">Description <span class="font-normal text-gray-400 ml-1">(Optional)</span></label>
-                                <textarea name="description" id="event-desc" x-model="eventDescription" rows="3" placeholder="Additional details..." class="block w-full rounded-xl border-0 bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-white ring-1 ring-inset ring-gray-200 dark:ring-gray-800 focus:ring-2 focus:ring-inset focus:ring-emerald-500 sm:text-sm px-4 py-3 transition-all resize-none placeholder:text-gray-400"></textarea>
+                                <textarea name="description" id="event-desc" x-model="eventDescription" rows="3" placeholder="Enter description..." class="block w-full rounded-xl border-0 bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-white ring-1 ring-inset ring-gray-200 dark:ring-gray-800 focus:ring-2 focus:ring-inset focus:ring-emerald-500 sm:text-sm px-4 py-3 transition-all resize-none placeholder:text-gray-400"></textarea>
                             </div>
 
                             <div class="space-y-2 pt-2 border-t border-gray-100 dark:border-gray-800">

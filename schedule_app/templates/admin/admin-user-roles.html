@@ -9,17 +9,34 @@
         {% include 'layout/topbar.html' with page_title="User Roles" %}
         
         <!-- Main Content Area -->
-        <main x-data="{ manageModalOpen: false, selectedRole: '', selectedRoleId: null, roleTheme: '', roleUsers: [], editModalOpen: false, editRoleId: null, editRoleName: '', editRoleDesc: '', editRoleTheme: '', editRoleCapabilities: [] }" class="flex-1 p-4 sm:p-6 lg:p-8 flex flex-col min-h-0 relative">
+        <main x-data="{ manageModalOpen: false, selectedRole: '', selectedRoleId: null, roleTheme: '', roleUsers: [], editModalOpen: false, editRoleId: null, editRoleName: '', editRoleDesc: '', editRoleTheme: '', editRoleCapabilities: [], searchQuery: '' }" class="flex-1 p-4 sm:p-6 lg:p-8 flex flex-col space-y-6 relative">
             <!-- Header Controls -->
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 shrink-0">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 shrink-0">
                 <div>
                     <h2 class="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white tracking-tight">Roles & Permissions</h2>
                     <p class="text-gray-500 dark:text-gray-400 mt-1 text-sm font-medium">Manage system access levels and department permissions.</p>
                 </div>
                 
-                <div class="flex items-center gap-2 sm:gap-3">
-                    <button @click="editRoleId = null; editRoleName = ''; editRoleDesc = ''; editRoleTheme = 'emerald'; editRoleCapabilities = []; editModalOpen = true;" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-md shadow-emerald-600/20 transition-all active:scale-95 flex items-center gap-2">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                <div class="flex flex-wrap items-center gap-3">
+                    <!-- Live Search Bar -->
+                    <div class="relative w-full sm:w-72">
+                        <input type="text" 
+                               x-model="searchQuery" 
+                               placeholder="Search..." 
+                               class="w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white text-xs font-semibold rounded-2xl pl-10 pr-8 py-2.5 shadow-xs focus:ring-2 focus:ring-emerald-500 focus:outline-hidden transition-all">
+                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                        </div>
+                        <button type="button" 
+                                x-show="searchQuery" 
+                                @click="searchQuery = ''" 
+                                class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
+                    </div>
+
+                    <button @click="editRoleId = null; editRoleName = ''; editRoleDesc = ''; editRoleTheme = 'emerald'; editRoleCapabilities = []; editModalOpen = true;" class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-bold shadow-md shadow-emerald-600/20 transition-all active:scale-95 flex items-center gap-2 shrink-0">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg>
                         Create Role
                     </button>
                 </div>
@@ -27,7 +44,8 @@
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-10">
                 {% for role in roles %}
-                <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+                <div x-show="!searchQuery || '{{ role.name|lower|escapejs }} {{ role.description|lower|escapejs }}'.includes(searchQuery.toLowerCase().trim())"
+                     class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
                     <div class="absolute top-0 left-0 w-1.5 h-full bg-emerald-500"></div>
                     <div class="flex justify-between items-start mb-4 pl-2">
                         <div>
@@ -99,6 +117,8 @@
             {% include 'admin/modals/manage-role-access.html' %}
             {% include 'admin/modals/edit-role.html' %}
         </main>
+        
+        {% include 'layout/footer.html' %}
     </div>
 </div>
 {% endblock %}

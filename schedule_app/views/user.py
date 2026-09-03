@@ -182,7 +182,7 @@ def volunteer_calendar_view(request):
     from schedule_app.models import Shift, Event, Unavailability
     
     today = timezone.now().date()
-    events = Event.objects.prefetch_related('offices', 'shifts__volunteer', 'shifts__ministry', 'shifts__job').all()
+    events = Event.objects.filter(date__gte=today).prefetch_related('offices', 'shifts__volunteer', 'shifts__ministry', 'shifts__job').order_by('date', 'start_time')
     
     events_data = []
     for e in events:
@@ -203,6 +203,8 @@ def volunteer_calendar_view(request):
         for s in unfilled_shifts:
             r_name = s.job.title if s.job else (s.ministry.name if s.ministry else "Volunteer")
             needed_roles_count[r_name] = needed_roles_count.get(r_name, 0) + 1
+
+        needed_roles = [{'role': r, 'count': c} for r, c in needed_roles_count.items()]
 
         team = []
         for s in filled_shifts:
@@ -235,7 +237,7 @@ def volunteer_calendar_view(request):
             'offices': [{'id': o.id, 'name': o.name} for o in e.offices.all()],
         })
     
-    unavailabilities = Unavailability.objects.filter(volunteer=request.user)
+    unavailabilities = Unavailability.objects.filter(volunteer=request.user, start_date__gte=today)
     unavailabilities_data = [{
         'id': u.id,
         'start_date': u.start_date.isoformat(),
@@ -246,12 +248,14 @@ def volunteer_calendar_view(request):
     return render(request, 'volunteer/volunteer-calendar.html', {
         'events_json': json.dumps(events_data),
         'unavailabilities_json': json.dumps(unavailabilities_data),
+        'today': today.isoformat(),
     })
 
 @login_required
 def volunteer_schedule_view(request):
     """Dedicated 'Schedule' tab where volunteers manage the dates they cannot serve (unavailable / blackout dates) & view commitments."""
     from schedule_app.models import Shift, Event, Unavailability
+    import datetime
     
     today = timezone.now().date()
     
@@ -267,6 +271,14 @@ def volunteer_schedule_view(request):
             final_reason = other_reason if (reason == 'Other' and other_reason) else (reason or 'Unavailable')
             
             if start_date:
+                try:
+                    s_date = datetime.date.fromisoformat(start_date)
+                    if s_date < today:
+                        messages.error(request, "Cannot set unavailable dates in the past.")
+                        return redirect('volunteer_schedule')
+                except ValueError:
+                    pass
+
                 Unavailability.objects.create(
                     volunteer=request.user,
                     start_date=start_date,
@@ -282,9 +294,10 @@ def volunteer_schedule_view(request):
             messages.info(request, "Unavailable date removed. You are now marked as available.")
             return redirect('volunteer_schedule')
 
-    # Volunteer's active unavailable dates
+    # Volunteer's active upcoming unavailable dates
     unavailabilities = Unavailability.objects.filter(
-        volunteer=request.user
+        volunteer=request.user,
+        start_date__gte=today
     ).order_by('start_date')
     
     # Active scheduled shifts
@@ -296,6 +309,7 @@ def volunteer_schedule_view(request):
     return render(request, 'volunteer/volunteer-schedule.html', {
         'unavailabilities': unavailabilities,
         'my_shifts': my_shifts,
+        'today': today.isoformat(),
     })
 
 @login_required
@@ -313,19 +327,20 @@ def volunteer_opportunities_view(request):
         action = request.POST.get('action', 'signup')
         
         shift = Shift.objects.filter(id=shift_id).select_related('event').first()
-        if shift:
+        if shift and shift.event.date >= today:
             if action == 'signup' and shift.volunteer is None:
                 shift.volunteer = request.user
                 shift.save()
-                messages.success(request, f"You successfully signed up for {shift.ministry.name} at {shift.event.name}!")
+                messages.success(request, f"You successfully signed up for {shift.event.name} ({shift.job.title if shift.job else shift.ministry.name})!")
             elif action == 'cancel' and shift.volunteer == request.user:
                 shift.volunteer = None
                 shift.save()
-                messages.info(request, f"You withdrew from {shift.ministry.name} at {shift.event.name}.")
+                messages.info(request, f"You removed yourself from {shift.event.name}.")
+                
         return redirect('volunteer_opportunities')
         
     # Open Shifts for signup
-    if my_ministries:
+    if my_ministries.exists():
         dept_open_shifts = Shift.objects.filter(
             volunteer__isnull=True,
             ministry__in=my_ministries,
@@ -398,6 +413,10 @@ def dept_head_event_detail_view(request, event_id):
     
     # Handle POST to update volunteer assignments for a job
     if request.method == 'POST':
+        if event.date < timezone.now().date():
+            messages.error(request, "Cannot modify assignments for events that have already passed.")
+            return redirect('dept_head_event_detail', event_id=event_id)
+
         job_id = request.POST.get('job_id')
         action = request.POST.get('action', 'save_assignments')
         
@@ -550,6 +569,8 @@ def dept_head_event_detail_view(request, event_id):
     return render(request, 'dept-head/dept-head-event-detail.html', {
         'event': event,
         'ministries_data': ministries_data,
+        'is_past_event': event.date < timezone.now().date(),
+        'today': timezone.now().date().isoformat(),
     })
 
 @login_required
@@ -645,6 +666,9 @@ def dept_head_jobs_view(request):
                 return redirect('dept_head_jobs')
                 
             team_leader = dept_members.filter(id=team_leader_id).first() if team_leader_id else None
+            volunteers_to_assign = list(dept_members.filter(id__in=assigned_volunteer_ids))
+            if team_leader and team_leader not in volunteers_to_assign:
+                volunteers_to_assign.append(team_leader)
             
             if job_id:
                 # Edit
@@ -655,7 +679,7 @@ def dept_head_jobs_view(request):
                     job.ministry = ministry
                     job.team_leader = team_leader
                     job.save()
-                    job.assigned_volunteers.set(dept_members.filter(id__in=assigned_volunteer_ids))
+                    job.assigned_volunteers.set(volunteers_to_assign)
                     messages.success(request, f'Job position "{title}" updated successfully.')
             else:
                 # Create
@@ -665,7 +689,7 @@ def dept_head_jobs_view(request):
                     ministry=ministry,
                     team_leader=team_leader
                 )
-                job.assigned_volunteers.set(dept_members.filter(id__in=assigned_volunteer_ids))
+                job.assigned_volunteers.set(volunteers_to_assign)
                 messages.success(request, f'Job position "{title}" created successfully.')
                 
             return redirect('dept_head_jobs')

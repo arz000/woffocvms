@@ -18,7 +18,7 @@
         {% include 'layout/topbar.html' with page_title="Department Roles" %}
 
         <!-- Main Content Area -->
-        <main class="flex-1 p-4 sm:p-6 lg:p-8 space-y-6">
+        <main class="flex-1 p-4 sm:p-6 lg:p-8 flex flex-col space-y-6">
             
             <!-- Messages / Alerts -->
             {% if messages %}
@@ -33,7 +33,7 @@
             {% endif %}
 
             <!-- Header Section -->
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h1 class="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white tracking-tight">Department Roles</h1>
                     <p class="text-gray-500 dark:text-gray-400 mt-1 text-sm font-medium">
@@ -41,13 +41,32 @@
                     </p>
                 </div>
 
-                <!-- Add Role Button -->
-                <button type="button" 
-                        @click="openCreateModal()"
-                        class="inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-3 rounded-2xl text-xs sm:text-sm font-bold shadow-md shadow-emerald-600/20 active:scale-95 transition-all">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg>
-                    Add Role
-                </button>
+                <div class="flex flex-wrap items-center gap-3">
+                    <!-- Live Real-Time Search Bar (No Confirm Button) -->
+                    <div class="relative w-full sm:w-72">
+                        <input type="text" 
+                               x-model="searchQuery" 
+                               placeholder="Search..." 
+                               class="w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white text-xs font-semibold rounded-2xl pl-10 pr-8 py-2.5 shadow-xs focus:ring-2 focus:ring-emerald-500 focus:outline-hidden transition-all">
+                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                        </div>
+                        <button type="button" 
+                                x-show="searchQuery" 
+                                @click="searchQuery = ''" 
+                                class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
+                    </div>
+
+                    <!-- Add Role Button -->
+                    <button type="button" 
+                            @click="openCreateModal()"
+                            class="inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-bold shadow-md shadow-emerald-600/20 active:scale-95 transition-all shrink-0">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg>
+                        Add Role
+                    </button>
+                </div>
             </div>
 
             <!-- Top Stats Grid -->
@@ -86,7 +105,8 @@
             <!-- Roles Cards Grid -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {% for job in jobs %}
-                <div class="bg-white dark:bg-gray-900 border border-emerald-100 dark:border-gray-800 rounded-3xl p-6 shadow-sm flex flex-col justify-between hover:shadow-md transition-all">
+                <div x-show="!searchQuery || '{{ job.title|lower|escapejs }} {{ job.description|lower|escapejs }} {{ job.team_leader.user.get_full_name|lower|escapejs }} {{ job.team_leader.user.username|lower|escapejs }} {% for v in job.assigned_volunteers.all %}{{ v.user.get_full_name|lower|escapejs }} {{ v.user.username|lower|escapejs }} {% endfor %}'.includes(searchQuery.toLowerCase().trim())"
+                     class="bg-white dark:bg-gray-900 border border-emerald-100 dark:border-gray-800 rounded-3xl p-6 shadow-sm flex flex-col justify-between hover:shadow-md transition-all">
                     
                     <div>
                         <!-- Header & Actions -->
@@ -108,15 +128,10 @@
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
                                 </button>
 
-                                <!-- Delete Button -->
-                                <form method="POST" action="{% url 'dept_head_jobs' %}" onsubmit="return confirm('Are you sure you want to delete this role?');" class="inline">
-                                    {% csrf_token %}
-                                    <input type="hidden" name="action" value="delete_job">
-                                    <input type="hidden" name="job_id" value="{{ job.id }}">
-                                    <button type="submit" class="p-2 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors" title="Delete Role">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                                    </button>
-                                </form>
+                                <!-- Delete Button (Global Modal) -->
+                                <button @click="$dispatch('open-delete-modal', { model: 'DepartmentJob', id: {{ job.id }}, title: '{{ job.title|escapejs }}' })" type="button" class="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-xl transition-colors" title="Delete Role">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                </button>
                             </div>
                         </div>
 
@@ -168,19 +183,10 @@
                 </div>
                 {% empty %}
                 <div class="col-span-full bg-white dark:bg-gray-900 border border-emerald-100 dark:border-gray-800 rounded-3xl p-12 text-center">
-                    <div class="w-14 h-14 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto mb-4 font-bold">
+                    <div class="w-14 h-14 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto mb-3 font-bold shadow-xs">
                         <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
                     </div>
                     <h2 class="text-base font-black text-gray-900 dark:text-white">No Department Roles Created Yet</h2>
-                    <p class="text-xs text-gray-400 mt-1 max-w-sm mx-auto">
-                        Create roles such as Cameraman, Projector Operator, or Sound Engineer to organize your department.
-                    </p>
-                    <button type="button" 
-                            @click="openCreateModal()" 
-                            class="mt-5 inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-5 py-2.5 rounded-2xl shadow-sm transition-all active:scale-95">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-                        Create First Role
-                    </button>
                 </div>
                 {% endfor %}
             </div>
@@ -243,7 +249,7 @@
                                                name="title" 
                                                x-model="form.title" 
                                                required 
-                                               placeholder="e.g. Cameraman, Projector Operator, Sound Engineer"
+                                               placeholder="Enter role title..."
                                                class="w-full px-4 py-3 rounded-2xl bg-gray-50 dark:bg-gray-950 border border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-emerald-500 text-xs sm:text-sm font-medium">
                                     </div>
 
@@ -288,7 +294,7 @@
                                             
                                             <!-- Option: None -->
                                             <button type="button" 
-                                                    @click="form.team_leader_id = ''; leaderOpen = false"
+                                                    @click="selectLeader(''); leaderOpen = false"
                                                     class="w-full flex items-center justify-between p-2.5 rounded-xl text-xs font-bold transition-all text-left"
                                                     :class="form.team_leader_id === '' ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300' : 'text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800/60'">
                                                 <div class="flex items-center gap-2.5">
@@ -303,7 +309,7 @@
                                             <!-- Member Options -->
                                             <template x-for="member in allMembers" :key="member.id">
                                                 <button type="button" 
-                                                        @click="form.team_leader_id = member.id.toString(); leaderOpen = false"
+                                                        @click="selectLeader(member.id); leaderOpen = false"
                                                         class="w-full flex items-center justify-between p-2.5 rounded-xl text-xs font-bold transition-all text-left"
                                                         :class="form.team_leader_id === member.id.toString() ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300' : 'text-gray-700 dark:text-gray-300 hover:bg-emerald-50/40 dark:hover:bg-gray-800/60'">
                                                     <div class="flex items-center gap-2.5 min-w-0">
@@ -324,7 +330,7 @@
                                         <textarea name="description" 
                                                   x-model="form.description" 
                                                   rows="2" 
-                                                  placeholder="Brief responsibilities for this role..."
+                                                  placeholder="Enter description..."
                                                   class="w-full px-4 py-3 rounded-2xl bg-gray-50 dark:bg-gray-950 border border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-emerald-500 text-xs sm:text-sm font-medium"></textarea>
                                     </div>
 
@@ -334,7 +340,7 @@
                                             Assign Volunteers
                                         </label>
                                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-48 overflow-y-auto custom-scrollbar p-1">
-                                            <template x-for="member in allMembers" :key="member.id">
+                                            <template x-for="member in availableMembers" :key="member.id">
                                                 <button type="button"
                                                         @click="toggleVolunteer(member.id)"
                                                         :class="form.volunteer_ids.includes(member.id) 
@@ -358,6 +364,9 @@
                                                     <input type="checkbox" name="assigned_volunteers" :value="member.id" :checked="form.volunteer_ids.includes(member.id)" class="hidden">
                                                 </button>
                                             </template>
+                                            <div x-show="availableMembers.length === 0" class="col-span-full py-4 text-center text-xs text-gray-400 font-medium">
+                                                No other members available to assign.
+                                            </div>
                                         </div>
                                     </div>
 
@@ -387,6 +396,7 @@
 function rolesManagerApp(allMembers) {
     return {
         allMembers: allMembers || [],
+        searchQuery: '',
         roleModalOpen: false,
         isEdit: false,
         form: {
@@ -411,14 +421,32 @@ function rolesManagerApp(allMembers) {
 
         openEditModal(data) {
             this.isEdit = true;
+            const leaderId = data.team_leader_id ? data.team_leader_id.toString() : '';
+            let vols = data.volunteer_ids ? data.volunteer_ids.map(Number) : [];
+            if (leaderId) {
+                vols = vols.filter(v => v !== Number(leaderId));
+            }
             this.form = {
                 id: data.id,
                 title: data.title,
                 description: data.description,
-                team_leader_id: data.team_leader_id ? data.team_leader_id.toString() : '',
-                volunteer_ids: data.volunteer_ids ? data.volunteer_ids.map(Number) : []
+                team_leader_id: leaderId,
+                volunteer_ids: vols
             };
             this.roleModalOpen = true;
+        },
+
+        selectLeader(id) {
+            const strId = id ? id.toString() : '';
+            this.form.team_leader_id = strId;
+            if (strId) {
+                this.form.volunteer_ids = this.form.volunteer_ids.filter(v => v !== Number(strId));
+            }
+        },
+
+        get availableMembers() {
+            if (!this.form.team_leader_id) return this.allMembers;
+            return this.allMembers.filter(m => m.id.toString() !== this.form.team_leader_id.toString());
         },
 
         toggleVolunteer(id) {

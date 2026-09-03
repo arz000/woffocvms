@@ -1,4 +1,5 @@
-<div class="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow group relative overflow-hidden">
+<div x-show="!searchQuery || '{{ event.name|lower|escapejs }} {{ event.description|lower|escapejs }} {{ event.date|date:"M d, Y"|lower|escapejs }} {% for office in event.offices.all %}{{ office.name|lower|escapejs }} {% endfor %}'.includes(searchQuery.toLowerCase().trim())"
+     class="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow group relative overflow-hidden">
     <!-- Theme Accent Line -->
     <div class="absolute top-0 left-0 w-1 h-full 
         {% if theme == 'blue' %}bg-blue-500

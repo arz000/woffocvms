@@ -173,7 +173,7 @@ def api_remove_role(request):
 
 def api_delete_record(request):
     """Global API Endpoint to securely delete any allowed model record."""
-    if not request.user.is_authenticated or not (request.user.is_staff or request.user.is_superuser):
+    if not request.user.is_authenticated:
         return JsonResponse({'error': 'Unauthorized'}, status=403)
         
     if request.method == 'POST':
@@ -182,20 +182,55 @@ def api_delete_record(request):
             model_name = data.get('model')
             record_id = data.get('id')
             
-            # Whitelist of models that can be deleted via this endpoint
-            from schedule_app.models import Ministry, Event, Role
-            ALLOWED_MODELS = {
-                'Ministry': Ministry,
-                'Event': Event,
-                'Role': Role
-            }
+            is_staff = request.user.is_staff or request.user.is_superuser
+            profile = getattr(request.user, 'volunteer_profile', None)
+            is_dept_head = profile and (
+                (profile.role and profile.role.name == 'Department Head') or 
+                profile.headed_ministries.exists()
+            )
             
-            model_class = ALLOWED_MODELS.get(model_name)
-            if not model_class:
-                return JsonResponse({'error': f'Model {model_name} is not allowed or does not exist.'}, status=400)
+            from schedule_app.models import Ministry, Event, Role, DepartmentJob, Unavailability, Shift
+            
+            if model_name == 'DepartmentJob':
+                if is_staff:
+                    DepartmentJob.objects.filter(id=record_id).delete()
+                elif is_dept_head:
+                    headed_mins = profile.headed_ministries.all()
+                    DepartmentJob.objects.filter(id=record_id, ministry__in=headed_mins).delete()
+                else:
+                    return JsonResponse({'error': 'Unauthorized to delete this role.'}, status=403)
+                return JsonResponse({'success': True})
                 
-            model_class.objects.filter(id=record_id).delete()
-            return JsonResponse({'success': True})
+            elif model_name == 'Unavailability':
+                if is_staff:
+                    Unavailability.objects.filter(id=record_id).delete()
+                else:
+                    Unavailability.objects.filter(id=record_id, volunteer=request.user).delete()
+                return JsonResponse({'success': True})
+                
+            elif model_name == 'Shift':
+                if is_staff:
+                    Shift.objects.filter(id=record_id).delete()
+                elif is_dept_head:
+                    headed_mins = profile.headed_ministries.all()
+                    Shift.objects.filter(id=record_id, ministry__in=headed_mins).delete()
+                else:
+                    Shift.objects.filter(id=record_id, volunteer=request.user).update(volunteer=None)
+                return JsonResponse({'success': True})
+
+            elif model_name in ['Ministry', 'Event', 'Role']:
+                if not is_staff:
+                    return JsonResponse({'error': 'Unauthorized'}, status=403)
+                ALLOWED_MODELS = {
+                    'Ministry': Ministry,
+                    'Event': Event,
+                    'Role': Role
+                }
+                ALLOWED_MODELS[model_name].objects.filter(id=record_id).delete()
+                return JsonResponse({'success': True})
+            else:
+                return JsonResponse({'error': f'Model {model_name} is not recognized.'}, status=400)
+                
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=400)
             

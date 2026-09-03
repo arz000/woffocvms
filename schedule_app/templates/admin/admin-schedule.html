@@ -41,6 +41,7 @@ function calendarApp() {
         events: initialEvents,
         selectedEvent: null,
         isDetailsModalOpen: false,
+        todayStr: new Date().toISOString().split('T')[0],
 
         get month() { return this.activeDate.getMonth(); },
         get year() { return this.activeDate.getFullYear(); },
@@ -81,17 +82,22 @@ function calendarApp() {
                     date: '',
                     isCurrentMonth: false,
                     isToday: false,
+                    isPast: false,
                     fullDate: ''
                 });
             }
 
             // 2. Current month's days
             for (let i = 1; i <= daysInMonth; i++) {
+                let fullDate = `${y}-${String(m + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+                let isToday = this.isToday(i, m, y);
+                let isPast = fullDate < this.todayStr;
                 daysArray.push({
                     date: i,
                     isCurrentMonth: true,
-                    isToday: this.isToday(i, m, y),
-                    fullDate: `${y}-${String(m + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`
+                    isToday: isToday,
+                    isPast: isPast,
+                    fullDate: fullDate
                 });
             }
 
@@ -103,6 +109,7 @@ function calendarApp() {
                     date: '',
                     isCurrentMonth: false,
                     isToday: false,
+                    isPast: false,
                     fullDate: ''
                 });
             }
@@ -117,11 +124,15 @@ function calendarApp() {
             let daysArray = [];
             for (let i = 0; i < 7; i++) {
                 let next = new Date(curr.getFullYear(), curr.getMonth(), first + i);
+                let fullDate = `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}-${String(next.getDate()).padStart(2, '0')}`;
+                let isToday = this.isToday(next.getDate(), next.getMonth(), next.getFullYear());
+                let isPast = fullDate < this.todayStr;
                 daysArray.push({
                     date: next.getDate(),
                     isCurrentMonth: next.getMonth() === this.month,
-                    isToday: this.isToday(next.getDate(), next.getMonth(), next.getFullYear()),
-                    fullDate: `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}-${String(next.getDate()).padStart(2, '0')}`
+                    isToday: isToday,
+                    isPast: isPast,
+                    fullDate: fullDate
                 });
             }
             this.days = daysArray;
@@ -209,8 +220,9 @@ function calendarApp() {
                     <template x-for="(day, index) in days" :key="index">
                         <div class="p-1 sm:p-2 group transition-colors relative flex flex-col min-h-0 overflow-hidden w-full min-w-0"
                              :class="{
-                                 'bg-white dark:bg-gray-900 hover:bg-emerald-50/30 dark:hover:bg-gray-800/80': day.isCurrentMonth,
-                                 'bg-gray-50/50 dark:bg-gray-950/50': !day.isCurrentMonth
+                                 'bg-gray-100/50 dark:bg-gray-950/70 opacity-60 cursor-not-allowed': day.isPast && !day.isToday,
+                                 'bg-white dark:bg-gray-900 hover:bg-emerald-50/30 dark:hover:bg-gray-800/80': day.isCurrentMonth && (!day.isPast || day.isToday),
+                                 'bg-gray-50/50 dark:bg-gray-950/50': !day.isCurrentMonth && (!day.isPast || day.isToday)
                              }">
                             
                             <!-- Date Number -->
@@ -221,7 +233,8 @@ function calendarApp() {
                                     </div>
                                 </template>
                                 <template x-if="!day.isToday && day.date !== ''">
-                                    <p class="text-xs sm:text-sm font-bold p-0.5 transition-colors text-gray-900 dark:text-gray-100 group-hover:text-emerald-600 dark:group-hover:text-emerald-400"
+                                    <p class="text-xs sm:text-sm font-bold p-0.5 transition-colors"
+                                       :class="day.isPast ? 'text-gray-300 dark:text-gray-600' : 'text-gray-900 dark:text-gray-100 group-hover:text-emerald-600 dark:group-hover:text-emerald-400'"
                                        x-text="day.date"></p>
                                 </template>
                             </div>
@@ -254,6 +267,8 @@ function calendarApp() {
                 </div>
             </div>
         </main>
+
+        {% include 'layout/footer.html' %}
 
         <!-- Enhanced Event Details Modal -->
         <div x-show="isDetailsModalOpen" 
