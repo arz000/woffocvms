@@ -57,14 +57,9 @@
                                 Confirmed Slot
                             </span>
 
-                            <form method="POST" onsubmit="return confirm('Are you sure you want to cancel this shift?');">
-                                {% csrf_token %}
-                                <input type="hidden" name="shift_id" value="{{ shift.id }}">
-                                <input type="hidden" name="action" value="cancel">
-                                <button type="submit" class="text-xs font-bold text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:underline">
-                                    Cancel
-                                </button>
-                            </form>
+                            <button @click="$dispatch('open-delete-modal', { model: 'Shift', id: {{ shift.id }}, title: '{{ shift.event.name|escapejs }} ({{ shift.job.title|default:shift.ministry.name|escapejs }})' })" type="button" class="text-xs font-bold text-gray-400 hover:text-red-500 hover:underline">
+                                Cancel
+                            </button>
                         </div>
                     </div>
                     {% endfor %}

@@ -1,5 +1,7 @@
 from django.shortcuts import render, redirect
 from django.contrib import messages
+from django.core.paginator import Paginator
+from django.db.models import Q
 from datetime import date
 import json
 from schedule_app.models import Role, Capability, Event, Shift, Ministry, VolunteerProfile
@@ -10,7 +12,7 @@ def check_admin_or_head(user):
     return hasattr(user, 'volunteer_profile') and user.volunteer_profile.role and user.volunteer_profile.role.name == 'Department Head'
 
 def admin_dashboard_view(request):
-    """Renders the dashboard for staff/admin members."""
+    """Renders the dashboard for staff/admin members with stats and department distribution."""
     if not check_admin_or_head(request.user):
         return redirect('login')
 
@@ -21,14 +23,59 @@ def admin_dashboard_view(request):
     next_event         = upcoming_events.first()
     next_event_open_shifts = Shift.objects.filter(event=next_event, volunteer__isnull=True).count() if next_event else 0
 
+    # Department Volunteer Distribution for Donut Chart & Visual Bars
+    import math
+    ministries = Ministry.objects.prefetch_related('volunteers').all()
+    dept_distribution = []
+    total_dept_members = 0
+
+    for m in ministries:
+        v_count = m.volunteers.count()
+        total_dept_members += v_count
+        dept_distribution.append({
+            'name': m.name,
+            'count': v_count,
+        })
+    
+    # Sort descending so the largest department appears first
+    dept_distribution.sort(key=lambda x: x['count'], reverse=True)
+
+    # Distinct vibrant colors for high visual contrast
+    palette = [
+        '#10b981', # Emerald
+        '#3b82f6', # Blue
+        '#8b5cf6', # Purple
+        '#f59e0b', # Amber
+        '#ec4899', # Pink
+        '#06b6d4', # Cyan
+        '#f97316', # Orange
+        '#6366f1', # Indigo
+        '#14b8a6', # Teal
+        '#64748b', # Slate
+    ]
+
+    circumference = 2 * math.pi * 58 # ~364.42
+    current_offset = 0
+
+    for idx, d in enumerate(dept_distribution):
+        d['color'] = palette[idx % len(palette)]
+        fraction = (d['count'] / total_dept_members) if total_dept_members > 0 else 0
+        d['percentage'] = round(fraction * 100)
+        length = fraction * circumference
+        d['dasharray'] = f"{length:.2f} {circumference - length:.2f}"
+        d['dashoffset'] = f"{-current_offset:.2f}"
+        current_offset += length
+
     return render(request, 'admin/admin-dashboard.html', {
         'total_volunteers':       total_volunteers,
         'total_departments':      total_departments,
+        'total_dept_members':     total_dept_members,
         'upcoming_count':         upcoming_events.count(),
         'open_shifts':            open_shifts,
         'next_event':             next_event,
         'next_event_open_shifts': next_event_open_shifts,
         'recent_events':          upcoming_events[:5],
+        'dept_distribution':      dept_distribution,
     })
 
 def admin_schedule_view(request):
@@ -36,7 +83,7 @@ def admin_schedule_view(request):
     if not check_admin_or_head(request.user):
         return redirect('login')
     
-    events = Event.objects.prefetch_related('offices', 'shifts__volunteer', 'shifts__ministry', 'shifts__job').all()
+    events = Event.objects.filter(date__gte=date.today()).prefetch_related('offices', 'shifts__volunteer', 'shifts__ministry', 'shifts__job').order_by('date', 'start_time')
     events_data = []
     for e in events:
         all_shifts = list(e.shifts.all())
@@ -80,7 +127,8 @@ def admin_schedule_view(request):
         })
     
     return render(request, 'admin/admin-schedule.html', {
-        'events_json': json.dumps(events_data)
+        'events_json': json.dumps(events_data),
+        'today': date.today().isoformat(),
     })
 
 def admin_service_view(request):
@@ -98,6 +146,15 @@ def admin_service_view(request):
         description = request.POST.get('description', '')
 
         if name and event_type and date_str and start_time_str and end_time_str:
+            try:
+                from datetime import datetime as dt
+                event_date = dt.strptime(date_str, '%Y-%m-%d').date()
+                if event_date < date.today():
+                    messages.error(request, 'Cannot schedule or create events on past dates.')
+                    return redirect('admin_service')
+            except ValueError:
+                pass
+
             if event_id:
                 event = Event.objects.get(id=event_id)
                 event.name = name
@@ -107,6 +164,7 @@ def admin_service_view(request):
                 event.end_time = end_time_str
                 event.description = description
                 event.save()
+                messages.success(request, f'Event "{name}" updated successfully.')
             else:
                 event = Event.objects.create(
                     name=name,
@@ -116,6 +174,7 @@ def admin_service_view(request):
                     end_time=end_time_str,
                     description=description
                 )
+                messages.success(request, f'Event "{name}" created successfully.')
             
             offices = request.POST.getlist('offices')
             event.offices.set(offices)
@@ -130,6 +189,7 @@ def admin_service_view(request):
         'scheduled_events': base_query.filter(event_type='scheduled'),
         'big_events': base_query.filter(event_type='big'),
         'ministries': ministries,
+        'today': date.today().isoformat(),
     })
 
 def admin_departments_view(request):
@@ -221,48 +281,110 @@ def admin_members_view(request):
     profile = getattr(request.user, 'volunteer_profile', None)
     
     if is_staff:
-        profiles = VolunteerProfile.objects.all().select_related('user', 'role').prefetch_related('ministries')
+        base_profiles = VolunteerProfile.objects.all().select_related('user', 'role').prefetch_related('ministries').order_by('user__first_name', 'user__last_name', 'user__username')
         all_ministries = Ministry.objects.all().order_by('name')
         
-        total_members = profiles.count()
-        assigned_count = profiles.filter(ministries__isnull=False).distinct().count()
-        unassigned_count = profiles.filter(ministries__isnull=True).count()
+        total_members = base_profiles.count()
+        assigned_count = base_profiles.filter(ministries__isnull=False).distinct().count()
+        unassigned_count = base_profiles.filter(ministries__isnull=True).count()
         
+        profiles_data = []
+        for p in base_profiles:
+            fn = p.user.first_name.strip() if p.user.first_name else ""
+            ln = p.user.last_name.strip() if p.user.last_name else ""
+            full_name = f"{fn} {ln}".strip() if (fn or ln) else p.user.username
+            first_letter = (fn[0] if fn else (p.user.username[0] if p.user.username else "U")).upper()
+            
+            profiles_data.append({
+                'id': p.id,
+                'user_id': p.user.id,
+                'username': p.user.username,
+                'full_name': full_name,
+                'first_letter': first_letter,
+                'role': p.role.name if p.role else "Volunteer",
+                'email': p.user.email or "—",
+                'phone': p.phone_number or "—",
+                'ministries': [{'id': m.id, 'name': m.name} for m in p.ministries.all()],
+                'ministry_ids': [m.id for m in p.ministries.all()],
+            })
+        
+        ministries_data = [{'id': m.id, 'name': m.name} for m in all_ministries]
         return render(request, 'admin/admin-members.html', {
-            'profiles': profiles,
+            'profiles_data': profiles_data,
+            'ministries_data': ministries_data,
             'all_ministries': all_ministries,
             'total_members': total_members,
             'assigned_count': assigned_count,
             'unassigned_count': unassigned_count,
         })
     elif profile and profile.headed_ministries.exists():
-        # Dept Head
         headed_ministries = profile.headed_ministries.all()
-        profiles = VolunteerProfile.objects.filter(ministries__in=headed_ministries).distinct().select_related('user', 'role').prefetch_related('ministries')
+        base_profiles = VolunteerProfile.objects.filter(ministries__in=headed_ministries).distinct().select_related('user', 'role').prefetch_related('ministries').order_by('user__first_name', 'user__last_name', 'user__username')
         
-        total_members = profiles.count()
+        total_members = base_profiles.count()
         assigned_count = total_members
         unassigned_count = VolunteerProfile.objects.filter(ministries__isnull=True).count()
         
+        profiles_data = []
+        for p in base_profiles:
+            fn = p.user.first_name.strip() if p.user.first_name else ""
+            ln = p.user.last_name.strip() if p.user.last_name else ""
+            full_name = f"{fn} {ln}".strip() if (fn or ln) else p.user.username
+            first_letter = (fn[0] if fn else (p.user.username[0] if p.user.username else "U")).upper()
+            
+            profiles_data.append({
+                'id': p.id,
+                'user_id': p.user.id,
+                'username': p.user.username,
+                'full_name': full_name,
+                'first_letter': first_letter,
+                'role': p.role.name if p.role else "Volunteer",
+                'email': p.user.email or "—",
+                'phone': p.phone_number or "—",
+                'ministries': [{'id': m.id, 'name': m.name} for m in p.ministries.all()],
+                'ministry_ids': [m.id for m in p.ministries.all()],
+            })
+            
+        ministries_data = [{'id': m.id, 'name': m.name} for m in headed_ministries]
         return render(request, 'dept-head/dept-head-members.html', {
-            'profiles': profiles,
+            'profiles_data': profiles_data,
+            'ministries_data': ministries_data,
             'all_ministries': headed_ministries,
             'total_members': total_members,
             'assigned_count': assigned_count,
             'unassigned_count': unassigned_count,
         })
     else:
-        # Volunteer
         my_ministries = profile.ministries.all() if profile else Ministry.objects.none()
         if my_ministries.exists():
-            profiles = VolunteerProfile.objects.filter(ministries__in=my_ministries).distinct().select_related('user', 'role').prefetch_related('ministries')
+            base_profiles = VolunteerProfile.objects.filter(ministries__in=my_ministries).distinct().select_related('user', 'role').prefetch_related('ministries').order_by('user__first_name', 'user__last_name', 'user__username')
         else:
-            profiles = VolunteerProfile.objects.filter(id=profile.id) if profile else VolunteerProfile.objects.none()
+            base_profiles = VolunteerProfile.objects.filter(id=profile.id) if profile else VolunteerProfile.objects.none()
             
-        total_members = profiles.count()
+        total_members = base_profiles.count()
         
+        profiles_data = []
+        for p in base_profiles:
+            fn = p.user.first_name.strip() if p.user.first_name else ""
+            ln = p.user.last_name.strip() if p.user.last_name else ""
+            full_name = f"{fn} {ln}".strip() if (fn or ln) else p.user.username
+            first_letter = (fn[0] if fn else (p.user.username[0] if p.user.username else "U")).upper()
+            
+            profiles_data.append({
+                'id': p.id,
+                'user_id': p.user.id,
+                'username': p.user.username,
+                'full_name': full_name,
+                'first_letter': first_letter,
+                'role': p.role.name if p.role else "Volunteer Member",
+                'email': p.user.email or "—",
+                'phone': p.phone_number or "—",
+                'ministries': [{'id': m.id, 'name': m.name} for m in p.ministries.all()],
+                'ministry_ids': [m.id for m in p.ministries.all()],
+            })
+            
         return render(request, 'volunteer/volunteer-members.html', {
-            'profiles': profiles,
+            'profiles_data': profiles_data,
             'my_ministries': my_ministries,
             'total_members': total_members,
         })

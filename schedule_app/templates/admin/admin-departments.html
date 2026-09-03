@@ -1,7 +1,7 @@
 {% extends 'layout/base.html' %}
 
 {% block content %}
-<div x-data="{ addDeptModalOpen: false, editModalOpen: false, editMinistry: {} }" class="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-950 transition-colors duration-300">
+<div x-data="{ addDeptModalOpen: false, editModalOpen: false, editMinistry: {}, searchQuery: '' }" class="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-950 transition-colors duration-300">
     {% include 'layout/admin-sidebar.html' %}
     
     <div class="flex-1 flex flex-col w-full h-screen overflow-y-auto">
@@ -9,21 +9,34 @@
         {% include 'layout/topbar.html' with page_title="Departments" %}
         
         <!-- Main Content Area -->
-        <main class="flex-1 p-4 sm:p-6 lg:p-8 flex flex-col min-h-0">
+        <main class="flex-1 p-4 sm:p-6 lg:p-8 flex flex-col space-y-6">
             <!-- Header Controls -->
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 shrink-0">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 shrink-0">
                 <div>
                     <h2 class="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white tracking-tight">Departments Directory</h2>
                     <p class="text-gray-500 dark:text-gray-400 mt-1 text-sm font-medium">Manage all organizational departments and ministries.</p>
                 </div>
                 
-                <div class="flex items-center gap-2 sm:gap-3">
-                    <button class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 hover:text-emerald-600 dark:hover:text-emerald-400 px-4 py-2.5 rounded-xl text-sm font-bold shadow-sm transition-all active:scale-95 flex items-center gap-2">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path></svg>
-                        Filter
-                    </button>
-                    <button @click="addDeptModalOpen = true" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-md shadow-emerald-600/20 transition-all active:scale-95 flex items-center gap-2">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                <div class="flex flex-wrap items-center gap-3">
+                    <!-- Live Search Bar -->
+                    <div class="relative w-full sm:w-72">
+                        <input type="text" 
+                               x-model="searchQuery" 
+                               placeholder="Search..." 
+                               class="w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white text-xs font-semibold rounded-2xl pl-10 pr-8 py-2.5 shadow-xs focus:ring-2 focus:ring-emerald-500 focus:outline-hidden transition-all">
+                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                        </div>
+                        <button type="button" 
+                                x-show="searchQuery" 
+                                @click="searchQuery = ''" 
+                                class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
+                    </div>
+
+                    <button @click="addDeptModalOpen = true" class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-bold shadow-md shadow-emerald-600/20 transition-all active:scale-95 flex items-center gap-2 shrink-0">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg>
                         Add Department
                     </button>
                 </div>
@@ -58,7 +71,8 @@
                         </thead>
                         <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
                             {% for ministry in ministries %}
-                            <tr class="hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors group">
+                            <tr x-show="!searchQuery || '{{ ministry.name|lower|escapejs }} {{ ministry.head.user.get_full_name|lower|escapejs }} {{ ministry.head.user.username|lower|escapejs }} {{ ministry.description|lower|escapejs }}'.includes(searchQuery.toLowerCase().trim())"
+                                class="hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors group">
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <p class="font-bold text-gray-900 dark:text-white">{{ ministry.name }}</p>
                                 </td>
@@ -93,12 +107,25 @@
                                     </div>
                                 </td>
                             </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="px-6 py-16 text-center">
+                                    <div class="max-w-xs mx-auto flex flex-col items-center justify-center space-y-3">
+                                        <div class="w-14 h-14 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold shadow-xs">
+                                            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                                        </div>
+                                        <h4 class="font-black text-gray-900 dark:text-white text-base">No Departments Created Yet</h4>
+                                    </div>
+                                </td>
+                            </tr>
                             {% endfor %}
                         </tbody>
                     </table>
                 </div>
             </div>
         </main>
+        
+        {% include 'layout/footer.html' %}
     </div>
     
     <!-- Edit Department Modal -->
@@ -252,14 +279,58 @@
                                             <svg class="w-6 h-6 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                                             No volunteers found
                                         </div>
+                                               placeholder="Search..."
+                                               class="block w-full pl-11 pr-10 py-3 rounded-xl border-0 bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-white text-sm ring-1 ring-inset ring-gray-200 dark:ring-gray-800 focus:ring-2 focus:ring-inset focus:ring-emerald-500 transition-all placeholder:text-gray-400"
+                                               x-model="query"
+                                               @input.debounce.300ms="doSearch()"
+                                               @keydown.arrow-down.prevent="selected = items.length ? Math.min(selected + 1, items.length - 1) : -1"
+                                               @keydown.arrow-up.prevent="selected = Math.max(selected - 1, -1)"
+                                               @keydown.enter.prevent="if (selected >= 0) select(items[selected])"
+                                               autocomplete="off">
+                                        <button type="button"
+                                                x-show="query"
+                                                @click="clear()"
+                                                class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                        </button>
+                                    </div>
+
+                                    <!-- Dropdown Results -->
+                                    <div x-show="open"
+                                         x-transition:enter="transition ease-out duration-200"
+                                         x-transition:enter-start="opacity-0 translate-y-1"
+                                         x-transition:enter-end="opacity-100 translate-y-0"
+                                         x-transition:leave="transition ease-in duration-150"
+                                         x-transition:leave-start="opacity-100 translate-y-0"
+                                         x-transition:leave-end="opacity-0 translate-y-1"
+                                         class="absolute z-50 left-0 right-0 mt-2 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl shadow-2xl overflow-hidden max-h-60 overflow-y-auto ring-1 ring-black/5"
+                                         style="top: 100%;">
+                                        <template x-for="(item, i) in items" :key="item.id">
+                                            <div @click="select(item)"
+                                                 @mouseenter="selected = i"
+                                                 :class="i === selected ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50'"
+                                                 class="flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors text-sm border-b border-gray-50 dark:border-gray-700/50 last:border-0">
+                                                <div class="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 flex items-center justify-center text-xs font-bold shrink-0 border border-emerald-200 dark:border-emerald-500/30"
+                                                     x-text="item.label.charAt(0).toUpperCase()"></div>
+                                                <span x-text="item.label" class="font-bold"></span>
+                                            </div>
+                                        </template>
+                                        <div x-show="items.length === 0" class="px-4 py-8 text-sm text-gray-400 text-center flex flex-col items-center justify-center gap-2">
+                                            <svg class="w-6 h-6 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                            No volunteers found
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="px-6 py-4 bg-gray-50 dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800 flex items-center justify-end gap-3 rounded-b-2xl">
-                            <button type="button" @click="editModalOpen = false" class="px-5 py-2.5 rounded-xl font-bold text-sm text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white transition-all shadow-sm active:scale-95">Cancel</button>
-                            <button type="submit" class="px-5 py-2.5 rounded-xl font-bold text-sm text-white bg-emerald-600 hover:bg-emerald-700 transition-all shadow-md shadow-emerald-600/20 active:scale-95 flex items-center gap-2">Save Changes</button>
+                        <div class="px-6 py-4 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-100 dark:border-gray-800 flex items-center justify-end gap-3 rounded-b-2xl">
+                            <button type="button" @click="editModalOpen = false" class="px-4 py-2.5 text-sm font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors">
+                                Cancel
+                            </button>
+                            <button type="submit" class="px-5 py-2.5 text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 rounded-xl shadow-sm shadow-emerald-500/20 transition-all flex items-center gap-2">
+                                Save Changes
+                            </button>
                         </div>
                     </form>
                 </div>
@@ -268,9 +339,9 @@
     </div>
     
     <!-- Add Department Modal -->
-    <div x-show="addDeptModalOpen" x-cloak class="relative z-50" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div x-show="addModalOpen" x-cloak class="relative z-50" aria-labelledby="modal-title" role="dialog" aria-modal="true">
         <!-- Backdrop -->
-        <div x-show="addDeptModalOpen"
+        <div x-show="addModalOpen"
              x-transition:enter="ease-out duration-300"
              x-transition:enter-start="opacity-0"
              x-transition:enter-end="opacity-100"
@@ -278,45 +349,46 @@
              x-transition:leave-start="opacity-100"
              x-transition:leave-end="opacity-0"
              class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity"
-             @click="addDeptModalOpen = false"></div>
+             @click="addModalOpen = false"></div>
 
-        <div class="fixed inset-0 z-10 w-screen overflow-y-auto pointer-events-none">
+        <div class="fixed inset-0 z-10 overflow-y-auto">
             <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
                 <!-- Modal Panel -->
-                <div x-show="addDeptModalOpen"
+                <div x-show="addModalOpen"
                      x-transition:enter="ease-out duration-300"
                      x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
                      x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
                      x-transition:leave="ease-in duration-200"
                      x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
                      x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-                     class="relative transform rounded-2xl bg-white dark:bg-gray-900 text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-lg pointer-events-auto border border-gray-200 dark:border-gray-800">
+                     class="relative transform overflow-hidden rounded-2xl bg-white dark:bg-gray-900 text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-lg border border-gray-100 dark:border-gray-800">
                     
-                    <form action="{% url 'admin_departments' %}" method="POST">
+                    <form method="POST">
                         {% csrf_token %}
-                        <div class="px-6 py-5 border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 flex justify-between items-center rounded-t-2xl">
+                        <input type="hidden" name="action" value="create">
+                        <div class="px-6 py-5 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
                             <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-full bg-emerald-50 dark:bg-emerald-500/10 flex items-center justify-center text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-500/20">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                                <div class="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
                                 </div>
                                 <div>
-                                    <h3 class="font-black text-gray-900 dark:text-white text-xl tracking-tight" id="modal-title">New Department</h3>
-                                    <p class="text-xs font-medium text-gray-500 mt-0.5">Create a new organizational group</p>
+                                    <h3 class="text-base font-bold text-gray-900 dark:text-white" id="modal-title">New Department</h3>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">Create a ministry group to organize volunteers</p>
                                 </div>
                             </div>
-                            <button type="button" @click="addDeptModalOpen = false" class="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                            <button type="button" @click="addModalOpen = false" class="text-gray-400 hover:text-gray-500 rounded-lg p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                             </button>
                         </div>
                         
                         <div class="px-6 py-6 space-y-6 bg-white dark:bg-gray-900">
                             <div class="space-y-1.5">
                                 <label for="dept-name" class="block text-sm font-bold text-gray-700 dark:text-gray-300">Department Name</label>
-                                <input type="text" name="name" id="dept-name" required placeholder="e.g. Music Department" class="block w-full rounded-xl border-0 bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-white ring-1 ring-inset ring-gray-200 dark:ring-gray-800 focus:ring-2 focus:ring-inset focus:ring-emerald-500 sm:text-sm px-4 py-3 transition-all placeholder:text-gray-400">
+                                <input type="text" name="name" id="dept-name" required placeholder="Enter department name..." class="block w-full rounded-xl border-0 bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-white ring-1 ring-inset ring-gray-200 dark:ring-gray-800 focus:ring-2 focus:ring-inset focus:ring-emerald-500 sm:text-sm px-4 py-3 transition-all placeholder:text-gray-400">
                             </div>
                             <div class="space-y-1.5">
                                 <label for="dept-desc" class="block text-sm font-bold text-gray-700 dark:text-gray-300">Description <span class="font-normal text-gray-400 ml-1">(Optional)</span></label>
-                                <textarea name="description" id="dept-desc" rows="3" placeholder="Briefly describe the purpose of this department..." class="block w-full rounded-xl border-0 bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-white ring-1 ring-inset ring-gray-200 dark:ring-gray-800 focus:ring-2 focus:ring-inset focus:ring-emerald-500 sm:text-sm px-4 py-3 transition-all resize-none placeholder:text-gray-400"></textarea>
+                                <textarea name="description" id="dept-desc" rows="3" placeholder="Enter description..." class="block w-full rounded-xl border-0 bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-white ring-1 ring-inset ring-gray-200 dark:ring-gray-800 focus:ring-2 focus:ring-inset focus:ring-emerald-500 sm:text-sm px-4 py-3 transition-all resize-none placeholder:text-gray-400"></textarea>
                             </div>
                             
                             <div class="pt-6 border-t border-gray-100 dark:border-gray-800">
@@ -357,7 +429,7 @@
                                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                                         </div>
                                         <input type="text"
-                                               placeholder="Search by name or email..."
+                                               placeholder="Search..."
                                                class="block w-full pl-11 pr-10 py-3 rounded-xl border-0 bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-white text-sm ring-1 ring-inset ring-gray-200 dark:ring-gray-800 focus:ring-2 focus:ring-inset focus:ring-emerald-500 transition-all placeholder:text-gray-400"
                                                x-model="query"
                                                @input.debounce.300ms="doSearch()"

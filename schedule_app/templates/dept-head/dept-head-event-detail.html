@@ -26,12 +26,17 @@
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
                     <div>
                         <div class="flex items-center gap-3 mb-2">
-                            <span class="text-[10px] font-black px-2.5 py-1 rounded-xl uppercase tracking-wider
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider
                                 {% if event.event_type == 'regular' %}bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/50
                                 {% elif event.event_type == 'scheduled' %}bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/50
                                 {% else %}bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800/50{% endif %}">
                                 {{ event.get_event_type_display }}
                             </span>
+                            {% if is_past_event %}
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-gray-100 dark:bg-gray-800 text-gray-500 border border-gray-300 dark:border-gray-700">
+                                Past Event (Assignments Closed)
+                            </span>
+                            {% endif %}
                         </div>
                         <h1 class="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white tracking-tight">{{ event.name }}</h1>
                         <div class="flex items-center flex-wrap gap-3 mt-3 text-sm text-gray-500 dark:text-gray-400">
@@ -106,12 +111,20 @@
                                     </div>
 
                                     <!-- Open Modal Button -->
+                                    {% if is_past_event %}
+                                    <button type="button" 
+                                            disabled
+                                            class="bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 text-xs font-bold py-2.5 px-4 rounded-2xl cursor-not-allowed flex items-center gap-2 shrink-0 border border-gray-200 dark:border-gray-700">
+                                        Assignments Closed
+                                    </button>
+                                    {% else %}
                                     <button type="button" 
                                             @click="modalOpen = true" 
                                             class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-2.5 px-4 rounded-2xl shadow-md shadow-emerald-600/20 transition-all active:scale-95 flex items-center gap-2 shrink-0">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                                         {% if row.assigned_volunteers %}Manage Assignment{% else %}Assign Volunteers{% endif %}
                                     </button>
+                                    {% endif %}
                                 </div>
                             </div>
 
@@ -256,15 +269,10 @@
                     {% else %}
                     <!-- Empty Roles State -->
                     <div class="p-12 text-center">
-                        <div class="w-14 h-14 mx-auto bg-gray-100 dark:bg-gray-800 rounded-2xl flex items-center justify-center mb-4 text-gray-400">
-                            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                        <div class="w-14 h-14 mx-auto bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 rounded-2xl flex items-center justify-center mb-3 shadow-xs">
+                            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
                         </div>
-                        <h3 class="text-base font-black text-gray-900 dark:text-white mb-1">No Roles Created For {{ m_data.ministry.name }}</h3>
-                        <p class="text-xs text-gray-400 mb-5 max-w-sm mx-auto">Create specific jobs (e.g. Cameraman, Projector, Sound Engineer) to start scheduling volunteers for this event.</p>
-                        <a href="{% url 'dept_head_jobs' %}" class="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-2.5 px-4 rounded-xl shadow-md shadow-emerald-600/20 transition-all active:scale-95">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-                            Create Department Roles
-                        </a>
+                        <h3 class="text-base font-black text-gray-900 dark:text-white">No Roles Created For {{ m_data.ministry.name }}</h3>
                     </div>
                     {% endif %}
                 </div>

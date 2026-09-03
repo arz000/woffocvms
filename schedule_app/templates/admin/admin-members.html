@@ -1,12 +1,12 @@
 {% extends 'layout/base.html' %}
 
 {% block content %}
+<!-- Safe JSON data embeds for Alpine -->
+{{ profiles_data|json_script:"members-data" }}
+{{ ministries_data|json_script:"ministries-data" }}
+
 <div class="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-950 transition-colors duration-300"
-     x-data="membersApp([
-         {% for m in all_ministries %}
-         { id: {{ m.id }}, name: '{{ m.name|escapejs }}' },
-         {% endfor %}
-     ])">
+     x-data="membersApp()">
     {% if not request.user.is_staff %}
         {% include 'layout/dept-head-sidebar.html' %}
     {% else %}
@@ -18,12 +18,89 @@
         {% include 'layout/topbar.html' with page_title="Members" %}
         
         <!-- Main Content Area -->
-        <main class="flex-1 p-4 sm:p-6 lg:p-8 flex flex-col min-h-0 space-y-6">
-            <!-- Header Controls -->
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0">
+        <main class="flex-1 p-4 sm:p-6 lg:p-8 flex flex-col space-y-6">
+            <!-- Header Controls & Real-time Search/Filter Bar -->
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0">
                 <div>
                     <h1 class="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white tracking-tight">Members Directory</h1>
                     <p class="text-gray-500 dark:text-gray-400 mt-1 text-sm font-medium">Manage volunteers and assign department memberships across the system.</p>
+                </div>
+
+                <!-- Live Auto-Filter Controls (No Confirm button needed) -->
+                <div class="flex flex-wrap items-center gap-2.5">
+                    <!-- Search Input -->
+                    <div class="relative w-full sm:w-72">
+                        <input type="text" 
+                               x-model="searchQuery" 
+                               @input="currentPage = 1"
+                               placeholder="Search..." 
+                               class="w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white text-xs font-semibold rounded-2xl pl-10 pr-8 py-2.5 shadow-xs focus:ring-2 focus:ring-emerald-500 focus:outline-hidden transition-all">
+                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                        </div>
+                        <button type="button" 
+                                x-show="searchQuery" 
+                                @click="searchQuery = ''; currentPage = 1" 
+                                class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
+                    </div>
+
+                    <!-- Custom Department Dropdown Matching Reference Style -->
+                    <div class="relative" x-data="{ deptDropdownOpen: false }">
+                        <!-- Trigger Button -->
+                        <button type="button" 
+                                @click="deptDropdownOpen = !deptDropdownOpen" 
+                                @click.away="deptDropdownOpen = false"
+                                class="w-48 sm:w-56 flex items-center justify-between bg-white dark:bg-gray-900 rounded-2xl px-5 py-3 shadow-md shadow-gray-100 dark:shadow-none border border-gray-100 dark:border-gray-800 text-left transition-all cursor-pointer group hover:border-emerald-200 dark:hover:border-emerald-800/60">
+                            <span class="text-sm font-medium truncate"
+                                  :class="selectedMinistry ? 'text-gray-900 dark:text-white font-semibold' : 'text-gray-400 dark:text-gray-400'"
+                                  x-text="selectedMinistryName">All Departments</span>
+                            <svg class="w-4 h-4 text-emerald-500 dark:text-emerald-400 transition-transform duration-200 shrink-0 ml-2" 
+                                 :class="deptDropdownOpen ? 'rotate-180' : ''" 
+                                 fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </button>
+
+                        <!-- Floating Menu Card -->
+                        <div x-show="deptDropdownOpen"
+                             x-transition:enter="transition ease-out duration-150"
+                             x-transition:enter-start="transform opacity-0 scale-95 -translate-y-2"
+                             x-transition:enter-end="transform opacity-100 scale-100 translate-y-0"
+                             x-transition:leave="transition ease-in duration-100"
+                             x-transition:leave-start="transform opacity-100 scale-100 translate-y-0"
+                             x-transition:leave-end="transform opacity-0 scale-95 -translate-y-2"
+                             x-cloak
+                             class="absolute right-0 sm:left-0 sm:right-auto mt-2 w-56 bg-white dark:bg-gray-900 rounded-2xl shadow-xl shadow-gray-200/60 dark:shadow-none border border-gray-100 dark:border-gray-800 p-2 z-50 space-y-1">
+                            
+                            <!-- All Departments Option -->
+                            <button type="button"
+                                    @click="selectMinistry('', 'All Departments'); deptDropdownOpen = false"
+                                    :class="selectedMinistry === '' ? 'bg-emerald-500 text-white font-semibold shadow-xs' : 'text-gray-700 dark:text-gray-200 hover:bg-emerald-500 hover:text-white font-medium'"
+                                    class="w-full text-left px-4 py-2.5 rounded-xl text-sm transition-all duration-150 cursor-pointer block">
+                                All Departments
+                            </button>
+
+                            <!-- Individual Ministry Options -->
+                            <template x-for="m in allMinistries" :key="m.id">
+                                <button type="button"
+                                        @click="selectMinistry(m.id, m.name); deptDropdownOpen = false"
+                                        :class="selectedMinistry === m.id ? 'bg-emerald-500 text-white font-semibold shadow-xs' : 'text-gray-700 dark:text-gray-200 hover:bg-emerald-500 hover:text-white font-medium'"
+                                        class="w-full text-left px-4 py-2.5 rounded-xl text-sm transition-all duration-150 cursor-pointer truncate block"
+                                        x-text="m.name">
+                                </button>
+                            </template>
+
+                            <!-- Unassigned Option -->
+                            <button type="button"
+                                    @click="selectMinistry('unassigned', 'Unassigned'); deptDropdownOpen = false"
+                                    :class="selectedMinistry === 'unassigned' ? 'bg-emerald-500 text-white font-semibold shadow-xs' : 'text-gray-700 dark:text-gray-200 hover:bg-emerald-500 hover:text-white font-medium'"
+                                    class="w-full text-left px-4 py-2.5 rounded-xl text-sm transition-all duration-150 cursor-pointer block">
+                                Unassigned
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -36,7 +113,7 @@
                     </div>
                     <div>
                         <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Total Members</p>
-                        <h3 class="text-2xl font-black text-gray-900 dark:text-white">{{ total_members|default:profiles|length }}</h3>
+                        <h3 class="text-2xl font-black text-gray-900 dark:text-white" x-text="allProfiles.length"></h3>
                     </div>
                 </div>
 
@@ -47,7 +124,7 @@
                     </div>
                     <div>
                         <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Total Assigned</p>
-                        <h3 class="text-2xl font-black text-gray-900 dark:text-white">{{ assigned_count|default:"0" }}</h3>
+                        <h3 class="text-2xl font-black text-gray-900 dark:text-white" x-text="allProfiles.filter(p => p.ministries && p.ministries.length > 0).length"></h3>
                     </div>
                 </div>
 
@@ -58,7 +135,7 @@
                     </div>
                     <div>
                         <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Needs Assignment</p>
-                        <h3 class="text-2xl font-black text-gray-900 dark:text-white">{{ unassigned_count|default:"0" }}</h3>
+                        <h3 class="text-2xl font-black text-gray-900 dark:text-white" x-text="allProfiles.filter(p => !p.ministries || p.ministries.length === 0).length"></h3>
                     </div>
                 </div>
 
@@ -69,17 +146,17 @@
                     </div>
                     <div>
                         <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Departments</p>
-                        <h3 class="text-2xl font-black text-gray-900 dark:text-white">{{ all_ministries|length }}</h3>
+                        <h3 class="text-2xl font-black text-gray-900 dark:text-white" x-text="allMinistries.length"></h3>
                     </div>
                 </div>
             </div>
 
-            <!-- Team Members Table -->
-            <div class="bg-white dark:bg-gray-900 border border-emerald-100 dark:border-gray-800 rounded-3xl shadow-sm overflow-hidden mb-10">
+            <!-- Team Members Table Container -->
+            <div class="bg-white dark:bg-gray-900 border border-emerald-100 dark:border-gray-800 rounded-3xl shadow-sm overflow-hidden mb-2">
                 <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse">
+                    <table class="w-full text-left border-collapse min-w-[700px]">
                         <thead>
-                            <tr class="bg-gray-50/50 dark:bg-gray-800/20 border-b border-gray-100 dark:border-gray-800">
+                            <tr class="bg-gray-50/75 dark:bg-gray-800/40 border-b border-gray-100 dark:border-gray-800">
                                 <th class="px-6 py-4 text-xs font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Member Name</th>
                                 <th class="px-6 py-4 text-xs font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Email Address</th>
                                 <th class="px-6 py-4 text-xs font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Phone Number</th>
@@ -88,60 +165,109 @@
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
-                            {% for profile in profiles %}
-                            <tr class="hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors group">
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="flex items-center gap-4">
-                                        <div class="w-10 h-10 rounded-2xl bg-emerald-100 dark:bg-emerald-900/40 border border-emerald-200 dark:border-emerald-800 shadow-sm flex items-center justify-center text-sm font-black text-emerald-700 dark:text-emerald-300 uppercase shrink-0">
-                                            {{ profile.user.first_name|first|default:profile.user.username|first|upper }}
+                            <!-- Instant Live Filtered Rows -->
+                            <template x-for="profile in paginatedProfiles" :key="profile.id">
+                                <tr class="hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors group">
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="flex items-center gap-3.5">
+                                            <div class="w-10 h-10 rounded-2xl bg-emerald-100 dark:bg-emerald-900/40 border border-emerald-200 dark:border-emerald-800 shadow-xs flex items-center justify-center text-sm font-black text-emerald-700 dark:text-emerald-300 uppercase shrink-0"
+                                                 x-text="profile.first_letter">
+                                            </div>
+                                            <div>
+                                                <p class="font-black text-gray-900 dark:text-white text-sm tracking-tight" x-text="profile.full_name"></p>
+                                                <div class="flex items-center gap-1.5 mt-0.5">
+                                                    <span class="text-xs font-semibold text-emerald-600 dark:text-emerald-400" x-text="profile.role"></span>
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <p class="font-bold text-gray-900 dark:text-white">{{ profile.user.get_full_name|default:profile.user.username }}</p>
-                                            <p class="text-xs font-semibold text-emerald-600 dark:text-emerald-400">{{ profile.role.name|default:"Volunteer" }}</p>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="flex items-center gap-2 text-xs font-medium text-gray-600 dark:text-gray-400" x-text="profile.email"></div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="flex items-center gap-2 text-xs font-medium text-gray-600 dark:text-gray-400" x-text="profile.phone"></div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div class="flex flex-wrap gap-1.5 max-w-xs">
+                                            <template x-for="min in profile.ministries" :key="min.id">
+                                                <span class="inline-flex items-center gap-1 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold px-2.5 py-1 rounded-xl border border-emerald-100 dark:border-emerald-900/30">
+                                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                                    <span x-text="min.name"></span>
+                                                </span>
+                                            </template>
+                                            <template x-if="!profile.ministries || profile.ministries.length === 0">
+                                                <span class="bg-gray-100 dark:bg-gray-800 text-gray-400 text-[10px] font-bold px-2.5 py-1 rounded-xl">
+                                                    Unassigned
+                                                </span>
+                                            </template>
                                         </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-right">
+                                        <button type="button" 
+                                                @click="openAssignModal(profile)"
+                                                class="inline-flex items-center gap-1.5 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 shadow-xs">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                                            Assign
+                                        </button>
+                                    </td>
+                                </tr>
+                            </template>
+
+                            <!-- Empty Search Results State -->
+                            <tr x-show="filteredProfiles.length === 0">
+                                <td colspan="5" class="px-6 py-16 text-center">
+                                    <div class="max-w-xs mx-auto flex flex-col items-center justify-center space-y-3">
+                                        <div class="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                                        </div>
+                                        <h4 class="font-black text-gray-900 dark:text-white text-base">No Members Found</h4>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400">No members match your current search or department filter.</p>
+                                        <button type="button" @click="searchQuery = ''; selectedMinistry = ''; currentPage = 1" class="mt-2 text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline">Clear all filters</button>
                                     </div>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="flex items-center gap-2 text-xs font-medium text-gray-600 dark:text-gray-400">
-                                        {{ profile.user.email|default:"—" }}
-                                    </div>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="flex items-center gap-2 text-xs font-medium text-gray-600 dark:text-gray-400">
-                                        {{ profile.phone_number|default:"—" }}
-                                    </div>
-                                </td>
-                                <td class="px-6 py-4">
-                                    <div class="flex flex-wrap gap-1.5">
-                                        {% for ministry in profile.ministries.all %}
-                                        <span class="bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold px-2 py-0.5 rounded-md border border-emerald-100 dark:border-emerald-900/30">
-                                            {{ ministry.name }}
-                                        </span>
-                                        {% empty %}
-                                        <span class="bg-gray-50 dark:bg-gray-800/50 text-gray-400 text-[10px] font-bold px-2 py-0.5 rounded-md">
-                                            Unassigned
-                                        </span>
-                                        {% endfor %}
-                                    </div>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-right">
-                                    <button type="button" 
-                                            @click="openAssignModal({
-                                                id: {{ profile.id }},
-                                                name: '{{ profile.user.get_full_name|default:profile.user.username|escapejs }}',
-                                                email: '{{ profile.user.email|escapejs }}',
-                                                role: '{{ profile.role.name|default:"Volunteer"|escapejs }}',
-                                                ministry_ids: [{% for m in profile.ministries.all %}{{ m.id }}{% if not forloop.last %},{% endif %}{% endfor %}]
-                                            })"
-                                            class="inline-flex items-center gap-1.5 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 shadow-xs">
-                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
-                                        Assign
-                                    </button>
                                 </td>
                             </tr>
-                            {% endfor %}
                         </tbody>
                     </table>
+                </div>
+
+                <!-- Reactive Pagination Footer -->
+                <div x-show="filteredProfiles.length > 0" class="px-6 py-4 bg-gray-50/75 dark:bg-gray-800/30 border-t border-gray-100 dark:border-gray-800 flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <p class="text-xs font-semibold text-gray-500 dark:text-gray-400">
+                        Showing <span class="text-gray-900 dark:text-white font-bold" x-text="paginatedProfiles.length"></span> of <span class="text-gray-900 dark:text-white font-bold" x-text="filteredProfiles.length"></span> members
+                    </p>
+
+                    <div class="flex items-center gap-1.5 ml-auto sm:ml-0">
+                        <!-- Previous Page Icon Button -->
+                        <button type="button"
+                                @click="prevPage()"
+                                :disabled="currentPage === 1"
+                                :class="currentPage === 1 ? 'opacity-40 cursor-not-allowed border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 text-gray-400' : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 shadow-2xs cursor-pointer'"
+                                class="w-8 h-8 rounded-xl border text-xs font-bold transition-all flex items-center justify-center"
+                                title="Previous Page">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>
+                        </button>
+
+                        <!-- Numbered Page Pills -->
+                        <template x-for="page in totalPages" :key="page">
+                            <button type="button"
+                                    x-show="Math.abs(page - currentPage) <= 2 || page === 1 || page === totalPages"
+                                    @click="goToPage(page)"
+                                    :class="currentPage === page ? 'bg-emerald-600 text-white font-black shadow-md shadow-emerald-600/20' : 'border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 shadow-2xs font-bold'"
+                                    class="w-8 h-8 rounded-xl text-xs flex items-center justify-center transition-all cursor-pointer"
+                                    x-text="page">
+                            </button>
+                        </template>
+
+                        <!-- Next Page Icon Button -->
+                        <button type="button"
+                                @click="nextPage()"
+                                :disabled="currentPage === totalPages"
+                                :class="currentPage === totalPages ? 'opacity-40 cursor-not-allowed border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 text-gray-400' : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 shadow-2xs cursor-pointer'"
+                                class="w-8 h-8 rounded-xl border text-xs font-bold transition-all flex items-center justify-center"
+                                title="Next Page">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -176,7 +302,7 @@
                                     </div>
                                     <div>
                                         <h3 class="font-black text-gray-900 dark:text-white text-lg tracking-tight">Assign Department</h3>
-                                        <p class="text-xs font-medium text-gray-500" x-text="selectedProfile ? ('For ' + selectedProfile.name) : ''"></p>
+                                        <p class="text-xs font-medium text-gray-500" x-text="selectedProfile ? ('For ' + selectedProfile.full_name) : ''"></p>
                                     </div>
                                 </div>
                                 <button type="button" @click="assignModalOpen = false" class="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800">
@@ -232,13 +358,90 @@
 </div>
 
 <script>
-function membersApp(allMinistries) {
+function membersApp() {
+    let rawMinistries = [];
+    let rawProfiles = [];
+    try {
+        const minEl = document.getElementById('ministries-data');
+        if (minEl) rawMinistries = JSON.parse(minEl.textContent);
+    } catch(e) { console.error(e); }
+    try {
+        const profEl = document.getElementById('members-data');
+        if (profEl) rawProfiles = JSON.parse(profEl.textContent);
+    } catch(e) { console.error(e); }
+
     return {
-        allMinistries: allMinistries || [],
+        allMinistries: rawMinistries,
+        allProfiles: rawProfiles,
+        searchQuery: '',
+        selectedMinistry: '',
+        selectedMinistryName: 'All Departments',
+        currentPage: 1,
+        pageSize: 8,
         assignModalOpen: false,
         selectedProfile: null,
         selectedMinistries: [],
         isSaving: false,
+
+        selectMinistry(id, name) {
+            this.selectedMinistry = id;
+            this.selectedMinistryName = name;
+            this.currentPage = 1;
+        },
+
+        get filteredProfiles() {
+            let q = this.searchQuery.toLowerCase().trim();
+            return this.allProfiles.filter(p => {
+                let matchesSearch = !q || 
+                    (p.full_name && p.full_name.toLowerCase().includes(q)) || 
+                    (p.username && p.username.toLowerCase().includes(q)) || 
+                    (p.email && p.email.toLowerCase().includes(q)) || 
+                    (p.phone && p.phone.toLowerCase().includes(q)) ||
+                    (p.role && p.role.toLowerCase().includes(q));
+                
+                let matchesMinistry = true;
+                if (this.selectedMinistry === 'unassigned') {
+                    matchesMinistry = !p.ministries || p.ministries.length === 0;
+                } else if (this.selectedMinistry) {
+                    matchesMinistry = p.ministry_ids && p.ministry_ids.includes(Number(this.selectedMinistry));
+                }
+                return matchesSearch && matchesMinistry;
+            });
+        },
+
+        get totalPages() {
+            return Math.ceil(this.filteredProfiles.length / this.pageSize) || 1;
+        },
+
+        get paginatedProfiles() {
+            let start = (this.currentPage - 1) * this.pageSize;
+            return this.filteredProfiles.slice(start, start + this.pageSize);
+        },
+
+        get startIndex() {
+            if (this.filteredProfiles.length === 0) return 0;
+            return (this.currentPage - 1) * this.pageSize + 1;
+        },
+
+        get endIndex() {
+            return Math.min(this.currentPage * this.pageSize, this.filteredProfiles.length);
+        },
+
+        prevPage() {
+            if (this.currentPage > 1) {
+                this.currentPage--;
+            }
+        },
+
+        nextPage() {
+            if (this.currentPage < this.totalPages) {
+                this.currentPage++;
+            }
+        },
+
+        goToPage(page) {
+            this.currentPage = page;
+        },
 
         openAssignModal(profile) {
             this.selectedProfile = profile;
@@ -271,7 +474,26 @@ function membersApp(allMinistries) {
                 });
                 const data = await res.json();
                 if (data.success) {
-                    window.location.reload();
+                    // Update in-memory profile reactive state without hard page reload
+                    const selectedMinObjs = this.allMinistries
+                        .filter(m => this.selectedMinistries.includes(m.id))
+                        .map(m => ({ id: m.id, name: m.name }));
+                    
+                    this.selectedProfile.ministry_ids = [...this.selectedMinistries];
+                    this.selectedProfile.ministries = selectedMinObjs;
+
+                    const found = this.allProfiles.find(p => p.id === this.selectedProfile.id);
+                    if (found) {
+                        found.ministry_ids = [...this.selectedMinistries];
+                        found.ministries = selectedMinObjs;
+                    }
+
+                    // Keep on the current page safely
+                    if (this.currentPage > this.totalPages) {
+                        this.currentPage = this.totalPages || 1;
+                    }
+
+                    this.assignModalOpen = false;
                 } else {
                     alert(data.error || 'Failed to update department assignment.');
                 }
