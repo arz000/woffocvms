@@ -2,6 +2,7 @@
 
 {% block content %}
 <div x-data="{ 
+    currentTab: 'upcoming',
     addEventModalOpen: false, 
     isEditing: false,
     editEventId: '',
@@ -54,15 +55,15 @@ class="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-950 transition-colo
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-2 shrink-0">
                 <div>
                     <h2 class="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white tracking-tight">Event Management</h2>
-                    <p class="text-gray-500 dark:text-gray-400 mt-1 text-sm font-medium">Organize and manage upcoming church services and events.</p>
+                    <p class="text-gray-500 dark:text-gray-400 mt-1 text-sm font-medium">Organize and manage upcoming and past church services and events.</p>
                 </div>
                 
                 <div class="flex flex-wrap items-center gap-3">
                     <!-- Live Search Bar -->
-                    <div class="relative w-full sm:w-72">
+                    <div class="relative w-full sm:w-64">
                         <input type="text" 
                                x-model="searchQuery" 
-                               placeholder="Search..." 
+                               placeholder="Search events..." 
                                class="w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white text-xs font-semibold rounded-2xl pl-10 pr-8 py-2.5 shadow-xs focus:ring-2 focus:ring-emerald-500 focus:outline-hidden transition-all">
                         <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
@@ -75,73 +76,286 @@ class="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-950 transition-colo
                         </button>
                     </div>
 
-                    <button @click="openCreateModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-bold shadow-md shadow-emerald-600/20 transition-all active:scale-95 flex items-center gap-2 shrink-0">
+                    <button @click="openCreateModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-bold shadow-md shadow-emerald-600/20 transition-all active:scale-95 flex items-center gap-2 shrink-0 cursor-pointer">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg>
                         Create Event
                     </button>
                 </div>
             </div>
 
-            <!-- Events Layout - 3 Columns -->
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 min-h-0 overflow-y-auto pb-8 custom-scrollbar items-start">
+            <!-- Tab Switcher: Upcoming vs Completed / Past -->
+            <div class="flex items-center justify-between gap-4 flex-wrap">
+                <div class="flex items-center p-1 bg-gray-200/60 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl shrink-0 shadow-2xs">
+                    <button type="button" 
+                            @click="currentTab = 'upcoming'"
+                            :class="currentTab === 'upcoming' ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-xs font-bold' : 'text-gray-500 hover:text-gray-900 dark:hover:text-white font-semibold'"
+                            class="px-4 py-2 rounded-xl text-xs transition-all flex items-center gap-2 cursor-pointer">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                        Upcoming Events
+                        <span class="bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 text-[10px] font-black px-2 py-0.5 rounded-full">{{ total_upcoming }}</span>
+                    </button>
+                    <button type="button" 
+                            @click="currentTab = 'past'"
+                            :class="currentTab === 'past' ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-xs font-bold' : 'text-gray-500 hover:text-gray-900 dark:hover:text-white font-semibold'"
+                            class="px-4 py-2 rounded-xl text-xs transition-all flex items-center gap-2 cursor-pointer">
+                        <span class="w-2 h-2 rounded-full bg-slate-400"></span>
+                        Completed / Past Events
+                        <span class="bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-[10px] font-black px-2 py-0.5 rounded-full">{{ total_past }}</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- UPCOMING EVENTS LAYOUT - 3 Columns -->
+            <div x-show="currentTab === 'upcoming'" class="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 min-h-0 overflow-y-auto pb-8 custom-scrollbar items-start">
                 
                 <!-- Regular Service Column -->
-                <div class="bg-gray-200/50 dark:bg-gray-800/30 rounded-2xl p-4 flex flex-col gap-4 border border-gray-200 dark:border-gray-800 h-full">
-                    <div class="flex items-center justify-between px-2">
+                <div x-data="columnPagination(4)" class="bg-gray-200/50 dark:bg-gray-800/30 rounded-2xl p-4 flex flex-col gap-3.5 border border-gray-200 dark:border-gray-800 h-full">
+                    <div class="flex items-center justify-between px-1">
                         <div class="flex items-center gap-2">
                             <div class="w-3 h-3 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]"></div>
                             <h3 class="font-bold text-gray-900 dark:text-white">Regular Service</h3>
-                            <span class="bg-gray-300 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs font-bold px-2 py-0.5 rounded-full ml-1">{{ regular_events.count }}</span>
+                            <span class="bg-gray-300 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs font-bold px-2 py-0.5 rounded-full ml-1" x-text="filteredCount"></span>
                         </div>
                     </div>
-                    <div class="flex flex-col gap-4 overflow-y-auto custom-scrollbar flex-1 pr-1">
+                    <div x-ref="list" class="flex flex-col gap-3.5 overflow-y-auto custom-scrollbar flex-1 pr-1 min-h-[120px]">
                         {% for event in regular_events %}
                             {% include 'admin/includes/event-card.html' with event=event theme="blue" %}
-                        {% empty %}
-                            <div class="p-8 text-center bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl">
-                                <p class="text-gray-500 font-medium text-sm">No regular services.</p>
-                            </div>
                         {% endfor %}
+                        <div x-show="filteredCount === 0" x-cloak class="p-8 text-center bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl">
+                            <p class="text-gray-500 font-medium text-sm">No upcoming regular services.</p>
+                        </div>
+                    </div>
+                    <!-- Pagination Footer -->
+                    <div x-show="filteredCount > 0" x-cloak class="mt-auto pt-3 border-t border-gray-200/80 dark:border-gray-700/60 flex items-center justify-between text-xs">
+                        <button type="button" 
+                                @click="prevPage()" 
+                                :disabled="page === 1" 
+                                class="px-2.5 py-1 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-35 disabled:cursor-not-allowed transition-all cursor-pointer flex items-center gap-1 font-semibold text-[11px] shadow-2xs">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                            <span>Prev</span>
+                        </button>
+                        
+                        <span class="font-medium text-[11px] text-gray-500 dark:text-gray-400 select-none">
+                            Page <span class="font-bold text-gray-900 dark:text-white" x-text="page"></span> of <span class="font-bold text-gray-900 dark:text-white" x-text="totalPages"></span>
+                        </span>
+
+                        <button type="button" 
+                                @click="nextPage()" 
+                                :disabled="page === totalPages" 
+                                class="px-2.5 py-1 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-35 disabled:cursor-not-allowed transition-all cursor-pointer flex items-center gap-1 font-semibold text-[11px] shadow-2xs">
+                            <span>Next</span>
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </button>
                     </div>
                 </div>
 
                 <!-- Scheduled Event Column -->
-                <div class="bg-gray-200/50 dark:bg-gray-800/30 rounded-2xl p-4 flex flex-col gap-4 border border-gray-200 dark:border-gray-800 h-full">
-                    <div class="flex items-center justify-between px-2">
+                <div x-data="columnPagination(4)" class="bg-gray-200/50 dark:bg-gray-800/30 rounded-2xl p-4 flex flex-col gap-3.5 border border-gray-200 dark:border-gray-800 h-full">
+                    <div class="flex items-center justify-between px-1">
                         <div class="flex items-center gap-2">
                             <div class="w-3 h-3 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]"></div>
                             <h3 class="font-bold text-gray-900 dark:text-white">Scheduled Event</h3>
-                            <span class="bg-gray-300 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs font-bold px-2 py-0.5 rounded-full ml-1">{{ scheduled_events.count }}</span>
+                            <span class="bg-gray-300 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs font-bold px-2 py-0.5 rounded-full ml-1" x-text="filteredCount"></span>
                         </div>
                     </div>
-                    <div class="flex flex-col gap-4 overflow-y-auto custom-scrollbar flex-1 pr-1">
+                    <div x-ref="list" class="flex flex-col gap-3.5 overflow-y-auto custom-scrollbar flex-1 pr-1 min-h-[120px]">
                         {% for event in scheduled_events %}
                             {% include 'admin/includes/event-card.html' with event=event theme="amber" %}
-                        {% empty %}
-                            <div class="p-8 text-center bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl">
-                                <p class="text-gray-500 font-medium text-sm">No scheduled events.</p>
-                            </div>
                         {% endfor %}
+                        <div x-show="filteredCount === 0" x-cloak class="p-8 text-center bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl">
+                            <p class="text-gray-500 font-medium text-sm">No upcoming scheduled events.</p>
+                        </div>
+                    </div>
+                    <!-- Pagination Footer -->
+                    <div x-show="filteredCount > 0" x-cloak class="mt-auto pt-3 border-t border-gray-200/80 dark:border-gray-700/60 flex items-center justify-between text-xs">
+                        <button type="button" 
+                                @click="prevPage()" 
+                                :disabled="page === 1" 
+                                class="px-2.5 py-1 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-35 disabled:cursor-not-allowed transition-all cursor-pointer flex items-center gap-1 font-semibold text-[11px] shadow-2xs">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                            <span>Prev</span>
+                        </button>
+                        
+                        <span class="font-medium text-[11px] text-gray-500 dark:text-gray-400 select-none">
+                            Page <span class="font-bold text-gray-900 dark:text-white" x-text="page"></span> of <span class="font-bold text-gray-900 dark:text-white" x-text="totalPages"></span>
+                        </span>
+
+                        <button type="button" 
+                                @click="nextPage()" 
+                                :disabled="page === totalPages" 
+                                class="px-2.5 py-1 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-35 disabled:cursor-not-allowed transition-all cursor-pointer flex items-center gap-1 font-semibold text-[11px] shadow-2xs">
+                            <span>Next</span>
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </button>
                     </div>
                 </div>
 
                 <!-- Big Event Column -->
-                <div class="bg-gray-200/50 dark:bg-gray-800/30 rounded-2xl p-4 flex flex-col gap-4 border border-gray-200 dark:border-gray-800 h-full">
-                    <div class="flex items-center justify-between px-2">
+                <div x-data="columnPagination(4)" class="bg-gray-200/50 dark:bg-gray-800/30 rounded-2xl p-4 flex flex-col gap-3.5 border border-gray-200 dark:border-gray-800 h-full">
+                    <div class="flex items-center justify-between px-1">
                         <div class="flex items-center gap-2">
                             <div class="w-3 h-3 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
                             <h3 class="font-bold text-gray-900 dark:text-white">Big Event</h3>
-                            <span class="bg-gray-300 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs font-bold px-2 py-0.5 rounded-full ml-1">{{ big_events.count }}</span>
+                            <span class="bg-gray-300 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs font-bold px-2 py-0.5 rounded-full ml-1" x-text="filteredCount"></span>
                         </div>
                     </div>
-                    <div class="flex flex-col gap-4 overflow-y-auto custom-scrollbar flex-1 pr-1">
+                    <div x-ref="list" class="flex flex-col gap-3.5 overflow-y-auto custom-scrollbar flex-1 pr-1 min-h-[120px]">
                         {% for event in big_events %}
                             {% include 'admin/includes/event-card.html' with event=event theme="emerald" %}
-                        {% empty %}
-                            <div class="p-8 text-center bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl">
-                                <p class="text-gray-500 font-medium text-sm">No big events.</p>
-                            </div>
                         {% endfor %}
+                        <div x-show="filteredCount === 0" x-cloak class="p-8 text-center bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl">
+                            <p class="text-gray-500 font-medium text-sm">No upcoming big events.</p>
+                        </div>
+                    </div>
+                    <!-- Pagination Footer -->
+                    <div x-show="filteredCount > 0" x-cloak class="mt-auto pt-3 border-t border-gray-200/80 dark:border-gray-700/60 flex items-center justify-between text-xs">
+                        <button type="button" 
+                                @click="prevPage()" 
+                                :disabled="page === 1" 
+                                class="px-2.5 py-1 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-35 disabled:cursor-not-allowed transition-all cursor-pointer flex items-center gap-1 font-semibold text-[11px] shadow-2xs">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                            <span>Prev</span>
+                        </button>
+                        
+                        <span class="font-medium text-[11px] text-gray-500 dark:text-gray-400 select-none">
+                            Page <span class="font-bold text-gray-900 dark:text-white" x-text="page"></span> of <span class="font-bold text-gray-900 dark:text-white" x-text="totalPages"></span>
+                        </span>
+
+                        <button type="button" 
+                                @click="nextPage()" 
+                                :disabled="page === totalPages" 
+                                class="px-2.5 py-1 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-35 disabled:cursor-not-allowed transition-all cursor-pointer flex items-center gap-1 font-semibold text-[11px] shadow-2xs">
+                            <span>Next</span>
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- PAST / COMPLETED EVENTS LAYOUT - 3 Columns -->
+            <div x-show="currentTab === 'past'" x-cloak class="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 min-h-0 overflow-y-auto pb-8 custom-scrollbar items-start">
+                
+                <!-- Past Regular Service Column -->
+                <div x-data="columnPagination(4)" class="bg-gray-200/50 dark:bg-gray-800/30 rounded-2xl p-4 flex flex-col gap-3.5 border border-gray-200 dark:border-gray-800 h-full">
+                    <div class="flex items-center justify-between px-1">
+                        <div class="flex items-center gap-2">
+                            <div class="w-3 h-3 rounded-full bg-blue-500 opacity-60"></div>
+                            <h3 class="font-bold text-gray-900 dark:text-white">Regular Service</h3>
+                            <span class="bg-gray-300 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs font-bold px-2 py-0.5 rounded-full ml-1" x-text="filteredCount"></span>
+                        </div>
+                    </div>
+                    <div x-ref="list" class="flex flex-col gap-3.5 overflow-y-auto custom-scrollbar flex-1 pr-1 min-h-[120px]">
+                        {% for event in past_regular_events %}
+                            {% include 'admin/includes/event-card.html' with event=event theme="blue" is_past=True %}
+                        {% endfor %}
+                        <div x-show="filteredCount === 0" x-cloak class="p-8 text-center bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl">
+                            <p class="text-gray-500 font-medium text-sm">No completed regular services.</p>
+                        </div>
+                    </div>
+                    <!-- Pagination Footer -->
+                    <div x-show="filteredCount > 0" x-cloak class="mt-auto pt-3 border-t border-gray-200/80 dark:border-gray-700/60 flex items-center justify-between text-xs">
+                        <button type="button" 
+                                @click="prevPage()" 
+                                :disabled="page === 1" 
+                                class="px-2.5 py-1 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-35 disabled:cursor-not-allowed transition-all cursor-pointer flex items-center gap-1 font-semibold text-[11px] shadow-2xs">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                            <span>Prev</span>
+                        </button>
+                        
+                        <span class="font-medium text-[11px] text-gray-500 dark:text-gray-400 select-none">
+                            Page <span class="font-bold text-gray-900 dark:text-white" x-text="page"></span> of <span class="font-bold text-gray-900 dark:text-white" x-text="totalPages"></span>
+                        </span>
+
+                        <button type="button" 
+                                @click="nextPage()" 
+                                :disabled="page === totalPages" 
+                                class="px-2.5 py-1 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-35 disabled:cursor-not-allowed transition-all cursor-pointer flex items-center gap-1 font-semibold text-[11px] shadow-2xs">
+                            <span>Next</span>
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Past Scheduled Event Column -->
+                <div x-data="columnPagination(4)" class="bg-gray-200/50 dark:bg-gray-800/30 rounded-2xl p-4 flex flex-col gap-3.5 border border-gray-200 dark:border-gray-800 h-full">
+                    <div class="flex items-center justify-between px-1">
+                        <div class="flex items-center gap-2">
+                            <div class="w-3 h-3 rounded-full bg-amber-500 opacity-60"></div>
+                            <h3 class="font-bold text-gray-900 dark:text-white">Scheduled Event</h3>
+                            <span class="bg-gray-300 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs font-bold px-2 py-0.5 rounded-full ml-1" x-text="filteredCount"></span>
+                        </div>
+                    </div>
+                    <div x-ref="list" class="flex flex-col gap-3.5 overflow-y-auto custom-scrollbar flex-1 pr-1 min-h-[120px]">
+                        {% for event in past_scheduled_events %}
+                            {% include 'admin/includes/event-card.html' with event=event theme="amber" is_past=True %}
+                        {% endfor %}
+                        <div x-show="filteredCount === 0" x-cloak class="p-8 text-center bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl">
+                            <p class="text-gray-500 font-medium text-sm">No completed scheduled events.</p>
+                        </div>
+                    </div>
+                    <!-- Pagination Footer -->
+                    <div x-show="filteredCount > 0" x-cloak class="mt-auto pt-3 border-t border-gray-200/80 dark:border-gray-700/60 flex items-center justify-between text-xs">
+                        <button type="button" 
+                                @click="prevPage()" 
+                                :disabled="page === 1" 
+                                class="px-2.5 py-1 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-35 disabled:cursor-not-allowed transition-all cursor-pointer flex items-center gap-1 font-semibold text-[11px] shadow-2xs">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                            <span>Prev</span>
+                        </button>
+                        
+                        <span class="font-medium text-[11px] text-gray-500 dark:text-gray-400 select-none">
+                            Page <span class="font-bold text-gray-900 dark:text-white" x-text="page"></span> of <span class="font-bold text-gray-900 dark:text-white" x-text="totalPages"></span>
+                        </span>
+
+                        <button type="button" 
+                                @click="nextPage()" 
+                                :disabled="page === totalPages" 
+                                class="px-2.5 py-1 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-35 disabled:cursor-not-allowed transition-all cursor-pointer flex items-center gap-1 font-semibold text-[11px] shadow-2xs">
+                            <span>Next</span>
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Past Big Event Column -->
+                <div x-data="columnPagination(4)" class="bg-gray-200/50 dark:bg-gray-800/30 rounded-2xl p-4 flex flex-col gap-3.5 border border-gray-200 dark:border-gray-800 h-full">
+                    <div class="flex items-center justify-between px-1">
+                        <div class="flex items-center gap-2">
+                            <div class="w-3 h-3 rounded-full bg-emerald-500 opacity-60"></div>
+                            <h3 class="font-bold text-gray-900 dark:text-white">Big Event</h3>
+                            <span class="bg-gray-300 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs font-bold px-2 py-0.5 rounded-full ml-1" x-text="filteredCount"></span>
+                        </div>
+                    </div>
+                    <div x-ref="list" class="flex flex-col gap-3.5 overflow-y-auto custom-scrollbar flex-1 pr-1 min-h-[120px]">
+                        {% for event in past_big_events %}
+                            {% include 'admin/includes/event-card.html' with event=event theme="emerald" is_past=True %}
+                        {% endfor %}
+                        <div x-show="filteredCount === 0" x-cloak class="p-8 text-center bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl">
+                            <p class="text-gray-500 font-medium text-sm">No completed big events.</p>
+                        </div>
+                    </div>
+                    <!-- Pagination Footer -->
+                    <div x-show="filteredCount > 0" x-cloak class="mt-auto pt-3 border-t border-gray-200/80 dark:border-gray-700/60 flex items-center justify-between text-xs">
+                        <button type="button" 
+                                @click="prevPage()" 
+                                :disabled="page === 1" 
+                                class="px-2.5 py-1 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-35 disabled:cursor-not-allowed transition-all cursor-pointer flex items-center gap-1 font-semibold text-[11px] shadow-2xs">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                            <span>Prev</span>
+                        </button>
+                        
+                        <span class="font-medium text-[11px] text-gray-500 dark:text-gray-400 select-none">
+                            Page <span class="font-bold text-gray-900 dark:text-white" x-text="page"></span> of <span class="font-bold text-gray-900 dark:text-white" x-text="totalPages"></span>
+                        </span>
+
+                        <button type="button" 
+                                @click="nextPage()" 
+                                :disabled="page === totalPages" 
+                                class="px-2.5 py-1 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-35 disabled:cursor-not-allowed transition-all cursor-pointer flex items-center gap-1 font-semibold text-[11px] shadow-2xs">
+                            <span>Next</span>
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </button>
                     </div>
                 </div>
 
@@ -274,6 +488,71 @@ class="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-950 transition-colo
         </div>
     </div>
 </div>
+
+<script>
+function columnPagination(pageSize = 4) {
+    return {
+        page: 1,
+        pageSize: pageSize,
+        filteredCount: 0,
+        get totalPages() {
+            return Math.max(1, Math.ceil(this.filteredCount / this.pageSize));
+        },
+        init() {
+            this.$nextTick(() => {
+                this.updatePagination();
+            });
+            this.$watch('searchQuery', () => {
+                this.page = 1;
+                this.$nextTick(() => this.updatePagination());
+            });
+            this.$watch('currentTab', () => {
+                this.$nextTick(() => this.updatePagination());
+            });
+        },
+        updatePagination() {
+            const list = this.$refs.list;
+            if (!list) return;
+            const items = list.querySelectorAll('.event-card-item');
+            const query = (typeof this.searchQuery === 'string' ? this.searchQuery : '').toLowerCase().trim();
+            let matchIndex = 0;
+
+            items.forEach(el => {
+                const text = (el.getAttribute('data-search') || '').toLowerCase();
+                const matches = !query || text.includes(query);
+                if (matches) {
+                    const itemPage = Math.floor(matchIndex / this.pageSize) + 1;
+                    if (itemPage === this.page) {
+                        el.style.display = '';
+                    } else {
+                        el.style.display = 'none';
+                    }
+                    matchIndex++;
+                } else {
+                    el.style.display = 'none';
+                }
+            });
+
+            this.filteredCount = matchIndex;
+            if (this.page > this.totalPages) {
+                this.page = this.totalPages;
+            }
+        },
+        prevPage() {
+            if (this.page > 1) {
+                this.page--;
+                this.updatePagination();
+            }
+        },
+        nextPage() {
+            if (this.page < this.totalPages) {
+                this.page++;
+                this.updatePagination();
+            }
+        }
+    };
+}
+</script>
 
 <style>
 /* Hide scrollbar for grid container but allow scrolling */

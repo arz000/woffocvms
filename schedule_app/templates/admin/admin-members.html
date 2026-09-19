@@ -397,6 +397,7 @@ function membersApp() {
                     (p.username && p.username.toLowerCase().includes(q)) || 
                     (p.email && p.email.toLowerCase().includes(q)) || 
                     (p.phone && p.phone.toLowerCase().includes(q)) ||
+                    (p.gender && p.gender.toLowerCase().includes(q)) ||
                     (p.role && p.role.toLowerCase().includes(q));
                 
                 let matchesMinistry = true;
@@ -494,11 +495,23 @@ function membersApp() {
                     }
 
                     this.assignModalOpen = false;
+                    if (window.showToast) {
+                        window.showToast('Department assignments updated successfully!', 'success');
+                    }
                 } else {
-                    alert(data.error || 'Failed to update department assignment.');
+                    if (window.showToast) {
+                        window.showToast(data.error || 'Failed to update department assignment.', 'error');
+                    } else {
+                        alert(data.error || 'Failed to update department assignment.');
+                    }
                 }
-            } catch (e) {
-                alert('Error saving department assignment.');
+            } catch (err) {
+                console.error(err);
+                if (window.showToast) {
+                    window.showToast('A network error occurred while updating assignments.', 'error');
+                } else {
+                    alert('A network error occurred while updating assignments.');
+                }
             } finally {
                 this.isSaving = false;
             }

@@ -1,15 +1,21 @@
-<div x-show="!searchQuery || '{{ event.name|lower|escapejs }} {{ event.description|lower|escapejs }} {{ event.date|date:"M d, Y"|lower|escapejs }} {% for office in event.offices.all %}{{ office.name|lower|escapejs }} {% endfor %}'.includes(searchQuery.toLowerCase().trim())"
-     class="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow group relative overflow-hidden">
+<div class="event-card-item bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow group relative overflow-hidden {% if is_past %}opacity-90 dark:opacity-85{% endif %}"
+     data-search="{{ event.name|lower|escapejs }} {{ event.description|lower|escapejs }} {{ event.date|date:"F d, Y"|lower|escapejs }} {{ event.date|date:"M d, Y"|lower|escapejs }} {% for office in event.offices.all %}{{ office.name|lower|escapejs }} {% endfor %}">
     <!-- Theme Accent Line -->
     <div class="absolute top-0 left-0 w-1 h-full 
-        {% if theme == 'blue' %}bg-blue-500
+        {% if is_past %}bg-slate-400 dark:bg-slate-600
+        {% elif theme == 'blue' %}bg-blue-500
         {% elif theme == 'amber' %}bg-amber-500
         {% elif theme == 'emerald' %}bg-emerald-500
         {% else %}bg-gray-500{% endif %}"></div>
 
     <div class="pl-3 flex flex-col h-full">
-        <div class="flex justify-between items-start mb-2">
-            <h4 class="font-bold text-gray-900 dark:text-white text-sm leading-tight">{{ event.name }}</h4>
+        <div class="flex justify-between items-start mb-2 gap-2">
+            <div class="flex items-center gap-2 flex-wrap min-w-0 flex-1">
+                <h4 class="font-bold text-gray-900 dark:text-white text-sm leading-tight break-words">{{ event.name }}</h4>
+                {% if is_past %}
+                    <span class="bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider border border-gray-200 dark:border-gray-700 shrink-0">Completed</span>
+                {% endif %}
+            </div>
         </div>
         
         <div class="flex items-center text-xs text-gray-500 dark:text-gray-400 mb-1 gap-1">

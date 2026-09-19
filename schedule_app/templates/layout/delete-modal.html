@@ -58,8 +58,8 @@
                     <!-- Buttons -->
                     <form id="global-delete-csrf" class="hidden">{% csrf_token %}</form>
                     <div class="flex items-center justify-center gap-4 w-full">
-                        <button type="button" @click="isOpen = false" class="px-6 py-3 rounded-full font-bold text-gray-700 dark:text-gray-200 bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors active:scale-95 w-1/2">
-                            No, Keep it.
+                        <button type="button" @click="isOpen = false" class="px-6 py-3 rounded-2xl font-bold text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors active:scale-95 w-1/2 border border-gray-200 dark:border-gray-700">
+                            Cancel
                         </button>
                         <button type="button" 
                                 @click="
@@ -72,17 +72,26 @@
                                         body: JSON.stringify({ model: modelName, id: recordId })
                                     }).then(r => r.json()).then(data => {
                                         if (data.success) {
+                                            if (window.showToastOnReload) {
+                                                window.showToastOnReload('Record deleted successfully!', 'success');
+                                            }
                                             window.location.reload();
                                         } else {
-                                            alert('Error: ' + data.error);
+                                            if (window.showToast) {
+                                                window.showToast('Error: ' + data.error, 'error');
+                                            } else {
+                                                alert('Error: ' + data.error);
+                                            }
                                         }
                                     }).catch(err => {
                                         console.error('Delete error:', err);
-                                        alert('Network error occurred.');
+                                        if (window.showToast) {
+                                            window.showToast('Network error occurred.', 'error');
+                                        }
                                     })
                                 " 
-                                class="px-6 py-3 rounded-full font-bold text-white bg-red-500 hover:bg-red-600 transition-colors active:scale-95 w-1/2">
-                            Yes, Delete It!
+                                class="px-6 py-3 rounded-2xl font-bold text-white bg-red-600 hover:bg-red-700 transition-colors active:scale-95 w-1/2 shadow-md shadow-red-600/20">
+                            Confirm
                         </button>
                     </div>
                 </div>

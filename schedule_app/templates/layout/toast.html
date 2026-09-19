@@ -1,0 +1,144 @@
+<!-- Global Floating Toast Notification System -->
+{% if messages %}
+    <div id="django-messages-container" class="hidden" style="display: none;">
+        {% for message in messages %}
+            <span data-message="{{ message }}" data-type="{% if 'error' in message.tags %}error{% elif 'warning' in message.tags %}warning{% elif 'info' in message.tags %}info{% else %}success{% endif %}"></span>
+        {% endfor %}
+    </div>
+{% endif %}
+
+<div x-data="globalToastManager()" 
+     @show-toast.window="addToast($event.detail)"
+     class="fixed top-5 right-5 z-50 flex flex-col gap-2.5 max-w-sm w-full pointer-events-none"
+     x-cloak>
+    
+    <template x-for="toast in toasts" :key="toast.id">
+        <div x-show="toast.visible"
+             x-transition:enter="transition ease-out duration-300 transform"
+             x-transition:enter-start="opacity-0 translate-y-[-10px] scale-95"
+             x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+             x-transition:leave="transition ease-in duration-200 transform"
+             x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+             x-transition:leave-end="opacity-0 translate-y-[-10px] scale-95"
+             class="pointer-events-auto flex items-start gap-3 p-4 rounded-2xl shadow-xl border backdrop-blur-md transition-all select-none"
+             :class="{
+                 'bg-emerald-600/95 text-white border-emerald-500/30 shadow-emerald-950/20': toast.type === 'success',
+                 'bg-red-600/95 text-white border-red-500/30 shadow-red-950/20': toast.type === 'error',
+                 'bg-amber-500/95 text-white border-amber-400/30 shadow-amber-950/20': toast.type === 'warning',
+                 'bg-gray-900/95 text-white border-gray-700/50 shadow-gray-950/20': toast.type === 'info' || !toast.type
+             }">
+            
+            <!-- Success Icon -->
+            <template x-if="toast.type === 'success'">
+                <div class="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center shrink-0 mt-0.5">
+                    <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>
+                </div>
+            </template>
+
+            <!-- Error Icon -->
+            <template x-if="toast.type === 'error'">
+                <div class="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center shrink-0 mt-0.5">
+                    <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12" /></svg>
+                </div>
+            </template>
+
+            <!-- Warning Icon -->
+            <template x-if="toast.type === 'warning'">
+                <div class="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center shrink-0 mt-0.5">
+                    <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                </div>
+            </template>
+
+            <!-- Info Icon -->
+            <template x-if="toast.type === 'info' || !toast.type">
+                <div class="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center shrink-0 mt-0.5">
+                    <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                </div>
+            </template>
+
+            <!-- Text Content -->
+            <div class="flex-1 min-w-0">
+                <p class="text-xs font-black uppercase tracking-wider opacity-80" x-text="toast.title || (toast.type === 'success' ? 'Success' : (toast.type === 'error' ? 'Error' : 'Notice'))"></p>
+                <p class="text-xs font-medium leading-snug mt-0.5" x-text="toast.message"></p>
+            </div>
+
+            <!-- Dismiss Button -->
+            <button type="button" @click="removeToast(toast.id)" class="text-white/70 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors shrink-0">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+        </div>
+    </template>
+</div>
+
+<script>
+function globalToastManager() {
+    return {
+        toasts: [],
+        init() {
+            // Check for pending toast stored before page reload
+            try {
+                const pending = sessionStorage.getItem('pending_toast');
+                if (pending) {
+                    const data = JSON.parse(pending);
+                    sessionStorage.removeItem('pending_toast');
+                    if (data && data.message) {
+                        this.addToast(data);
+                    }
+                }
+            } catch(e) {
+                console.error('Error reading pending toast', e);
+            }
+
+            // Check for initial Django messages on page load
+            const messageNodes = document.querySelectorAll('#django-messages-container [data-message]');
+            messageNodes.forEach(node => {
+                const message = node.getAttribute('data-message');
+                const type = node.getAttribute('data-type') || 'success';
+                if (message) {
+                    this.addToast({ message: message, type: type });
+                }
+            });
+        },
+        addToast(detail) {
+            const id = Date.now() + Math.random();
+            const toast = {
+                id: id,
+                title: (typeof detail === 'object' ? detail.title : '') || '',
+                message: (typeof detail === 'object' ? detail.message : detail) || 'Action completed successfully!',
+                type: (typeof detail === 'object' ? detail.type : 'success') || 'success',
+                visible: true
+            };
+            this.toasts.push(toast);
+
+            // Auto-dismiss after 3.5 seconds
+            setTimeout(() => {
+                this.removeToast(id);
+            }, 3500);
+        },
+        removeToast(id) {
+            const t = this.toasts.find(item => item.id === id);
+            if (t) {
+                t.visible = false;
+                setTimeout(() => {
+                    this.toasts = this.toasts.filter(item => item.id !== id);
+                }, 300);
+            }
+        }
+    };
+}
+
+// Global helpers accessible anywhere
+window.showToast = function(message, type = 'success', title = '') {
+    window.dispatchEvent(new CustomEvent('show-toast', {
+        detail: { message: message, type: type, title: title }
+    }));
+};
+
+window.showToastOnReload = function(message, type = 'success', title = '') {
+    try {
+        sessionStorage.setItem('pending_toast', JSON.stringify({ message, type, title }));
+    } catch(e) {
+        console.error('Error setting pending toast', e);
+    }
+};
+</script>

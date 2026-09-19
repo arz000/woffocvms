@@ -1,0 +1,343 @@
+{% extends 'layout/base.html' %}
+
+{% block content %}
+<div class="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-950 transition-colors duration-300"
+     x-data="{
+         searchQuery: '{{ query|escapejs }}',
+         selectedCategory: '{{ selected_category|escapejs }}',
+         selectedAction: '{{ selected_action|escapejs }}',
+         selectedDate: '{{ selected_date|escapejs }}',
+         applyFilter(param, val) {
+             const url = new URL(window.location.href);
+             url.searchParams.set(param, val);
+             if (param !== 'page') {
+                 url.searchParams.set('page', '1');
+             }
+             window.location.href = url.toString();
+         },
+         clearAllFilters() {
+             window.location.href = '{% url 'admin_activity_log' %}';
+         }
+     }">
+    {% include 'layout/admin-sidebar.html' %}
+    
+    <div class="flex-1 flex flex-col w-full h-screen overflow-y-auto">
+        <!-- Topbar -->
+        {% include 'layout/topbar.html' with page_title="Activity Log" %}
+        
+        <!-- Main Content Area -->
+        <main class="flex-1 p-4 sm:p-6 lg:p-8 flex flex-col space-y-6 pb-24">
+            
+            <!-- Header Title & Controls -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0">
+                <div>
+                    <h2 class="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white tracking-tight">Audit & Activity Log</h2>
+                    <p class="text-gray-500 dark:text-gray-400 mt-1 text-sm font-medium">Review administrative actions, role changes, member updates, and system events.</p>
+                </div>
+                
+                <div class="flex items-center gap-3">
+                    <button type="button" 
+                            @click="window.location.reload()" 
+                            class="px-4 py-2.5 rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 text-xs font-bold hover:bg-gray-50 dark:hover:bg-gray-800 transition-all shadow-xs flex items-center gap-2 cursor-pointer">
+                        <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                        Refresh
+                    </button>
+                </div>
+            </div>
+
+            <!-- Stats Metric Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+                <!-- Total Activities -->
+                <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl p-5 shadow-sm relative overflow-hidden group hover:shadow-md transition-all">
+                    <div class="absolute -right-6 -bottom-6 w-24 h-24 rounded-full bg-emerald-500/10 dark:bg-emerald-500/20 blur-xl pointer-events-none"></div>
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Total Logs</p>
+                            <p class="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white mt-1.5">{{ total_activities }}</p>
+                        </div>
+                        <div class="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200/60 dark:border-emerald-800/60 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Today's Activities -->
+                <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl p-5 shadow-sm relative overflow-hidden group hover:shadow-md transition-all">
+                    <div class="absolute -right-6 -bottom-6 w-24 h-24 rounded-full bg-blue-500/10 dark:bg-blue-500/20 blur-xl pointer-events-none"></div>
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Today's Events</p>
+                            <p class="text-2xl sm:text-3xl font-black text-blue-600 dark:text-blue-400 mt-1.5">{{ today_activities }}</p>
+                        </div>
+                        <div class="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-950/60 border border-blue-200/60 dark:border-blue-800/60 flex items-center justify-center text-blue-600 dark:text-blue-400">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Security & Auth Events -->
+                <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl p-5 shadow-sm relative overflow-hidden group hover:shadow-md transition-all">
+                    <div class="absolute -right-6 -bottom-6 w-24 h-24 rounded-full bg-amber-500/10 dark:bg-amber-500/20 blur-xl pointer-events-none"></div>
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Auth & Security</p>
+                            <p class="text-2xl sm:text-3xl font-black text-amber-600 dark:text-amber-400 mt-1.5">{{ security_activities }}</p>
+                        </div>
+                        <div class="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-950/60 border border-amber-200/60 dark:border-amber-800/60 flex items-center justify-center text-amber-600 dark:text-amber-400">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Active Actors -->
+                <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl p-5 shadow-sm relative overflow-hidden group hover:shadow-md transition-all">
+                    <div class="absolute -right-6 -bottom-6 w-24 h-24 rounded-full bg-purple-500/10 dark:bg-purple-500/20 blur-xl pointer-events-none"></div>
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Active Actors</p>
+                            <p class="text-2xl sm:text-3xl font-black text-purple-600 dark:text-purple-400 mt-1.5">{{ unique_actors }}</p>
+                        </div>
+                        <div class="w-12 h-12 rounded-2xl bg-purple-50 dark:bg-purple-950/60 border border-purple-200/60 dark:border-purple-800/60 flex items-center justify-center text-purple-600 dark:text-purple-400">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filters and Search Bar Container -->
+            <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl p-5 shadow-sm space-y-4">
+                <form method="GET" action="{% url 'admin_activity_log' %}" class="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+                    
+                    <!-- Search Input -->
+                    <div class="relative flex-1">
+                        <input type="text" 
+                               name="q" 
+                               value="{{ query }}" 
+                               placeholder="Search logs by actor, action description, or IP..." 
+                               class="w-full bg-gray-50/70 dark:bg-gray-950/70 border border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white text-xs font-semibold rounded-2xl pl-10 pr-10 py-3 shadow-2xs focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 focus:outline-hidden transition-all">
+                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                        </div>
+                        {% if query %}
+                        <a href="{% url 'admin_activity_log' %}" class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </a>
+                        {% endif %}
+                    </div>
+
+                    <div class="flex items-center gap-2.5 flex-wrap">
+                        <!-- Action Type Filter -->
+                        <div class="relative min-w-[130px]">
+                            <select name="action" 
+                                    onchange="this.form.submit()" 
+                                    class="w-full bg-gray-50/70 dark:bg-gray-950/70 border border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white text-xs font-bold rounded-2xl px-3.5 py-3 shadow-2xs focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 focus:outline-hidden transition-all appearance-none cursor-pointer pr-8">
+                                {% for val, label in action_types %}
+                                    <option value="{{ val }}" {% if selected_action == val %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-400">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                            </div>
+                        </div>
+
+                        <!-- Date Filter -->
+                        <div class="relative min-w-[130px]">
+                            <select name="date" 
+                                    onchange="this.form.submit()" 
+                                    class="w-full bg-gray-50/70 dark:bg-gray-950/70 border border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white text-xs font-bold rounded-2xl px-3.5 py-3 shadow-2xs focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 focus:outline-hidden transition-all appearance-none cursor-pointer pr-8">
+                                <option value="all" {% if selected_date == 'all' %}selected{% endif %}>All Time</option>
+                                <option value="today" {% if selected_date == 'today' %}selected{% endif %}>Today</option>
+                                <option value="week" {% if selected_date == 'week' %}selected{% endif %}>Past 7 Days</option>
+                                <option value="month" {% if selected_date == 'month' %}selected{% endif %}>Past 30 Days</option>
+                            </select>
+                            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-400">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                            </div>
+                        </div>
+
+                        <!-- Hidden Category Input preserved across form submits -->
+                        <input type="hidden" name="category" value="{{ selected_category }}">
+
+                        <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-3 rounded-2xl text-xs font-bold shadow-md shadow-emerald-600/20 transition-all active:scale-95 flex items-center gap-2 cursor-pointer">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" /></svg>
+                            Filter
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Category Pills Filter -->
+                <div class="flex items-center gap-2 overflow-x-auto pb-1 pt-2 scrollbar-none">
+                    {% for cat_val, cat_label in categories %}
+                        <button type="button" 
+                                @click="applyFilter('category', '{{ cat_val }}')"
+                                class="px-3.5 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap cursor-pointer shrink-0 {% if selected_category == cat_val %}bg-emerald-600 text-white shadow-md shadow-emerald-600/20{% else %}bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700{% endif %}">
+                            {{ cat_label }}
+                        </button>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Activity Logs Table Card -->
+            <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl shadow-sm overflow-hidden flex flex-col">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-gray-100 dark:border-gray-800 bg-gray-50/75 dark:bg-gray-950/50 text-[11px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+                                <th class="py-4 px-6">Timestamp</th>
+                                <th class="py-4 px-6">Actor</th>
+                                <th class="py-4 px-6">Action</th>
+                                <th class="py-4 px-6">Category</th>
+                                <th class="py-4 px-6 min-w-[300px]">Description</th>
+                                <th class="py-4 px-6 text-right">IP Address</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100 dark:divide-gray-800/60 text-xs">
+                            {% for log in logs %}
+                            <tr class="hover:bg-gray-50/60 dark:hover:bg-gray-800/40 transition-colors">
+                                <!-- Timestamp -->
+                                <td class="py-4 px-6 whitespace-nowrap text-gray-500 dark:text-gray-400">
+                                    <div class="font-bold text-gray-900 dark:text-white">{{ log.created_at|date:"M d, Y" }}</div>
+                                    <div class="text-[11px] text-gray-400 dark:text-gray-500">{{ log.created_at|date:"H:i:s A" }}</div>
+                                </td>
+
+                                <!-- Actor -->
+                                <td class="py-4 px-6 whitespace-nowrap">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white flex items-center justify-center font-black text-xs uppercase shadow-xs">
+                                            {{ log.actor_name|first|default:"S" }}
+                                        </div>
+                                        <div>
+                                            <p class="font-bold text-gray-900 dark:text-white leading-tight">{{ log.actor_name|default:"System" }}</p>
+                                            {% if log.user %}
+                                                <p class="text-[10px] font-medium text-gray-400 dark:text-gray-500">@{{ log.user.username }}</p>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </td>
+
+                                <!-- Action Badge -->
+                                <td class="py-4 px-6 whitespace-nowrap">
+                                    {% if log.action_type == 'CREATE' %}
+                                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-black bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                            Created
+                                        </span>
+                                    {% elif log.action_type == 'UPDATE' %}
+                                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-black bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300 border border-blue-300 dark:border-blue-700">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                                            Updated
+                                        </span>
+                                    {% elif log.action_type == 'DELETE' %}
+                                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-black bg-red-100 dark:bg-red-950/60 text-red-800 dark:text-red-300 border border-red-300 dark:border-red-700">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-red-500"></span>
+                                            Deleted
+                                        </span>
+                                    {% elif log.action_type == 'ASSIGN' %}
+                                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-black bg-purple-100 dark:bg-purple-950/60 text-purple-800 dark:text-purple-300 border border-purple-300 dark:border-purple-700">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
+                                            Assigned
+                                        </span>
+                                    {% elif log.action_type == 'AUTH' %}
+                                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-black bg-indigo-100 dark:bg-indigo-950/60 text-indigo-800 dark:text-indigo-300 border border-indigo-300 dark:border-indigo-700">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
+                                            Auth
+                                        </span>
+                                    {% elif log.action_type == 'SECURITY' %}
+                                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-black bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                                            Security
+                                        </span>
+                                    {% else %}
+                                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-black bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-700">
+                                            {{ log.action_type }}
+                                        </span>
+                                    {% endif %}
+                                </td>
+
+                                <!-- Category -->
+                                <td class="py-4 px-6 whitespace-nowrap">
+                                    <span class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
+                                        {{ log.category }}
+                                    </span>
+                                </td>
+
+                                <!-- Description -->
+                                <td class="py-4 px-6 text-gray-800 dark:text-gray-200 font-medium leading-relaxed">
+                                    {{ log.description }}
+                                </td>
+
+                                <!-- IP Address -->
+                                <td class="py-4 px-6 whitespace-nowrap text-right">
+                                    <span class="font-mono text-[11px] font-semibold text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-950/60 px-2.5 py-1 rounded-lg border border-gray-200/60 dark:border-gray-800">
+                                        {{ log.ip_address|default:"127.0.0.1" }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="py-16 px-6 text-center">
+                                    <div class="flex flex-col items-center justify-center max-w-sm mx-auto">
+                                        <div class="w-16 h-16 rounded-3xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-400 dark:text-gray-500 mb-4">
+                                            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                                        </div>
+                                        <h3 class="text-base font-black text-gray-900 dark:text-white">No activity logs found</h3>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">There are no log records matching your current filter criteria.</p>
+                                        <button type="button" 
+                                                @click="clearAllFilters()"
+                                                class="mt-4 px-4 py-2 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm transition-all active:scale-95 cursor-pointer">
+                                            Reset Filters
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination Footer -->
+                {% if page_obj.has_other_pages %}
+                <div class="p-4 sm:p-5 border-t border-gray-100 dark:border-gray-800 flex flex-col sm:flex-row items-center justify-between gap-4 bg-gray-50/50 dark:bg-gray-950/30">
+                    <p class="text-xs font-semibold text-gray-500 dark:text-gray-400">
+                        Showing page <span class="font-bold text-gray-900 dark:text-white">{{ page_obj.number }}</span> of <span class="font-bold text-gray-900 dark:text-white">{{ page_obj.paginator.num_pages }}</span> ({{ page_obj.paginator.count }} total entries)
+                    </p>
+
+                    <div class="flex items-center gap-1.5">
+                        {% if page_obj.has_previous %}
+                            <button type="button" 
+                                    @click="applyFilter('page', '{{ page_obj.previous_page_number }}')"
+                                    class="px-3.5 py-1.5 rounded-xl border border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 text-xs font-bold hover:bg-white dark:hover:bg-gray-900 transition-colors shadow-2xs cursor-pointer">
+                                Previous
+                            </button>
+                        {% endif %}
+
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                                <span class="w-8 h-8 rounded-xl bg-emerald-600 text-white text-xs font-black flex items-center justify-center shadow-xs">
+                                    {{ num }}
+                                </span>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                <button type="button" 
+                                        @click="applyFilter('page', '{{ num }}')"
+                                        class="w-8 h-8 rounded-xl border border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 text-xs font-bold hover:bg-white dark:hover:bg-gray-900 transition-colors flex items-center justify-center cursor-pointer">
+                                    {{ num }}
+                                </button>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if page_obj.has_next %}
+                            <button type="button" 
+                                    @click="applyFilter('page', '{{ page_obj.next_page_number }}')"
+                                    class="px-3.5 py-1.5 rounded-xl border border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 text-xs font-bold hover:bg-white dark:hover:bg-gray-900 transition-colors shadow-2xs cursor-pointer">
+                                Next
+                            </button>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+        </main>
+    </div>
+</div>
+{% endblock %}

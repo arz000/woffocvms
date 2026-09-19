@@ -16,6 +16,7 @@ def user_profile_view(request):
     
     if request.method == 'POST':
         action = request.POST.get('action', 'update_profile')
+        from schedule_app.utils import log_activity
         
         if action == 'change_password':
             current_pwd = request.POST.get('current_password', '')
@@ -32,11 +33,23 @@ def user_profile_view(request):
                 request.user.set_password(new_pwd)
                 request.user.save()
                 update_session_auth_hash(request, request.user)
+                log_activity(
+                    request=request,
+                    action_type='SECURITY',
+                    category='Auth',
+                    description=f"User '{request.user.username}' changed their account password."
+                )
                 messages.success(request, 'Password changed successfully.')
                 return redirect('user_profile')
         else:
             if form.is_valid():
                 form.save()
+                log_activity(
+                    request=request,
+                    action_type='UPDATE',
+                    category='Members',
+                    description=f"Member '{request.user.get_full_name() or request.user.username}' updated profile information."
+                )
                 messages.success(request, 'Profile updated successfully.')
                 return redirect('user_profile')
         
@@ -97,7 +110,7 @@ def user_dashboard_view(request):
             my_shifts = Shift.objects.filter(
                 volunteer=request.user,
                 event__date__gte=today
-            ).select_related('event', 'ministry').order_by('event__date', 'event__start_time')
+            ).select_related('event', 'ministry', 'job').order_by('event__date', 'event__start_time')
             
             # Open opportunities (unassigned shifts in user's departments or all)
             if my_ministries.exists():
@@ -105,12 +118,13 @@ def user_dashboard_view(request):
                     volunteer__isnull=True,
                     ministry__in=my_ministries,
                     event__date__gte=today
-                ).select_related('event', 'ministry').order_by('event__date', 'event__start_time')
+                ).select_related('event', 'ministry', 'job').order_by('event__date', 'event__start_time')
             else:
                 open_shifts = Shift.objects.filter(
                     volunteer__isnull=True,
                     event__date__gte=today
-                ).select_related('event', 'ministry').order_by('event__date', 'event__start_time')
+                ).select_related('event', 'ministry', 'job').order_by('event__date', 'event__start_time')
+
                 
             # Past shifts count
             completed_shifts_count = Shift.objects.filter(
@@ -182,7 +196,7 @@ def volunteer_calendar_view(request):
     from schedule_app.models import Shift, Event, Unavailability
     
     today = timezone.now().date()
-    events = Event.objects.filter(date__gte=today).prefetch_related('offices', 'shifts__volunteer', 'shifts__ministry', 'shifts__job').order_by('date', 'start_time')
+    events = Event.objects.all().prefetch_related('offices', 'shifts__volunteer', 'shifts__ministry', 'shifts__job').order_by('date', 'start_time')
     
     events_data = []
     for e in events:
@@ -285,7 +299,7 @@ def volunteer_schedule_view(request):
                     end_date=end_date,
                     reason=final_reason
                 )
-                messages.success(request, f"Unavailable date added ({start_date}). Department Heads will be notified.")
+                pass  # Toast notification handles user feedback
             return redirect('volunteer_schedule')
             
         elif action == 'delete_unavailability':
@@ -300,17 +314,25 @@ def volunteer_schedule_view(request):
         start_date__gte=today
     ).order_by('start_date')
     
-    # Active scheduled shifts
+    # Active scheduled shifts (Upcoming)
     my_shifts = Shift.objects.filter(
         volunteer=request.user,
         event__date__gte=today
     ).select_related('event', 'ministry').order_by('event__date', 'event__start_time')
+
+    # Past served shifts (History)
+    past_shifts = Shift.objects.filter(
+        volunteer=request.user,
+        event__date__lt=today
+    ).select_related('event', 'ministry').order_by('-event__date', '-event__start_time')
     
     return render(request, 'volunteer/volunteer-schedule.html', {
         'unavailabilities': unavailabilities,
         'my_shifts': my_shifts,
+        'past_shifts': past_shifts,
         'today': today.isoformat(),
     })
+
 
 @login_required
 def volunteer_opportunities_view(request):
@@ -335,7 +357,7 @@ def volunteer_opportunities_view(request):
             elif action == 'cancel' and shift.volunteer == request.user:
                 shift.volunteer = None
                 shift.save()
-                messages.info(request, f"You removed yourself from {shift.event.name}.")
+                messages.success(request, f"You have successfully removed yourself from {shift.event.name}.")
                 
         return redirect('volunteer_opportunities')
         
@@ -379,10 +401,6 @@ def dept_head_events_view(request):
         return redirect('user_dashboard')
     
     today = timezone.now().date()
-    base_query = Event.objects.filter(
-        offices__in=headed_ministries,
-        date__gte=today
-    ).distinct().order_by('date', 'start_time').prefetch_related('offices', 'shifts__volunteer', 'shifts__ministry')
     
     # Annotate each event with filled_count
     def annotate_events(events):
@@ -390,14 +408,33 @@ def dept_head_events_view(request):
             event.filled_count = event.shifts.filter(volunteer__isnull=False).count()
         return events
     
-    regular_events = annotate_events(list(base_query.filter(event_type='regular')))
-    scheduled_events = annotate_events(list(base_query.filter(event_type='scheduled')))
-    big_events = annotate_events(list(base_query.filter(event_type='big')))
+    upcoming_query = Event.objects.filter(
+        offices__in=headed_ministries,
+        date__gte=today
+    ).distinct().order_by('date', 'start_time').prefetch_related('offices', 'shifts__volunteer', 'shifts__ministry')
+
+    past_query = Event.objects.filter(
+        offices__in=headed_ministries,
+        date__lt=today
+    ).distinct().order_by('-date', '-start_time').prefetch_related('offices', 'shifts__volunteer', 'shifts__ministry')
+    
+    regular_events = annotate_events(list(upcoming_query.filter(event_type='regular')))
+    scheduled_events = annotate_events(list(upcoming_query.filter(event_type='scheduled')))
+    big_events = annotate_events(list(upcoming_query.filter(event_type='big')))
+
+    past_regular_events = annotate_events(list(past_query.filter(event_type='regular')))
+    past_scheduled_events = annotate_events(list(past_query.filter(event_type='scheduled')))
+    past_big_events = annotate_events(list(past_query.filter(event_type='big')))
     
     return render(request, 'dept-head/dept-head-events.html', {
         'regular_events': regular_events,
         'scheduled_events': scheduled_events,
         'big_events': big_events,
+        'past_regular_events': past_regular_events,
+        'past_scheduled_events': past_scheduled_events,
+        'past_big_events': past_big_events,
+        'total_upcoming': upcoming_query.count(),
+        'total_past': past_query.count(),
     })
 
 @login_required
@@ -697,7 +734,7 @@ def dept_head_jobs_view(request):
         elif action == 'delete_job':
             job_id = request.POST.get('job_id')
             DepartmentJob.objects.filter(id=job_id, ministry__in=headed_ministries).delete()
-            messages.info(request, "Job position deleted.")
+            messages.success(request, "Job position deleted successfully.")
             return redirect('dept_head_jobs')
             
     jobs = DepartmentJob.objects.filter(

@@ -51,8 +51,16 @@ class VolunteerProfile(models.Model):
     """
     Extends the built-in Django User model to store additional information.
     """
+    GENDER_CHOICES = [
+        ('Male', 'Male'),
+        ('Female', 'Female'),
+        ('Other', 'Other'),
+    ]
+
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='volunteer_profile')
     phone_number = models.CharField(max_length=20, blank=True)
+    gender = models.CharField(max_length=20, choices=GENDER_CHOICES, blank=True)
+    birthday = models.DateField(null=True, blank=True)
     ministries = models.ManyToManyField(Ministry, blank=True, related_name='volunteers')
     role = models.ForeignKey(Role, on_delete=models.SET_NULL, null=True, blank=True, related_name='volunteers')
     
@@ -143,6 +151,48 @@ class Unavailability(models.Model):
     class Meta:
         verbose_name_plural = "Unavailabilities"
         ordering = ['start_date']
+
+class ActivityLog(models.Model):
+    """
+    Logs administrative, user, and security actions across the system.
+    """
+    ACTION_CHOICES = [
+        ('CREATE', 'Created'),
+        ('UPDATE', 'Updated'),
+        ('DELETE', 'Deleted'),
+        ('ASSIGN', 'Assigned'),
+        ('AUTH', 'Authentication'),
+        ('SECURITY', 'Security'),
+    ]
+
+    CATEGORY_CHOICES = [
+        ('Roles', 'Roles & Permissions'),
+        ('Members', 'Members'),
+        ('Departments', 'Departments'),
+        ('Events', 'Events'),
+        ('Shifts', 'Shifts'),
+        ('Jobs', 'Department Jobs'),
+        ('Auth', 'Authentication'),
+        ('General', 'General'),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='activity_logs')
+    actor_name = models.CharField(max_length=150, blank=True)
+    action_type = models.CharField(max_length=20, choices=ACTION_CHOICES, default='UPDATE')
+    category = models.CharField(max_length=50, choices=CATEGORY_CHOICES, default='General')
+    description = models.TextField()
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = "Activity Log"
+        verbose_name_plural = "Activity Logs"
+
+    def __str__(self):
+        actor = self.actor_name or (self.user.get_full_name() or self.user.username if self.user else "System")
+        return f"[{self.created_at.strftime('%Y-%m-%d %H:%M')}] {actor}: {self.description[:50]}"
+
 
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):

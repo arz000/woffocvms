@@ -25,7 +25,8 @@ SECRET_KEY = 'django-insecure-0*4eew-4=6nsq2d+z8kzig%&mely09-mp+6rki-cv%)-&_xm7m
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
+
 
 
 # Application definition
@@ -129,8 +130,13 @@ STATICFILES_DIRS = [
 
 # Aunthentication redirects
 
-LOGIN_URL = 'login_page'
+LOGIN_URL = 'login'
 
 LOGIN_REDIRECT_URL = 'main'
 
 LOGOUT_REDIRECT_URL = 'landing_page'
+
+
+# Email configuration
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+DEFAULT_FROM_EMAIL = 'WOFFOC VMS <noreply@woffoc.org>'

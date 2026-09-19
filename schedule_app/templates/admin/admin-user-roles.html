@@ -9,7 +9,30 @@
         {% include 'layout/topbar.html' with page_title="User Roles" %}
         
         <!-- Main Content Area -->
-        <main x-data="{ manageModalOpen: false, selectedRole: '', selectedRoleId: null, roleTheme: '', roleUsers: [], editModalOpen: false, editRoleId: null, editRoleName: '', editRoleDesc: '', editRoleTheme: '', editRoleCapabilities: [], searchQuery: '' }" class="flex-1 p-4 sm:p-6 lg:p-8 flex flex-col space-y-6 relative">
+        <main x-data="{ 
+            manageModalOpen: false, 
+            selectedRole: '', 
+            selectedRoleId: null, 
+            roleTheme: '', 
+            roleUsers: [], 
+            editModalOpen: false, 
+            editRoleId: null, 
+            editRoleName: '', 
+            editRoleDesc: '', 
+            editRoleTheme: '', 
+            editRoleCapabilities: [], 
+            searchQuery: '',
+            capabilitiesModalOpen: false,
+            newCapName: '',
+            newCapDesc: '',
+            capSearchQuery: '',
+            isSubmittingCap: false,
+            allCapabilities: [
+                {% for cap in all_capabilities %}
+                    { id: {{ cap.id }}, name: '{{ cap.name|escapejs }}', description: '{{ cap.description|escapejs }}' }{% if not forloop.last %},{% endif %}
+                {% endfor %}
+            ]
+        }" class="flex-1 p-4 sm:p-6 lg:p-8 flex flex-col space-y-6 relative">
             <!-- Header Controls -->
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 shrink-0">
                 <div>
@@ -19,7 +42,7 @@
                 
                 <div class="flex flex-wrap items-center gap-3">
                     <!-- Live Search Bar -->
-                    <div class="relative w-full sm:w-72">
+                    <div class="relative w-full sm:w-64">
                         <input type="text" 
                                x-model="searchQuery" 
                                placeholder="Search..." 
@@ -35,7 +58,13 @@
                         </button>
                     </div>
 
-                    <button @click="editRoleId = null; editRoleName = ''; editRoleDesc = ''; editRoleTheme = 'emerald'; editRoleCapabilities = []; editModalOpen = true;" class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-bold shadow-md shadow-emerald-600/20 transition-all active:scale-95 flex items-center gap-2 shrink-0">
+                    <!-- Manage Capabilities Button -->
+                    <button @click="capabilitiesModalOpen = true" type="button" class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all active:scale-95 flex items-center gap-2 shrink-0 cursor-pointer shadow-2xs">
+                        <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
+                        Capabilities
+                    </button>
+
+                    <button @click="editRoleId = null; editRoleName = ''; editRoleDesc = ''; editRoleTheme = 'emerald'; editRoleCapabilities = []; editModalOpen = true;" class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-bold shadow-md shadow-emerald-600/20 transition-all active:scale-95 flex items-center gap-2 shrink-0 cursor-pointer">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg>
                         Create Role
                     </button>
@@ -116,6 +145,7 @@
             <!-- Modals -->
             {% include 'admin/modals/manage-role-access.html' %}
             {% include 'admin/modals/edit-role.html' %}
+            {% include 'admin/modals/manage-capabilities.html' %}
         </main>
         
         {% include 'layout/footer.html' %}

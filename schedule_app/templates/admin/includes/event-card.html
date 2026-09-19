@@ -1,16 +1,22 @@
-<div x-show="!searchQuery || '{{ event.name|lower|escapejs }} {{ event.description|lower|escapejs }} {{ event.date|date:"F d, Y"|lower|escapejs }}'.includes(searchQuery.toLowerCase().trim())"
-     class="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow group relative overflow-hidden">
+<div class="event-card-item bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow group relative overflow-hidden {% if is_past %}opacity-90 dark:opacity-85{% endif %}"
+     data-search="{{ event.name|lower|escapejs }} {{ event.description|lower|escapejs }} {{ event.date|date:"F d, Y"|lower|escapejs }} {{ event.date|date:"M d, Y"|lower|escapejs }} {% for o in event.offices.all %}{{ o.name|lower|escapejs }} {% endfor %}">
     <!-- Theme Accent Line -->
     <div class="absolute top-0 left-0 w-1 h-full 
-        {% if theme == 'blue' %}bg-blue-500
+        {% if is_past %}bg-slate-400 dark:bg-slate-600
+        {% elif theme == 'blue' %}bg-blue-500
         {% elif theme == 'amber' %}bg-amber-500
         {% elif theme == 'emerald' %}bg-emerald-500
         {% else %}bg-gray-500{% endif %}"></div>
 
     <div class="pl-3 flex flex-col h-full">
-        <div class="flex justify-between items-start mb-2">
-            <h4 class="font-bold text-gray-900 dark:text-white text-sm leading-tight">{{ event.name }}</h4>
-            <div class="flex opacity-0 group-hover:opacity-100 transition-opacity gap-1">
+        <div class="flex justify-between items-start mb-2 gap-2">
+            <div class="flex items-center gap-2 flex-wrap min-w-0 flex-1">
+                <h4 class="font-bold text-gray-900 dark:text-white text-sm leading-tight break-words">{{ event.name }}</h4>
+                {% if is_past %}
+                    <span class="bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider border border-gray-200 dark:border-gray-700 shrink-0">Completed</span>
+                {% endif %}
+            </div>
+            <div class="flex opacity-0 group-hover:opacity-100 transition-opacity gap-1 shrink-0">
                 <!-- Edit Button -->
                 <button @click="$dispatch('open-edit-event', { id: {{ event.id }}, eventType: '{{ event.event_type|escapejs }}', name: '{{ event.name|escapejs }}', date: '{{ event.date|date:'Y-m-d' }}', startTime: '{{ event.start_time|time:'H:i' }}', endTime: '{{ event.end_time|time:'H:i' }}', description: '{{ event.description|escapejs }}', offices: [{% for o in event.offices.all %}'{{ o.id }}'{% if not forloop.last %},{% endif %}{% endfor %}] })" type="button" class="text-gray-400 hover:text-emerald-500 p-1 rounded hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-colors" title="Edit Event">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>

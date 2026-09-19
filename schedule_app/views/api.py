@@ -1,7 +1,48 @@
 from django.http import JsonResponse
 from django.db.models import Q
 import json
-from schedule_app.models import Role, VolunteerProfile
+from schedule_app.models import Role, VolunteerProfile, Capability
+from schedule_app.utils import log_activity
+
+def api_create_capability(request):
+    """API endpoint for superusers and staff to create a new system capability."""
+    if not request.user.is_authenticated or not (request.user.is_staff or request.user.is_superuser):
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+        
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            name = data.get('name', '').strip()
+            description = data.get('description', '').strip()
+            
+            if not name:
+                return JsonResponse({'error': 'Capability name is required.'}, status=400)
+                
+            if Capability.objects.filter(name__iexact=name).exists():
+                return JsonResponse({'error': f"Capability with name '{name}' already exists."}, status=400)
+                
+            cap = Capability.objects.create(name=name, description=description)
+            
+            log_activity(
+                request=request,
+                action_type='CREATE',
+                category='Roles',
+                description=f"Created new system capability '{cap.name}'."
+            )
+            
+            return JsonResponse({
+                'success': True,
+                'capability': {
+                    'id': cap.id,
+                    'name': cap.name,
+                    'description': cap.description
+                }
+            })
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=400)
+            
+    return JsonResponse({'error': 'Invalid method'}, status=405)
+
 
 def search_volunteers(request):
     """Return JSON list of volunteers matching the query for Alpine.js autocomplete."""
@@ -65,11 +106,19 @@ def api_update_role(request):
             
             if role_id:
                 role = Role.objects.get(id=role_id)
+                old_name = role.name
                 if name:
                     role.name = name
                 if description is not None:
                     role.description = description
+                role.capabilities.set(capabilities)
                 role.save()
+                log_activity(
+                    request=request,
+                    action_type='UPDATE',
+                    category='Roles',
+                    description=f"Updated role '{role.name}' configuration and permissions."
+                )
             else:
                 if not name:
                     return JsonResponse({'error': 'Role name is required'}, status=400)
@@ -78,9 +127,15 @@ def api_update_role(request):
                     description=description or '',
                     theme='emerald'
                 )
+                role.capabilities.set(capabilities)
+                role.save()
+                log_activity(
+                    request=request,
+                    action_type='CREATE',
+                    category='Roles',
+                    description=f"Created new system role '{role.name}'."
+                )
                 
-            role.capabilities.set(capabilities)
-            role.save()
             return JsonResponse({'success': True})
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=400)
@@ -106,6 +161,8 @@ def api_update_ministries(request):
             ministry_ids = data.get('ministry_ids', [])
             
             target_profile = VolunteerProfile.objects.get(id=profile_id)
+            target_name = target_profile.user.get_full_name() or target_profile.user.username
+            
             if is_staff:
                 target_profile.ministries.set(ministry_ids)
             elif is_head:
@@ -116,6 +173,12 @@ def api_update_ministries(request):
                 target_profile.ministries.set(unrelated_min_ids | valid_assigned)
                 
             target_profile.save()
+            log_activity(
+                request=request,
+                action_type='ASSIGN',
+                category='Members',
+                description=f"Updated department/ministry assignments for member {target_name}."
+            )
             return JsonResponse({'success': True})
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=400)
@@ -138,11 +201,19 @@ def api_assign_role(request):
             profile.role = role
             profile.save()
             
+            target_name = profile.user.get_full_name() or profile.user.username
+            log_activity(
+                request=request,
+                action_type='ASSIGN',
+                category='Roles',
+                description=f"Assigned role '{role.name}' to member {target_name}."
+            )
+            
             return JsonResponse({
                 'success': True,
                 'user': {
                     'id': profile.id,
-                    'name': profile.user.get_full_name() or profile.user.username,
+                    'name': target_name,
                     'email': profile.user.email
                 }
             })
@@ -162,8 +233,17 @@ def api_remove_role(request):
             user_id = data.get('user_id')
             
             profile = VolunteerProfile.objects.get(id=user_id)
+            prev_role_name = profile.role.name if profile.role else "Role"
             profile.role = None
             profile.save()
+            
+            target_name = profile.user.get_full_name() or profile.user.username
+            log_activity(
+                request=request,
+                action_type='UPDATE',
+                category='Roles',
+                description=f"Removed role '{prev_role_name}' from member {target_name}."
+            )
             
             return JsonResponse({'success': True})
         except Exception as e:
@@ -192,6 +272,8 @@ def api_delete_record(request):
             from schedule_app.models import Ministry, Event, Role, DepartmentJob, Unavailability, Shift
             
             if model_name == 'DepartmentJob':
+                job = DepartmentJob.objects.filter(id=record_id).first()
+                job_title = job.title if job else f"ID {record_id}"
                 if is_staff:
                     DepartmentJob.objects.filter(id=record_id).delete()
                 elif is_dept_head:
@@ -199,6 +281,12 @@ def api_delete_record(request):
                     DepartmentJob.objects.filter(id=record_id, ministry__in=headed_mins).delete()
                 else:
                     return JsonResponse({'error': 'Unauthorized to delete this role.'}, status=403)
+                log_activity(
+                    request=request,
+                    action_type='DELETE',
+                    category='Jobs',
+                    description=f"Deleted department job position '{job_title}'."
+                )
                 return JsonResponse({'success': True})
                 
             elif model_name == 'Unavailability':
@@ -206,27 +294,63 @@ def api_delete_record(request):
                     Unavailability.objects.filter(id=record_id).delete()
                 else:
                     Unavailability.objects.filter(id=record_id, volunteer=request.user).delete()
+                log_activity(
+                    request=request,
+                    action_type='DELETE',
+                    category='Members',
+                    description=f"Deleted volunteer unavailability blackout date (Record ID: {record_id})."
+                )
                 return JsonResponse({'success': True})
                 
             elif model_name == 'Shift':
+                shift = Shift.objects.filter(id=record_id).select_related('event', 'ministry').first()
+                shift_desc = f"{shift.ministry.name} at {shift.event.name}" if shift else f"Shift #{record_id}"
                 if is_staff:
                     Shift.objects.filter(id=record_id).delete()
+                    log_activity(
+                        request=request,
+                        action_type='DELETE',
+                        category='Shifts',
+                        description=f"Deleted shift '{shift_desc}'."
+                    )
                 elif is_dept_head:
                     headed_mins = profile.headed_ministries.all()
                     Shift.objects.filter(id=record_id, ministry__in=headed_mins).delete()
+                    log_activity(
+                        request=request,
+                        action_type='DELETE',
+                        category='Shifts',
+                        description=f"Department Head deleted shift '{shift_desc}'."
+                    )
                 else:
                     Shift.objects.filter(id=record_id, volunteer=request.user).update(volunteer=None)
+                    log_activity(
+                        request=request,
+                        action_type='UPDATE',
+                        category='Shifts',
+                        description=f"Volunteer cancelled assignment on shift '{shift_desc}'."
+                    )
                 return JsonResponse({'success': True})
 
-            elif model_name in ['Ministry', 'Event', 'Role']:
+            elif model_name in ['Ministry', 'Event', 'Role', 'Capability']:
                 if not is_staff:
                     return JsonResponse({'error': 'Unauthorized'}, status=403)
                 ALLOWED_MODELS = {
-                    'Ministry': Ministry,
-                    'Event': Event,
-                    'Role': Role
+                    'Ministry': (Ministry, 'Departments'),
+                    'Event': (Event, 'Events'),
+                    'Role': (Role, 'Roles'),
+                    'Capability': (Capability, 'Roles')
                 }
-                ALLOWED_MODELS[model_name].objects.filter(id=record_id).delete()
+                model_cls, category = ALLOWED_MODELS[model_name]
+                obj = model_cls.objects.filter(id=record_id).first()
+                obj_name = str(obj) if obj else f"ID {record_id}"
+                model_cls.objects.filter(id=record_id).delete()
+                log_activity(
+                    request=request,
+                    action_type='DELETE',
+                    category=category,
+                    description=f"Deleted {model_name} record '{obj_name}'."
+                )
                 return JsonResponse({'success': True})
             else:
                 return JsonResponse({'error': f'Model {model_name} is not recognized.'}, status=400)

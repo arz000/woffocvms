@@ -73,27 +73,27 @@
                                 <h4 class="text-sm font-bold text-gray-900 dark:text-white mb-4">Capabilities</h4>
                                 
                                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    {% for cap in all_capabilities %}
-                                    <!-- Capability Item -->
-                                    <label class="flex items-start gap-3 p-3 rounded-xl border border-gray-100 dark:border-gray-800 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors">
-                                        <div class="relative flex items-center pt-0.5">
-                                            <input type="checkbox" :value="{{ cap.id }}" x-model="editRoleCapabilities" class="peer sr-only">
-                                            <div class="w-5 h-5 rounded border border-gray-300 dark:border-gray-700 transition-colors flex items-center justify-center"
-                                                 :class="{
-                                                     'peer-checked:bg-red-500 peer-checked:border-red-500': editRoleTheme === 'red',
-                                                     'peer-checked:bg-amber-500 peer-checked:border-amber-500': editRoleTheme === 'amber',
-                                                     'peer-checked:bg-blue-500 peer-checked:border-blue-500': editRoleTheme === 'blue',
-                                                     'peer-checked:bg-emerald-500 peer-checked:border-emerald-500': editRoleTheme === 'emerald'
-                                                 }">
-                                                <svg class="w-3 h-3 text-white opacity-0 peer-checked:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                                    <template x-for="cap in allCapabilities" :key="cap.id">
+                                        <!-- Capability Item -->
+                                        <label class="flex items-start gap-3 p-3 rounded-xl border border-gray-100 dark:border-gray-800 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors">
+                                            <div class="relative flex items-center pt-0.5">
+                                                <input type="checkbox" :value="cap.id" x-model="editRoleCapabilities" class="peer sr-only">
+                                                <div class="w-5 h-5 rounded border border-gray-300 dark:border-gray-700 transition-colors flex items-center justify-center"
+                                                     :class="{
+                                                         'peer-checked:bg-red-500 peer-checked:border-red-500': editRoleTheme === 'red',
+                                                         'peer-checked:bg-amber-500 peer-checked:border-amber-500': editRoleTheme === 'amber',
+                                                         'peer-checked:bg-blue-500 peer-checked:border-blue-500': editRoleTheme === 'blue',
+                                                         'peer-checked:bg-emerald-500 peer-checked:border-emerald-500': editRoleTheme === 'emerald'
+                                                     }">
+                                                    <svg class="w-3 h-3 text-white opacity-0 peer-checked:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                                                </div>
                                             </div>
-                                        </div>
-                                        <div>
-                                            <p class="text-sm font-bold text-gray-900 dark:text-white leading-none mb-1">{{ cap.name }}</p>
-                                            <p class="text-xs font-medium text-gray-500 leading-tight">{{ cap.description }}</p>
-                                        </div>
-                                    </label>
-                                    {% endfor %}
+                                            <div>
+                                                <p class="text-sm font-bold text-gray-900 dark:text-white leading-none mb-1" x-text="cap.name"></p>
+                                                <p class="text-xs font-medium text-gray-500 leading-tight" x-text="cap.description"></p>
+                                            </div>
+                                        </label>
+                                    </template>
                                 </div>
                             </div>
                         </div>
@@ -117,12 +117,23 @@
                                 })
                             }).then(res => res.json()).then(data => {
                                 if(data.success) {
+                                    if (window.showToastOnReload) {
+                                        window.showToastOnReload('Role permissions saved successfully!', 'success');
+                                    }
                                     window.location.reload();
                                 } else {
-                                    alert('Error saving role: ' + data.error);
+                                    if (window.showToast) {
+                                        window.showToast(data.error || 'Error saving role', 'error');
+                                    } else {
+                                        alert('Error saving role: ' + data.error);
+                                    }
                                 }
                             }).catch(err => {
-                                alert('Network error while saving');
+                                if (window.showToast) {
+                                    window.showToast('Network error while saving role', 'error');
+                                } else {
+                                    alert('Network error while saving');
+                                }
                                 console.error(err);
                             });
                         " class="px-5 py-2.5 text-white rounded-xl text-sm font-bold shadow-md transition-all active:scale-95"
@@ -131,8 +142,8 @@
                                     'bg-amber-600 hover:bg-amber-700 shadow-amber-600/20': editRoleTheme === 'amber',
                                     'bg-blue-600 hover:bg-blue-700 shadow-blue-600/20': editRoleTheme === 'blue',
                                     'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20': editRoleTheme === 'emerald'
-                                }"
-                                x-text="editRoleId ? 'Save Changes' : 'Create Role'">
+                                }">
+                            Confirm
                         </button>
                     </div>
                 </div>

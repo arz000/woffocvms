@@ -18,20 +18,6 @@
         
         <!-- Main Content Area -->
         <main class="flex-1 p-4 sm:p-6 lg:p-8 flex flex-col w-full space-y-6 pb-24">
-            
-            <!-- Toast Notifications -->
-            {% if messages %}
-            <div class="space-y-2">
-                {% for message in messages %}
-                <div class="p-4 rounded-2xl text-xs font-bold {% if message.tags == 'error' %}bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700{% else %}bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800{% endif %} flex items-center justify-between shadow-sm">
-                    <div class="flex items-center gap-2.5">
-                        <span class="w-2 h-2 rounded-full {% if message.tags == 'error' %}bg-slate-500{% else %}bg-emerald-500{% endif %}"></span>
-                        <span>{{ message }}</span>
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-            {% endif %}
 
             <!-- Profile Hero Banner Card -->
             <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl p-6 sm:p-8 shadow-xl shadow-gray-900/5 relative overflow-hidden">
@@ -130,6 +116,16 @@
                             <div class="bg-gray-50 dark:bg-gray-950 p-4 rounded-2xl border border-gray-100 dark:border-gray-800/80">
                                 <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Phone Number</p>
                                 <p class="text-xs font-black text-gray-900 dark:text-white">{{ request.user.volunteer_profile.phone_number|default:"Not specified" }}</p>
+                            </div>
+
+                            <div class="bg-gray-50 dark:bg-gray-950 p-4 rounded-2xl border border-gray-100 dark:border-gray-800/80">
+                                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Gender</p>
+                                <p class="text-xs font-black text-gray-900 dark:text-white">{{ request.user.volunteer_profile.gender|default:"Not specified" }}</p>
+                            </div>
+
+                            <div class="bg-gray-50 dark:bg-gray-950 p-4 rounded-2xl border border-gray-100 dark:border-gray-800/80">
+                                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Birthday</p>
+                                <p class="text-xs font-black text-gray-900 dark:text-white">{% if request.user.volunteer_profile.birthday %}{{ request.user.volunteer_profile.birthday|date:"F d, Y" }}{% else %}Not specified{% endif %}</p>
                             </div>
 
                             <div class="bg-gray-50 dark:bg-gray-950 p-4 rounded-2xl border border-gray-100 dark:border-gray-800/80 sm:col-span-2">
@@ -301,6 +297,80 @@
                                                 <label class="block text-xs font-bold text-gray-700 dark:text-gray-300">Phone Number</label>
                                                 {{ form.phone_number }}
                                                 {% if form.phone_number.errors %}<p class="text-xs text-emerald-600">{{ form.phone_number.errors.0 }}</p>{% endif %}
+                                            </div>
+                                            <!-- Modern Gender Dropdown -->
+                                            <div class="space-y-1.5" x-data="{ genderOpen: false, selectedGender: '{{ request.user.volunteer_profile.gender|default:'' }}' }">
+                                                <label class="block text-xs font-bold text-gray-700 dark:text-gray-300">Gender</label>
+                                                
+                                                <!-- Form Field Binding -->
+                                                <input type="hidden" name="gender" :value="selectedGender">
+                                                
+                                                <div class="relative">
+                                                    <!-- Trigger Button -->
+                                                    <button type="button" 
+                                                            @click="genderOpen = !genderOpen" 
+                                                            @click.away="genderOpen = false"
+                                                            class="w-full flex items-center justify-between rounded-2xl border border-gray-200 dark:border-gray-800 py-3 px-4 text-xs sm:text-sm font-semibold bg-gray-50/60 dark:bg-gray-950/60 hover:bg-gray-50 dark:hover:bg-gray-950 hover:border-emerald-500/40 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all outline-hidden cursor-pointer shadow-2xs">
+                                                        <span x-text="selectedGender ? selectedGender : 'Select Gender'"
+                                                              :class="selectedGender ? 'text-gray-900 dark:text-white font-bold' : 'text-gray-400 dark:text-gray-500'"></span>
+                                                        <svg class="w-4 h-4 text-gray-400 dark:text-gray-500 transition-transform duration-200 shrink-0 ml-2" 
+                                                             :class="genderOpen ? 'rotate-180 text-emerald-600 dark:text-emerald-400' : ''" 
+                                                             fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                                        </svg>
+                                                    </button>
+
+                                                    <!-- Floating Dropdown Menu -->
+                                                    <div x-show="genderOpen" 
+                                                         x-transition:enter="transition ease-out duration-200"
+                                                         x-transition:enter-start="opacity-0 translate-y-1 scale-98"
+                                                         x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+                                                         x-transition:leave="transition ease-in duration-150"
+                                                         x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+                                                         x-transition:leave-end="opacity-0 translate-y-1 scale-98"
+                                                         class="absolute z-50 left-0 right-0 mt-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-xl shadow-gray-900/10 p-1.5 space-y-1 backdrop-blur-md"
+                                                         x-cloak>
+                                                        
+                                                        <!-- Male -->
+                                                        <button type="button" 
+                                                                @click="selectedGender = 'Male'; genderOpen = false"
+                                                                class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all text-left cursor-pointer"
+                                                                :class="selectedGender === 'Male' ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border border-emerald-200/70 dark:border-emerald-800/60' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/60 hover:text-emerald-600 dark:hover:text-emerald-400'">
+                                                            <span>Male</span>
+                                                            <template x-if="selectedGender === 'Male'">
+                                                                <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" /></svg>
+                                                            </template>
+                                                        </button>
+
+                                                        <!-- Female -->
+                                                        <button type="button" 
+                                                                @click="selectedGender = 'Female'; genderOpen = false"
+                                                                class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all text-left cursor-pointer"
+                                                                :class="selectedGender === 'Female' ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border border-emerald-200/70 dark:border-emerald-800/60' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/60 hover:text-emerald-600 dark:hover:text-emerald-400'">
+                                                            <span>Female</span>
+                                                            <template x-if="selectedGender === 'Female'">
+                                                                <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" /></svg>
+                                                            </template>
+                                                        </button>
+
+                                                        <!-- Other -->
+                                                        <button type="button" 
+                                                                @click="selectedGender = 'Other'; genderOpen = false"
+                                                                class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all text-left cursor-pointer"
+                                                                :class="selectedGender === 'Other' ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border border-emerald-200/70 dark:border-emerald-800/60' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/60 hover:text-emerald-600 dark:hover:text-emerald-400'">
+                                                            <span>Other</span>
+                                                            <template x-if="selectedGender === 'Other'">
+                                                                <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" /></svg>
+                                                            </template>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                {% if form.gender.errors %}<p class="text-xs text-emerald-600">{{ form.gender.errors.0 }}</p>{% endif %}
+                                            </div>
+                                            <div class="space-y-1.5">
+                                                <label class="block text-xs font-bold text-gray-700 dark:text-gray-300">Birthday</label>
+                                                {{ form.birthday }}
+                                                {% if form.birthday.errors %}<p class="text-xs text-emerald-600">{{ form.birthday.errors.0 }}</p>{% endif %}
                                             </div>
                                             <div class="space-y-1.5 sm:col-span-2">
                                                 <label class="block text-xs font-bold text-gray-700 dark:text-gray-300">Bio</label>

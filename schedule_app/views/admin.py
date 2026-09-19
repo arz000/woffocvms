@@ -3,8 +3,10 @@ from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db.models import Q
 from datetime import date
+from django.utils import timezone
 import json
-from schedule_app.models import Role, Capability, Event, Shift, Ministry, VolunteerProfile
+from schedule_app.models import Role, Capability, Event, Shift, Ministry, VolunteerProfile, ActivityLog
+from schedule_app.utils import log_activity
 
 def check_admin_or_head(user):
     if not user.is_authenticated: return False
@@ -83,7 +85,7 @@ def admin_schedule_view(request):
     if not check_admin_or_head(request.user):
         return redirect('login')
     
-    events = Event.objects.filter(date__gte=date.today()).prefetch_related('offices', 'shifts__volunteer', 'shifts__ministry', 'shifts__job').order_by('date', 'start_time')
+    events = Event.objects.all().prefetch_related('offices', 'shifts__volunteer', 'shifts__ministry', 'shifts__job').order_by('date', 'start_time')
     events_data = []
     for e in events:
         all_shifts = list(e.shifts.all())
@@ -164,6 +166,12 @@ def admin_service_view(request):
                 event.end_time = end_time_str
                 event.description = description
                 event.save()
+                log_activity(
+                    request=request,
+                    action_type='UPDATE',
+                    category='Events',
+                    description=f"Updated event '{name}' scheduled on {date_str}."
+                )
                 messages.success(request, f'Event "{name}" updated successfully.')
             else:
                 event = Event.objects.create(
@@ -174,6 +182,12 @@ def admin_service_view(request):
                     end_time=end_time_str,
                     description=description
                 )
+                log_activity(
+                    request=request,
+                    action_type='CREATE',
+                    category='Events',
+                    description=f"Created new event '{name}' for {date_str}."
+                )
                 messages.success(request, f'Event "{name}" created successfully.')
             
             offices = request.POST.getlist('offices')
@@ -181,15 +195,23 @@ def admin_service_view(request):
             
         return redirect('admin_service')
     
-    base_query = Event.objects.filter(date__gte=date.today()).order_by('date').prefetch_related('shifts__ministry', 'shifts__volunteer', 'offices')
+    base_query = Event.objects.prefetch_related('shifts__ministry', 'shifts__volunteer', 'offices')
+    today_val = date.today()
+    upcoming_events = base_query.filter(date__gte=today_val).order_by('date', 'start_time')
+    past_events = base_query.filter(date__lt=today_val).order_by('-date', '-start_time')
     ministries = Ministry.objects.all().order_by('name')
     
     return render(request, 'admin/admin-service.html', {
-        'regular_events': base_query.filter(event_type='regular'),
-        'scheduled_events': base_query.filter(event_type='scheduled'),
-        'big_events': base_query.filter(event_type='big'),
+        'regular_events': upcoming_events.filter(event_type='regular'),
+        'scheduled_events': upcoming_events.filter(event_type='scheduled'),
+        'big_events': upcoming_events.filter(event_type='big'),
+        'past_regular_events': past_events.filter(event_type='regular'),
+        'past_scheduled_events': past_events.filter(event_type='scheduled'),
+        'past_big_events': past_events.filter(event_type='big'),
+        'total_upcoming': upcoming_events.count(),
+        'total_past': past_events.count(),
         'ministries': ministries,
-        'today': date.today().isoformat(),
+        'today': today_val.isoformat(),
     })
 
 def admin_departments_view(request):
@@ -253,6 +275,12 @@ def admin_departments_view(request):
                             old_head.role = volunteer_role
                             old_head.save()
                             
+                log_activity(
+                    request=request,
+                    action_type='UPDATE',
+                    category='Departments',
+                    description=f"Updated department '{ministry.name}' details and leadership."
+                )
                 messages.success(request, f'Department "{ministry.name}" updated successfully!')
         else:
             # Create new
@@ -260,6 +288,12 @@ def admin_departments_view(request):
                 ministry = Ministry.objects.create(name=name, description=description)
                 _assign_head(ministry, head_id)
                 ministry.save()
+                log_activity(
+                    request=request,
+                    action_type='CREATE',
+                    category='Departments',
+                    description=f"Created new department '{name}'."
+                )
                 messages.success(request, f'Department "{name}" created successfully!')
                 
         return redirect('admin_departments')
@@ -304,6 +338,8 @@ def admin_members_view(request):
                 'role': p.role.name if p.role else "Volunteer",
                 'email': p.user.email or "—",
                 'phone': p.phone_number or "—",
+                'gender': p.gender or "—",
+                'birthday': p.birthday.strftime('%b %d, %Y') if p.birthday else "—",
                 'ministries': [{'id': m.id, 'name': m.name} for m in p.ministries.all()],
                 'ministry_ids': [m.id for m in p.ministries.all()],
             })
@@ -341,6 +377,8 @@ def admin_members_view(request):
                 'role': p.role.name if p.role else "Volunteer",
                 'email': p.user.email or "—",
                 'phone': p.phone_number or "—",
+                'gender': p.gender or "—",
+                'birthday': p.birthday.strftime('%b %d, %Y') if p.birthday else "—",
                 'ministries': [{'id': m.id, 'name': m.name} for m in p.ministries.all()],
                 'ministry_ids': [m.id for m in p.ministries.all()],
             })
@@ -379,6 +417,8 @@ def admin_members_view(request):
                 'role': p.role.name if p.role else "Volunteer Member",
                 'email': p.user.email or "—",
                 'phone': p.phone_number or "—",
+                'gender': p.gender or "—",
+                'birthday': p.birthday.strftime('%b %d, %Y') if p.birthday else "—",
                 'ministries': [{'id': m.id, 'name': m.name} for m in p.ministries.all()],
                 'ministry_ids': [m.id for m in p.ministries.all()],
             })
@@ -400,4 +440,95 @@ def admin_user_roles_view(request):
     return render(request, 'admin/admin-user-roles.html', {
         'roles': roles,
         'all_capabilities': all_capabilities
+    })
+
+def admin_activity_log_view(request):
+    """Renders the System Activity Log with real-time filtering, search, and pagination."""
+    if not request.user.is_authenticated or not (request.user.is_staff or request.user.is_superuser):
+        return redirect('login')
+    
+    query = request.GET.get('q', '').strip()
+    category = request.GET.get('category', '').strip()
+    action_type = request.GET.get('action', '').strip()
+    date_filter = request.GET.get('date', '').strip()
+    
+    logs = ActivityLog.objects.select_related('user').all()
+    
+    # Text Search Filter
+    if query:
+        logs = logs.filter(
+            Q(description__icontains=query) |
+            Q(actor_name__icontains=query) |
+            Q(user__username__icontains=query) |
+            Q(user__first_name__icontains=query) |
+            Q(user__last_name__icontains=query) |
+            Q(ip_address__icontains=query)
+        )
+    
+    # Category Filter
+    if category and category != 'All':
+        logs = logs.filter(category=category)
+        
+    # Action Type Filter
+    if action_type and action_type != 'All':
+        logs = logs.filter(action_type=action_type)
+        
+    # Date Filter
+    today = timezone.now().date()
+    if date_filter == 'today':
+        logs = logs.filter(created_at__date=today)
+    elif date_filter == 'week':
+        week_ago = today - timezone.timedelta(days=7)
+        logs = logs.filter(created_at__date__gte=week_ago)
+    elif date_filter == 'month':
+        month_ago = today - timezone.timedelta(days=30)
+        logs = logs.filter(created_at__date__gte=month_ago)
+
+    # Compute high-level stats
+    total_activities = ActivityLog.objects.count()
+    today_activities = ActivityLog.objects.filter(created_at__date=today).count()
+    security_activities = ActivityLog.objects.filter(Q(action_type='SECURITY') | Q(category='Auth')).count()
+    unique_actors = ActivityLog.objects.exclude(actor_name='System').values('actor_name').distinct().count()
+
+    # Pagination
+    paginator = Paginator(logs, 20)
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+
+    # Available Categories & Action Types for filtering
+    categories = [
+        ('All', 'All Categories'),
+        ('Roles', 'Roles & Permissions'),
+        ('Members', 'Members'),
+        ('Departments', 'Departments'),
+        ('Events', 'Events'),
+        ('Shifts', 'Shifts'),
+        ('Jobs', 'Department Jobs'),
+        ('Auth', 'Authentication & Access'),
+        ('General', 'General'),
+    ]
+
+    action_types = [
+        ('All', 'All Actions'),
+        ('CREATE', 'Created'),
+        ('UPDATE', 'Updated'),
+        ('DELETE', 'Deleted'),
+        ('ASSIGN', 'Assigned'),
+        ('AUTH', 'Authentication'),
+        ('SECURITY', 'Security'),
+    ]
+
+    return render(request, 'admin/admin-activity-log.html', {
+        'page_obj': page_obj,
+        'logs': page_obj.object_list,
+        'total_activities': total_activities,
+        'today_activities': today_activities,
+        'security_activities': security_activities,
+        'unique_actors': unique_actors,
+        'categories': categories,
+        'action_types': action_types,
+        'selected_category': category or 'All',
+        'selected_action': action_type or 'All',
+        'selected_date': date_filter or 'all',
+        'query': query,
     })

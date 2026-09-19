@@ -9,6 +9,14 @@ urlpatterns = [
     path('register/', views.register_view, name='register'),
     path('logout/', views.logout_view, name='logout'),
     
+    # Password Reset Routes
+    path('forgot-password/', views.password_reset_view, name='password_reset'),
+    path('forgot-password/done/', views.CustomPasswordResetDoneView.as_view(), name='password_reset_done'),
+    path('reset/<uidb64>/<token>/', views.CustomPasswordResetConfirmView.as_view(), name='password_reset_confirm'),
+    path('reset/done/', views.CustomPasswordResetCompleteView.as_view(), name='password_reset_complete'),
+
+
+    
     # User / Volunteer Routes
     path('user-dashboard/', views.user_dashboard_view, name='user_dashboard'),
     path('profile/', views.user_profile_view, name='user_profile'),
@@ -30,6 +38,7 @@ urlpatterns = [
     path('admin-departments/', views.admin_departments_view, name='admin_departments'),
     path('admin-members/', views.admin_members_view, name='admin_members'),
     path('admin-user-roles/', views.admin_user_roles_view, name='admin_user_roles'),
+    path('admin-activity-log/', views.admin_activity_log_view, name='admin_activity_log'),
     path('api/update-role/', views.api_update_role, name='api_update_role'),
     path('api/assign-role/', views.api_assign_role, name='api_assign_role'),
     path('api/remove-role/', views.api_remove_role, name='api_remove_role'),
@@ -38,6 +47,7 @@ urlpatterns = [
 
     # Delete records
     path('api/delete-record/', views.api_delete_record, name='api_delete_record'),
+    path('api/create-capability/', views.api_create_capability, name='api_create_capability'),
 
 
    
