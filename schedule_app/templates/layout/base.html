@@ -38,6 +38,7 @@
     </style>
 
     <script src="{% static 'js/theme.js' %}"></script>
+    {% block extra_head %}{% endblock %}
   </head>
   <body x-data="{ 
             sidebarOpen: false, 

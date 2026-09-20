@@ -1,114 +1,299 @@
 {% extends 'layout/base.html' %}
 {% load static %}
 
+{% block extra_head %}
+<script>document.documentElement.classList.remove('dark');</script>
+<style>
+  @keyframes float-slow { 0%,100%{transform:translateY(0) scale(1)} 50%{transform:translateY(-18px) scale(1.04)} }
+  @keyframes float-med  { 0%,100%{transform:translateY(0) scale(1)} 50%{transform:translateY(12px) scale(0.97)} }
+  @keyframes shimmer    { 0%{background-position:200% center} 100%{background-position:-200% center} }
+  @keyframes fade-up    { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+
+  .blob-1 { animation: float-slow 8s ease-in-out infinite; }
+  .blob-2 { animation: float-med  11s ease-in-out infinite; }
+  .blob-3 { animation: float-slow 14s ease-in-out infinite 2s; }
+
+  .login-card { animation: fade-up 0.55s cubic-bezier(.22,1,.36,1) both; }
+
+  .input-wrap { position: relative; }
+  .input-wrap input {
+    display: block; width: 100%;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 18px 16px 6px;
+    font-size: 0.9375rem; font-weight: 500;
+    color: #111827; background: #f9fafb;
+    outline: none; transition: border-color .2s, box-shadow .2s, background .2s;
+    appearance: none;
+  }
+  .input-wrap input:focus {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99,102,241,.12);
+    background: #fff;
+  }
+  .input-wrap label {
+    position: absolute; left: 16px; top: 50%; transform: translateY(-50%);
+    font-size: 0.9375rem; font-weight: 500; color: #9ca3af;
+    pointer-events: none; transition: all .18s cubic-bezier(.4,0,.2,1);
+  }
+  .input-wrap input:focus + label,
+  .input-wrap input:not(:placeholder-shown) + label {
+    top: 10px; transform: translateY(0);
+    font-size: 0.6875rem; font-weight: 600; color: #6366f1; letter-spacing: .04em; text-transform: uppercase;
+  }
+  .input-wrap input.has-toggle { padding-right: 48px; }
+
+  .grad-text {
+    background: linear-gradient(135deg,#6366f1,#8b5cf6,#a78bfa);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+
+  .btn-submit {
+    position: relative; overflow: hidden;
+    background: linear-gradient(135deg,#4f46e5,#7c3aed);
+    transition: transform .18s, box-shadow .18s;
+  }
+  .btn-submit::after {
+    content:''; position:absolute; inset:0;
+    background: linear-gradient(105deg,transparent 40%,rgba(255,255,255,.18) 50%,transparent 60%);
+    background-size: 200% auto;
+    animation: shimmer 2.5s linear infinite;
+  }
+  .btn-submit:hover { transform: translateY(-1px); box-shadow: 0 8px 28px rgba(99,102,241,.45); }
+  .btn-submit:active { transform: translateY(0); }
+
+  .step-badge {
+    display:inline-flex; align-items:center; gap:6px;
+    background: rgba(99,102,241,.1); border:1px solid rgba(99,102,241,.2);
+    border-radius: 999px; padding: 4px 12px;
+    font-size:.75rem; font-weight:700; color:#6366f1; text-transform:uppercase; letter-spacing:.05em;
+  }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="min-h-screen flex">
-    <!-- Left Side: Information / Branding (Hidden on small screens) -->
-    <div class="hidden lg:flex lg:flex-1 lg:flex-col lg:justify-between bg-gray-900 relative overflow-hidden px-12 py-16">
-        <!-- Background Gradient -->
-        <div class="absolute inset-0 bg-gradient-to-br from-blue-900 to-gray-900 opacity-90 z-0"></div>
-        
-        <!-- Abstract Shapes -->
-        <div class="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
-            <div class="absolute -top-24 -left-24 w-96 h-96 rounded-full bg-blue-600 blur-3xl opacity-20"></div>
-            <div class="absolute bottom-10 right-10 w-72 h-72 rounded-full bg-indigo-500 blur-3xl opacity-20"></div>
-        </div>
+<div class="min-h-screen flex bg-white">
 
-        <div class="relative z-10">
-            <div class="flex items-center gap-3 mb-24">
-                <div class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-600/30">
-                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m-4-8h8"></path></svg>
-                </div>
-                <span class="font-black text-2xl tracking-tight text-white">WOFFOC VMS</span>
-            </div>
+  <!-- ── LEFT PANEL ── -->
+  <div class="hidden lg:flex lg:w-[52%] xl:w-[55%] relative overflow-hidden flex-col justify-between p-12"
+       style="background: linear-gradient(145deg,#0f0c29 0%,#302b63 55%,#24243e 100%);">
 
-            <h1 class="text-5xl font-black tracking-tight text-white drop-shadow-sm leading-tight max-w-lg">
-                Join our <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400">Community.</span>
-            </h1>
-            <p class="mt-6 text-xl leading-8 text-gray-300 max-w-sm font-medium">
-                Create your account to start finding opportunities and making an impact today.
-            </p>
+    <!-- blobs -->
+    <div class="blob-1 absolute -top-32 -left-32 w-[500px] h-[500px] rounded-full opacity-25"
+         style="background:radial-gradient(circle,#6366f1,transparent 70%)"></div>
+    <div class="blob-2 absolute bottom-0 right-0 w-[420px] h-[420px] rounded-full opacity-20"
+         style="background:radial-gradient(circle,#8b5cf6,transparent 70%)"></div>
+    <div class="blob-3 absolute top-1/2 left-1/3 w-[260px] h-[260px] rounded-full opacity-10"
+         style="background:radial-gradient(circle,#a78bfa,transparent 70%)"></div>
+    <div class="absolute inset-0 opacity-[0.04]"
+         style="background-image:linear-gradient(rgba(255,255,255,.5) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.5) 1px,transparent 1px);background-size:40px 40px"></div>
 
-            <!-- Volunteer Photo Collage (Tight Grid Layout) -->
-            <div class="mt-12 grid grid-cols-5 gap-3 max-w-md">
-                <div class="col-span-3 h-56">
-                    <img src="{% static 'images/vol1.jpg' %}" alt="Volunteer serving coffee" class="w-full h-full object-cover rounded-2xl shadow-xl hover:scale-105 transition-all duration-300 border-2 border-gray-800/50 relative z-10">
-                </div>
-                <div class="col-span-2 grid grid-rows-2 gap-3 h-56">
-                    <img src="{% static 'images/vol2.jpg' %}" alt="Volunteers setting up" class="w-full h-full object-cover rounded-2xl shadow-xl hover:scale-105 transition-all duration-300 border-2 border-gray-800/50 relative z-10">
-                    <img src="{% static 'images/vol3.jpg' %}" alt="Volunteer greeting family" class="w-full h-full object-cover rounded-2xl shadow-xl hover:scale-105 transition-all duration-300 border-2 border-gray-800/50 relative z-10">
-                </div>
-            </div>
-        </div>
-
-        <div class="relative z-10 text-sm text-gray-500 mt-12">
-            &copy; 2026 WOFFOC. All rights reserved.
-        </div>
+    <!-- logo -->
+    <div class="relative z-10 flex items-center gap-3">
+      <div class="w-9 h-9 rounded-xl flex items-center justify-center shadow-lg"
+           style="background:linear-gradient(135deg,#6366f1,#8b5cf6)">
+        <svg class="w-4.5 h-4.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m-4-8h8"/>
+        </svg>
+      </div>
+      <span class="font-black text-xl tracking-tight text-white">WOFFOC VMS</span>
     </div>
 
-    <!-- Right Side: Registration Form -->
-    <div class="flex-1 flex flex-col justify-center px-6 sm:px-12 lg:flex-none lg:w-1/2 xl:w-5/12 bg-white relative py-12 lg:py-0 overflow-y-auto">
-        <div class="mx-auto w-full max-w-sm lg:w-[400px]">
-            
-            <!-- Mobile Logo (Visible only on small screens) -->
-            <div class="lg:hidden flex items-center gap-3 mb-10 justify-center">
-                <div class="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-600/20">
-                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m-4-8h8"></path></svg>
-                </div>
-                <span class="font-black text-2xl tracking-tight text-gray-900">WOFFOC VMS</span>
-            </div>
+    <!-- content -->
+    <div class="relative z-10 flex flex-col gap-8">
+      <div>
+        <p class="text-xs font-bold uppercase tracking-widest mb-4" style="color:#a78bfa">Join Our Community</p>
+        <h1 class="text-5xl xl:text-6xl font-black tracking-tight text-white leading-[1.08]">
+          Start your<br><span class="grad-text">Journey.</span>
+        </h1>
+        <p class="mt-5 text-base leading-7 max-w-sm" style="color:rgba(255,255,255,.62)">
+          Create your account and become part of a thriving volunteer network making a difference every week.
+        </p>
+      </div>
 
-            <div class="text-center lg:text-left mb-10">
-                <h2 class="text-3xl font-black text-gray-900 tracking-tight">Create Account</h2>
-                <p class="text-sm font-medium text-gray-500 mt-2">Sign up to join our volunteer network.</p>
-            </div>
-            
-            <form class="space-y-5" action="{% url 'register' %}" method="POST">
-                {% csrf_token %}
-                
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="space-y-1.5">
-                        <label for="{{ form.first_name.id_for_label }}" class="block text-sm font-semibold text-gray-700">{{ form.first_name.label }}</label>
-                        {{ form.first_name }}
-                        {% if form.first_name.errors %}<p class="text-xs text-red-600 font-medium">{{ form.first_name.errors.0 }}</p>{% endif %}
-                    </div>
-                    <div class="space-y-1.5">
-                        <label for="{{ form.last_name.id_for_label }}" class="block text-sm font-semibold text-gray-700">{{ form.last_name.label }}</label>
-                        {{ form.last_name }}
-                        {% if form.last_name.errors %}<p class="text-xs text-red-600 font-medium">{{ form.last_name.errors.0 }}</p>{% endif %}
-                    </div>
-                </div>
-
-                <div class="space-y-1.5">
-                    <label for="{{ form.username.id_for_label }}" class="block text-sm font-semibold text-gray-700">{{ form.username.label }}</label>
-                    {{ form.username }}
-                    {% if form.username.errors %}<p class="text-xs text-red-600 font-medium">{{ form.username.errors.0 }}</p>{% endif %}
-                </div>
-
-                <div class="space-y-1.5">
-                    <label for="{{ form.email.id_for_label }}" class="block text-sm font-semibold text-gray-700">{{ form.email.label }}</label>
-                    {{ form.email }}
-                    {% if form.email.errors %}<p class="text-xs text-red-600 font-medium">{{ form.email.errors.0 }}</p>{% endif %}
-                </div>
-
-                <div class="space-y-1.5">
-                    <label for="{{ form.password.id_for_label }}" class="block text-sm font-semibold text-gray-700">{{ form.password.label }}</label>
-                    {{ form.password }}
-                    {% if form.password.errors %}<p class="text-xs text-red-600 font-medium">{{ form.password.errors.0 }}</p>{% endif %}
-                </div>
-
-                <div class="pt-4">
-                    <button type="submit" class="flex w-full justify-center items-center gap-2 rounded-xl bg-gray-900 px-4 py-3.5 text-sm font-bold text-white shadow-lg shadow-gray-900/20 hover:bg-gray-800 hover:shadow-gray-900/30 transition-all duration-200 active:scale-[0.98]">
-                        Create Account
-                    </button>
-                </div>
-            </form>
-
-            <p class="mt-10 text-center lg:text-left text-sm font-medium text-gray-500">
-                Already have an account?
-                <a href="{% url 'login' %}" class="font-bold text-gray-900 hover:text-blue-600 transition-colors underline decoration-gray-300 hover:decoration-blue-600 underline-offset-4">Sign in instead</a>
-            </p>
+      <!-- photo grid -->
+      <div class="grid grid-cols-5 gap-2.5 max-w-md">
+        <div class="col-span-3 h-52 rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
+          <img src="{% static 'images/vol1.jpg' %}" alt="Volunteer"
+               class="w-full h-full object-cover hover:scale-105 transition-transform duration-500">
         </div>
+        <div class="col-span-2 grid grid-rows-2 gap-2.5 h-52">
+          <div class="rounded-2xl overflow-hidden border border-white/10 shadow-xl">
+            <img src="{% static 'images/vol2.jpg' %}" alt="Volunteer"
+                 class="w-full h-full object-cover hover:scale-105 transition-transform duration-500">
+          </div>
+          <div class="rounded-2xl overflow-hidden border border-white/10 shadow-xl">
+            <img src="{% static 'images/vol3.jpg' %}" alt="Volunteer"
+                 class="w-full h-full object-cover hover:scale-105 transition-transform duration-500">
+          </div>
+        </div>
+      </div>
+
+      <!-- perks list -->
+      <ul class="space-y-3">
+        <li class="flex items-center gap-3 text-sm font-medium" style="color:rgba(255,255,255,.7)">
+          <span class="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center"
+                style="background:rgba(99,102,241,.25);border:1px solid rgba(99,102,241,.4)">
+            <svg class="w-2.5 h-2.5" fill="none" stroke="#a78bfa" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+            </svg>
+          </span>
+          Join departments
+        </li>
+        <li class="flex items-center gap-3 text-sm font-medium" style="color:rgba(255,255,255,.7)">
+          <span class="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center"
+                style="background:rgba(99,102,241,.25);border:1px solid rgba(99,102,241,.4)">
+            <svg class="w-2.5 h-2.5" fill="none" stroke="#a78bfa" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+            </svg>
+          </span>
+          Track your schedule
+        </li>
+        <li class="flex items-center gap-3 text-sm font-medium" style="color:rgba(255,255,255,.7)">
+          <span class="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center"
+                style="background:rgba(99,102,241,.25);border:1px solid rgba(99,102,241,.4)">
+            <svg class="w-2.5 h-2.5" fill="none" stroke="#a78bfa" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+            </svg>
+          </span>
+          Get notified instantly
+        </li>
+        <li class="flex items-center gap-3 text-sm font-medium" style="color:rgba(255,255,255,.7)">
+          <span class="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center"
+                style="background:rgba(99,102,241,.25);border:1px solid rgba(99,102,241,.4)">
+            <svg class="w-2.5 h-2.5" fill="none" stroke="#a78bfa" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+            </svg>
+          </span>
+          Connect with your ministry team
+        </li>
+      </ul>
     </div>
+
+    <p class="relative z-10 text-xs" style="color:rgba(255,255,255,.3)">&copy; 2026 WOFFOC. All rights reserved.</p>
+  </div>
+
+  <!-- ── RIGHT PANEL ── -->
+  <div class="flex-1 flex flex-col justify-center items-center px-6 sm:px-10 py-12 bg-white overflow-y-auto">
+    <div class="login-card w-full max-w-[420px]">
+
+      <!-- Mobile logo -->
+      <div class="lg:hidden flex items-center gap-3 mb-10 justify-center">
+        <div class="w-9 h-9 rounded-xl flex items-center justify-center shadow-lg"
+             style="background:linear-gradient(135deg,#6366f1,#8b5cf6)">
+          <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m-4-8h8"/>
+          </svg>
+        </div>
+        <span class="font-black text-xl tracking-tight text-gray-900">WOFFOC VMS</span>
+      </div>
+
+      <!-- heading -->
+      <div class="mb-8">
+        <h2 class="text-3xl font-black text-gray-900 tracking-tight">Create account</h2>
+        <p class="mt-1.5 text-sm font-medium text-gray-400">Fill in your details to get started</p>
+      </div>
+
+      <form class="space-y-3.5" action="{% url 'register' %}" method="POST" x-data="{showPw:false}">
+        {% csrf_token %}
+
+        <!-- name row -->
+        <div class="grid grid-cols-2 gap-3">
+          <div class="input-wrap">
+            <input type="text"
+                   id="{{ form.first_name.id_for_label }}"
+                   name="{{ form.first_name.html_name }}"
+                   placeholder=" "
+                   value="{{ form.first_name.value|default:'' }}"
+                   class="{% if form.first_name.errors %}!border-red-400{% endif %}">
+            <label for="{{ form.first_name.id_for_label }}">First name</label>
+            {% if form.first_name.errors %}<p class="mt-1 text-xs text-red-500 font-semibold">{{ form.first_name.errors.0 }}</p>{% endif %}
+          </div>
+          <div class="input-wrap">
+            <input type="text"
+                   id="{{ form.last_name.id_for_label }}"
+                   name="{{ form.last_name.html_name }}"
+                   placeholder=" "
+                   value="{{ form.last_name.value|default:'' }}"
+                   class="{% if form.last_name.errors %}!border-red-400{% endif %}">
+            <label for="{{ form.last_name.id_for_label }}">Last name</label>
+            {% if form.last_name.errors %}<p class="mt-1 text-xs text-red-500 font-semibold">{{ form.last_name.errors.0 }}</p>{% endif %}
+          </div>
+        </div>
+
+        <!-- username -->
+        <div class="input-wrap">
+          <input type="text"
+                 id="{{ form.username.id_for_label }}"
+                 name="{{ form.username.html_name }}"
+                 placeholder=" "
+                 autocomplete="username"
+                 value="{{ form.username.value|default:'' }}"
+                 class="{% if form.username.errors %}!border-red-400{% endif %}">
+          <label for="{{ form.username.id_for_label }}">Username</label>
+          {% if form.username.errors %}<p class="mt-1 text-xs text-red-500 font-semibold">{{ form.username.errors.0 }}</p>{% endif %}
+        </div>
+
+        <!-- email -->
+        <div class="input-wrap">
+          <input type="email"
+                 id="{{ form.email.id_for_label }}"
+                 name="{{ form.email.html_name }}"
+                 placeholder=" "
+                 autocomplete="email"
+                 value="{{ form.email.value|default:'' }}"
+                 class="{% if form.email.errors %}!border-red-400{% endif %}">
+          <label for="{{ form.email.id_for_label }}">Email address</label>
+          {% if form.email.errors %}<p class="mt-1 text-xs text-red-500 font-semibold">{{ form.email.errors.0 }}</p>{% endif %}
+        </div>
+
+        <!-- password -->
+        <div class="input-wrap" x-data="{showPw:false}">
+          <input :type="showPw ? 'text' : 'password'"
+                 id="{{ form.password.id_for_label }}"
+                 name="{{ form.password.html_name }}"
+                 placeholder=" "
+                 autocomplete="new-password"
+                 class="has-toggle {% if form.password.errors %}!border-red-400{% endif %}">
+          <label for="{{ form.password.id_for_label }}">Password</label>
+          <button type="button" @click="showPw=!showPw"
+                  class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-indigo-500 transition-colors focus:outline-none">
+            <svg x-show="!showPw" class="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0zM2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+            </svg>
+            <svg x-show="showPw" class="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display:none">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/>
+            </svg>
+          </button>
+          {% if form.password.errors %}<p class="mt-1 text-xs text-red-500 font-semibold">{{ form.password.errors.0 }}</p>{% endif %}
+        </div>
+
+        <!-- submit -->
+        <div class="pt-2">
+          <button type="submit"
+                  class="btn-submit w-full py-3.5 rounded-2xl text-sm font-bold text-white flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2">
+            Create Account
+            <svg class="w-4 h-4 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+            </svg>
+          </button>
+        </div>
+      </form>
+
+      <div class="relative my-7">
+        <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-gray-100"></div></div>
+        <div class="relative flex justify-center">
+          <span class="bg-white px-4 text-xs font-semibold text-gray-400 uppercase tracking-widest">Have an account?</span>
+        </div>
+      </div>
+
+      <a href="{% url 'login' %}"
+         class="block w-full py-3.5 rounded-2xl text-sm font-bold text-center border-2 border-gray-200 text-gray-700
+                hover:border-indigo-400 hover:text-indigo-600 transition-all duration-200 hover:bg-indigo-50/50">
+        Sign in instead
+      </a>
+    </div>
+  </div>
+
 </div>
 {% endblock %}
