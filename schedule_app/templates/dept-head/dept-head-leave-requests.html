@@ -3,40 +3,43 @@
 {% block content %}
 <div class="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-950 transition-colors duration-300"
      x-data="{
-         searchQuery: '',
-         currentPage: 1,
-         pageSize: 8,
-         activeTab: '{{ status_filter|default:"all" }}',
+         searchQuery: '{{ search_query|escapejs }}',
+         activeTab: '{{ status_filter|default:'all'|escapejs }}',
          approveModalOpen: false,
          declineModalOpen: false,
-         selectedId: null,
+         selectedRequestId: null,
          selectedVolunteerName: '',
-         selectedDateRange: '',
+         selectedMinistryName: '',
          selectedReason: '',
+         currentPage: 1,
+         pageSize: 8,
 
-         unavailabilities: [
-             {% for unavail in unavailabilities %}
+         requests: [
+             {% for req in leave_requests %}
              {
-                 id: {{ unavail.id }},
-                 name: '{{ unavail.volunteer.get_full_name|default:unavail.volunteer.username|escapejs }}',
-                 first_letter: '{{ unavail.volunteer.first_name|first|default:unavail.volunteer.username|first|upper }}',
-                 start_date: '{{ unavail.start_date|date:"F d, Y" }}',
-                 end_date: '{% if unavail.end_date and unavail.end_date != unavail.start_date %}{{ unavail.end_date|date:"F d, Y" }}{% endif %}',
-                 date_range_display: '{{ unavail.start_date|date:"F d, Y" }}{% if unavail.end_date and unavail.end_date != unavail.start_date %} to {{ unavail.end_date|date:"F d, Y" }}{% endif %}',
-                 reason: '{{ unavail.reason|default:"Unavailable"|escapejs }}',
-                 status: '{{ unavail.status|default:"pending" }}',
-                 reviewed_by: '{% if unavail.reviewed_by %}{{ unavail.reviewed_by.get_full_name|default:unavail.reviewed_by.username|escapejs }}{% endif %}',
-                 reviewed_at: '{% if unavail.reviewed_at %}{{ unavail.reviewed_at|date:"M d, Y" }}{% endif %}'
+                 id: {{ req.id }},
+                 volunteer_name: '{{ req.volunteer.get_full_name|default:req.volunteer.username|escapejs }}',
+                 volunteer_letter: '{{ req.volunteer.first_name|first|default:req.volunteer.username|first|upper }}',
+                 ministry_name: '{{ req.ministry.name|escapejs }}',
+                 reason: '{{ req.reason|default:'No reason provided'|escapejs }}',
+                 status: '{{ req.status|escapejs }}',
+                 created_at: '{{ req.created_at|date:'M d, Y h:i A' }}',
+                 reviewed_by: '{% if req.reviewed_by %}{{ req.reviewed_by.get_full_name|default:req.reviewed_by.username|escapejs }}{% endif %}',
+                 reviewed_at: '{% if req.reviewed_at %}{{ req.reviewed_at|date:'M d, Y' }}{% endif %}'
              }{% if not forloop.last %},{% endif %}
              {% endfor %}
          ],
 
          get filteredList() {
              let q = this.searchQuery.toLowerCase().trim();
-             return this.unavailabilities.filter(u => {
-                 let matchesQuery = !q || u.name.toLowerCase().includes(q) || u.reason.toLowerCase().includes(q) || u.start_date.toLowerCase().includes(q) || (u.end_date && u.end_date.toLowerCase().includes(q));
-                 let matchesTab = (this.activeTab === 'all') || (u.status === this.activeTab);
-                 return matchesQuery && matchesTab;
+             return this.requests.filter(r => {
+                 let matchSearch = !q || 
+                     r.volunteer_name.toLowerCase().includes(q) || 
+                     r.ministry_name.toLowerCase().includes(q) || 
+                     r.reason.toLowerCase().includes(q);
+                 
+                 let matchTab = this.activeTab === 'all' || r.status === this.activeTab;
+                 return matchSearch && matchTab;
              });
          },
 
@@ -47,15 +50,6 @@
          get paginatedList() {
              let start = (this.currentPage - 1) * this.pageSize;
              return this.filteredList.slice(start, start + this.pageSize);
-         },
-
-         get startIndex() {
-             if (this.filteredList.length === 0) return 0;
-             return (this.currentPage - 1) * this.pageSize + 1;
-         },
-
-         get endIndex() {
-             return Math.min(this.currentPage * this.pageSize, this.filteredList.length);
          },
 
          prevPage() {
@@ -70,35 +64,35 @@
              this.currentPage = p;
          },
 
-         openApproveModal(id, vName, dateRange, reason = '') {
-             this.selectedId = id;
+         openApproveModal(id, vName, mName, reason = '') {
+             this.selectedRequestId = id;
              this.selectedVolunteerName = vName;
-             this.selectedDateRange = dateRange;
+             this.selectedMinistryName = mName;
              this.selectedReason = reason;
              this.approveModalOpen = true;
          },
 
          closeApproveModal() {
              this.approveModalOpen = false;
-             this.selectedId = null;
+             this.selectedRequestId = null;
              this.selectedVolunteerName = '';
-             this.selectedDateRange = '';
+             this.selectedMinistryName = '';
              this.selectedReason = '';
          },
 
-         openDeclineModal(id, vName, dateRange, reason = '') {
-             this.selectedId = id;
+         openDeclineModal(id, vName, mName, reason = '') {
+             this.selectedRequestId = id;
              this.selectedVolunteerName = vName;
-             this.selectedDateRange = dateRange;
+             this.selectedMinistryName = mName;
              this.selectedReason = reason;
              this.declineModalOpen = true;
          },
 
          closeDeclineModal() {
              this.declineModalOpen = false;
-             this.selectedId = null;
+             this.selectedRequestId = null;
              this.selectedVolunteerName = '';
-             this.selectedDateRange = '';
+             this.selectedMinistryName = '';
              this.selectedReason = '';
          }
      }">
@@ -106,17 +100,17 @@
     
     <div class="flex-1 flex flex-col w-full h-screen overflow-y-auto">
         <!-- Topbar -->
-        {% include 'layout/topbar.html' with page_title="Member Availability" %}
+        {% include 'layout/topbar.html' with page_title="Member Request for Leave" %}
 
         <!-- Main Content Area -->
         <main class="flex-1 p-4 sm:p-6 lg:p-8 flex flex-col space-y-6">
-            
+
             <!-- Header Section -->
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0">
                 <div>
-                    <h1 class="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white tracking-tight">Member Unavailable Dates</h1>
+                    <h1 class="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white tracking-tight">Member Request for Leave</h1>
                     <p class="text-gray-500 dark:text-gray-400 mt-1 text-sm font-medium">
-                        Review, confirm, or decline volunteer blackout and unavailable date requests.
+                        Review and approve volunteer requests to leave your department rosters.
                     </p>
                 </div>
 
@@ -133,7 +127,7 @@
                     <button type="button" 
                             x-show="searchQuery" 
                             @click="searchQuery = ''; currentPage = 1" 
-                            class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer">
+                            class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                     </button>
                 </div>
@@ -145,7 +139,7 @@
                 document.addEventListener('DOMContentLoaded', function() {
                     setTimeout(function() {
                         if (window.showToast) {
-                            window.showToast('You have {{ pending_count }} pending unavailable date request{{ pending_count|pluralize }} awaiting confirmation.', 'warning', 'Action Required');
+                            window.showToast('You have {{ pending_count }} pending leave request{{ pending_count|pluralize }} awaiting confirmation.', 'warning', 'Action Required');
                         }
                     }, 350);
                 });
@@ -154,7 +148,7 @@
 
             <!-- Top Stats Grid -->
             <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 shrink-0">
-                <!-- Pending Review -->
+                <!-- Pending -->
                 <div class="bg-white dark:bg-gray-900 border border-emerald-100 dark:border-gray-800 rounded-3xl p-5 shadow-sm flex items-center gap-4">
                     <div class="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold shrink-0 border border-amber-100 dark:border-amber-900/40">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
@@ -168,45 +162,45 @@
                 <!-- Approved -->
                 <div class="bg-white dark:bg-gray-900 border border-emerald-100 dark:border-gray-800 rounded-3xl p-5 shadow-sm flex items-center gap-4">
                     <div class="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold shrink-0 border border-emerald-100 dark:border-emerald-900/40">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
                     </div>
                     <div>
-                        <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Approved Dates</p>
+                        <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Approved</p>
                         <h3 class="text-2xl font-black text-gray-900 dark:text-white">{{ approved_count }}</h3>
                     </div>
                 </div>
 
-                <!-- Total Blocked Records -->
+                <!-- Declined -->
                 <div class="bg-white dark:bg-gray-900 border border-emerald-100 dark:border-gray-800 rounded-3xl p-5 shadow-sm flex items-center gap-4">
-                    <div class="w-12 h-12 rounded-2xl bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300 flex items-center justify-center font-bold shrink-0 border border-gray-200 dark:border-gray-700">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    <div class="w-12 h-12 rounded-2xl bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 flex items-center justify-center font-bold shrink-0 border border-gray-200 dark:border-gray-700">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                     </div>
                     <div>
-                        <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Total Records</p>
-                        <h3 class="text-2xl font-black text-gray-900 dark:text-white">{{ total_unavailabilities }}</h3>
+                        <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Declined</p>
+                        <h3 class="text-2xl font-black text-gray-900 dark:text-white">{{ declined_count }}</h3>
                     </div>
                 </div>
 
-                <!-- Total Department Members -->
+                <!-- Total -->
                 <div class="bg-white dark:bg-gray-900 border border-emerald-100 dark:border-gray-800 rounded-3xl p-5 shadow-sm flex items-center gap-4">
                     <div class="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold shrink-0 border border-emerald-100 dark:border-emerald-900/40">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                     </div>
                     <div>
-                        <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Department Members</p>
-                        <h3 class="text-2xl font-black text-gray-900 dark:text-white">{{ total_members }}</h3>
+                        <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Total Requests</p>
+                        <h3 class="text-2xl font-black text-gray-900 dark:text-white">{{ total_requests }}</h3>
                     </div>
                 </div>
             </div>
 
-            <!-- Filter Status Tabs -->
-            <div class="flex items-center gap-2 overflow-x-auto pb-1">
+            <!-- Filter Tabs -->
+            <div class="flex items-center gap-2 border-b border-gray-200 dark:border-gray-800 pb-2">
                 <button type="button" 
                         @click="activeTab = 'all'; currentPage = 1"
                         :class="activeTab === 'all' ? 'bg-emerald-600 text-white font-black shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-bold'"
                         class="px-4 py-2 rounded-xl text-xs transition-all flex items-center gap-2 cursor-pointer">
                     <span>All Requests</span>
-                    <span class="px-1.5 py-0.5 rounded-md text-[10px]" :class="activeTab === 'all' ? 'bg-white/20 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'">{{ total_unavailabilities }}</span>
+                    <span class="px-1.5 py-0.5 rounded-md text-[10px]" :class="activeTab === 'all' ? 'bg-white/20 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'">{{ total_requests }}</span>
                 </button>
 
                 <button type="button" 
@@ -234,76 +228,75 @@
                 </button>
             </div>
 
-            <!-- Unavailable Records List -->
+            <!-- Requests List -->
             <div class="bg-white dark:bg-gray-900 border border-emerald-100 dark:border-gray-800 rounded-3xl shadow-sm overflow-hidden mb-2">
                 <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
-                    <h2 class="text-base font-black text-gray-900 dark:text-white">Unavailable Date Requests</h2>
-                    <span class="text-xs font-bold text-gray-400" x-text="filteredList.length + ' entries found'"></span>
+                    <h2 class="text-base font-black text-gray-900 dark:text-white">Department Leave Requests</h2>
+                    <span class="text-xs font-bold text-gray-400" x-text="filteredList.length + ' requests found'"></span>
                 </div>
 
                 <div class="divide-y divide-gray-100 dark:divide-gray-800">
-                    <template x-for="unavail in paginatedList" :key="unavail.id">
+                    <template x-for="req in paginatedList" :key="req.id">
                         <div class="p-5 sm:px-6 hover:bg-gray-50/50 dark:hover:bg-gray-800/40 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-4">
-                            <!-- Volunteer Details -->
+                            <!-- Volunteer & Ministry Info -->
                             <div class="flex items-start gap-4 min-w-0">
                                 <div class="w-11 h-11 rounded-2xl bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 flex items-center justify-center font-black text-base shrink-0"
-                                     x-text="unavail.first_letter">
+                                     x-text="req.volunteer_letter">
                                 </div>
                                 <div class="min-w-0">
                                     <div class="flex items-center gap-2.5 flex-wrap">
-                                        <h3 class="text-sm font-black text-gray-900 dark:text-white truncate" x-text="unavail.name"></h3>
+                                        <h3 class="text-sm font-black text-gray-900 dark:text-white truncate" x-text="req.volunteer_name"></h3>
+                                        
+                                        <!-- Ministry Badge -->
+                                        <span class="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
+                                              x-text="req.ministry_name"></span>
                                         
                                         <!-- Status Badge -->
                                         <span class="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md"
                                               :class="{
-                                                  'bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-200 border border-amber-200 dark:border-amber-800': unavail.status === 'pending',
-                                                  'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800': unavail.status === 'approved',
-                                                  'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700': unavail.status === 'declined'
+                                                  'bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-200 border border-amber-200 dark:border-amber-800': req.status === 'pending',
+                                                  'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800': req.status === 'approved',
+                                                  'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700': req.status === 'declined'
                                               }"
-                                              x-text="unavail.status === 'pending' ? 'Pending Review' : (unavail.status === 'approved' ? 'Approved' : 'Declined')">
+                                              x-text="req.status === 'pending' ? 'Pending Review' : (req.status === 'approved' ? 'Approved' : 'Declined')">
                                         </span>
                                     </div>
+                                    
+                                    <!-- Reason -->
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 font-medium">
+                                        <span class="font-bold text-gray-700 dark:text-gray-300">Reason:</span> <span x-text="req.reason"></span>
+                                    </p>
 
-                                    <!-- Date & Reason -->
-                                    <div class="flex items-center gap-2 mt-1.5 flex-wrap">
-                                        <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-gray-50 dark:bg-gray-800/60 border border-gray-200/80 dark:border-gray-700/60 text-xs font-bold text-gray-900 dark:text-white">
-                                            <svg class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                                            <span x-text="unavail.date_range_display"></span>
-                                        </div>
-                                        <span class="text-xs text-gray-500 dark:text-gray-400 font-medium">
-                                            <span class="font-bold text-gray-700 dark:text-gray-300">Reason:</span> <span x-text="unavail.reason"></span>
-                                        </span>
+                                    <!-- Date & Review metadata -->
+                                    <div class="flex items-center gap-3 text-[11px] text-gray-400 dark:text-gray-500 mt-1 font-medium">
+                                        <span>Submitted on <span x-text="req.created_at"></span></span>
+                                        <template x-if="req.reviewed_by">
+                                            <span>• Reviewed by <span x-text="req.reviewed_by"></span> on <span x-text="req.reviewed_at"></span></span>
+                                        </template>
                                     </div>
-
-                                    <!-- Review metadata if resolved -->
-                                    <template x-if="unavail.reviewed_by">
-                                        <div class="flex items-center gap-2 text-[11px] text-gray-400 dark:text-gray-500 mt-1 font-medium">
-                                            <span>Reviewed by <span x-text="unavail.reviewed_by"></span> on <span x-text="unavail.reviewed_at"></span></span>
-                                        </div>
-                                    </template>
                                 </div>
                             </div>
 
                             <!-- Actions -->
                             <div class="flex items-center gap-2 shrink-0 self-end md:self-center">
-                                <template x-if="unavail.status === 'pending'">
+                                <template x-if="req.status === 'pending'">
                                     <div class="flex items-center gap-2">
                                         <!-- Decline Button -->
                                         <button type="button"
-                                                @click="openDeclineModal(unavail.id, unavail.name, unavail.date_range_display, unavail.reason)"
+                                                @click="openDeclineModal(req.id, req.volunteer_name, req.ministry_name, req.reason)"
                                                 class="px-3.5 py-2 rounded-xl text-xs font-bold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-750 transition-all border border-gray-200 dark:border-gray-700 active:scale-98 cursor-pointer">
                                             Decline
                                         </button>
                                         
                                         <!-- Confirm Approval Button -->
                                         <button type="button"
-                                                @click="openApproveModal(unavail.id, unavail.name, unavail.date_range_display, unavail.reason)"
+                                                @click="openApproveModal(req.id, req.volunteer_name, req.ministry_name, req.reason)"
                                                 class="px-4 py-2 rounded-xl text-xs font-black text-white bg-emerald-600 hover:bg-emerald-700 shadow-sm shadow-emerald-600/25 transition-all active:scale-98 flex items-center gap-1.5 cursor-pointer">
                                             Confirm Approval
                                         </button>
                                     </div>
                                 </template>
-                                <template x-if="unavail.status !== 'pending'">
+                                <template x-if="req.status !== 'pending'">
                                     <span class="text-xs font-bold text-gray-400 italic">Resolved</span>
                                 </template>
                             </div>
@@ -315,8 +308,8 @@
                         <div class="w-12 h-12 rounded-full bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto mb-3">
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
                         </div>
-                        <h3 class="text-sm font-bold text-gray-900 dark:text-white">No Unavailable Dates Found</h3>
-                        <p class="text-xs text-gray-400 mt-1">No requests match your current tab or search filter.</p>
+                        <h3 class="text-sm font-bold text-gray-900 dark:text-white">No Leave Requests Found</h3>
+                        <p class="text-xs text-gray-400 mt-1">No department leave requests match your search or filter.</p>
                     </div>
                 </div>
 
@@ -327,7 +320,6 @@
                     </p>
 
                     <div class="flex items-center gap-1.5 ml-auto sm:ml-0">
-                        <!-- Previous Page Icon Button -->
                         <button type="button"
                                 @click="prevPage()"
                                 :disabled="currentPage === 1"
@@ -347,7 +339,6 @@
                             </button>
                         </template>
 
-                        <!-- Next Page Icon Button -->
                         <button type="button"
                                 @click="nextPage()"
                                 :disabled="currentPage === totalPages"
@@ -365,7 +356,7 @@
         {% include 'layout/footer.html' %}
     </div>
 
-    <!-- Enhanced Approve Unavailable Request Modal -->
+    <!-- Enhanced Approve Leave Request Modal -->
     <div x-show="approveModalOpen"
          x-cloak
          class="relative z-50">
@@ -389,23 +380,21 @@
                      x-transition:leave-start="opacity-100 scale-100 translate-y-0"
                      x-transition:leave-end="opacity-0 scale-95 translate-y-4"
                      @click.away="closeApproveModal()"
-                     class="relative transform rounded-[32px] bg-white dark:bg-gray-900 text-left shadow-2xl shadow-emerald-950/20 dark:shadow-black/70 transition-all sm:w-full sm:max-w-lg border border-emerald-500/20 dark:border-emerald-500/20 overflow-hidden">
-                    
+                     class="relative transform rounded-[32px] bg-white dark:bg-gray-900 text-left shadow-2xl shadow-emerald-950/30 dark:shadow-black/70 transition-all sm:w-full sm:max-w-lg border border-emerald-500/25 dark:border-emerald-500/25 overflow-hidden">
+                     
                     <!-- Modal Header Banner with ambient radial glow -->
-                    <div class="p-6 sm:p-7 border-b border-gray-100 dark:border-gray-800 relative bg-gradient-to-br from-emerald-500/10 via-emerald-500/5 to-transparent overflow-hidden">
+                    <div class="p-6 sm:p-7 border-b border-gray-100 dark:border-gray-800 relative bg-gradient-to-br from-emerald-500/15 via-emerald-500/5 to-transparent overflow-hidden">
                         <div class="absolute -top-12 -right-12 w-44 h-44 rounded-full bg-emerald-500/15 blur-2xl pointer-events-none"></div>
                         <div class="flex items-start justify-between gap-4 relative z-10">
                             <div class="flex items-start gap-4">
                                 <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-900/60 dark:to-emerald-800/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-700/60 shadow-md shadow-emerald-600/15 flex items-center justify-center shrink-0 ring-4 ring-emerald-500/10">
-                                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                                    </svg>
                                 </div>
                                 <div>
-                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-100/80 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 mb-1">
-                                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                                        Availability Confirmation
-                                    </span>
-                                    <h3 class="text-xl sm:text-2xl font-black text-gray-900 dark:text-white leading-tight">Confirm Blackout Dates</h3>
-                                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 font-medium">Approve volunteer unavailable schedule request</p>
+                                    <h3 class="text-xl sm:text-2xl font-black text-gray-900 dark:text-white leading-tight">Approve Leave Request</h3>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 font-medium">Release volunteer from this department serving roster</p>
                                 </div>
                             </div>
                         </div>
@@ -421,48 +410,47 @@
                                         <span x-text="(selectedVolunteerName || 'V').charAt(0).toUpperCase()"></span>
                                     </div>
                                     <div class="min-w-0">
-                                        <span class="text-[10px] font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-wider">Volunteer</span>
+                                        <span class="text-[10px] font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-wider">Active Volunteer</span>
                                         <h4 class="text-base font-black text-gray-900 dark:text-white truncate leading-tight" x-text="selectedVolunteerName"></h4>
                                     </div>
                                 </div>
-                                <span class="shrink-0 text-[11px] font-black px-3 py-1 rounded-xl bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800" x-text="selectedDateRange"></span>
+                                <span class="shrink-0 text-[11px] font-black px-3 py-1 rounded-xl bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800" x-text="selectedMinistryName"></span>
                             </div>
 
-                            <!-- Volunteer Reason Note -->
-                            <div x-show="selectedReason && selectedReason !== 'Unavailable'" 
+                            <!-- Volunteer Departure Note if provided -->
+                            <div x-show="selectedReason && selectedReason !== 'No reason provided'" 
                                  class="pt-3 border-t border-emerald-100/70 dark:border-emerald-900/40 text-xs text-gray-600 dark:text-gray-300 font-medium">
-                                <span class="text-emerald-700 dark:text-emerald-400 font-bold text-[11px] uppercase tracking-wider">Stated Reason:</span>
+                                <span class="text-emerald-700 dark:text-emerald-400 font-bold text-[11px] uppercase tracking-wider">Volunteer Note:</span>
                                 <p class="mt-0.5 italic text-gray-700 dark:text-gray-200" x-text="'“' + selectedReason + '”'"></p>
                             </div>
                         </div>
 
-                        <p class="text-xs text-gray-600 dark:text-gray-300 font-medium">
-                            Please confirm the unavailable dates for <span class="font-black text-gray-900 dark:text-white" x-text="selectedVolunteerName"></span> (<span class="font-bold text-emerald-600 dark:text-emerald-400" x-text="selectedDateRange"></span>).
-                        </p>
-                        
-                        <!-- Actions & Side Effects Checklist -->
-                        <div class="p-3.5 rounded-2xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-100/80 dark:border-emerald-900/40 text-xs text-gray-600 dark:text-gray-300 space-y-1.5 font-medium">
-                            <div class="flex items-center gap-2">
-                                <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-                                <span>The dates will be marked as officially approved blackout dates.</span>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-                                <span>Any assigned shifts during this window in your departments will be automatically released.</span>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-                                <span>The volunteer will receive an updated status badge on their schedule view.</span>
+                        <!-- Action Checklist -->
+                        <div class="space-y-2">
+                            <p class="text-[11px] font-black uppercase tracking-wider text-gray-400 dark:text-gray-500">Result of approval</p>
+                            <div class="space-y-2">
+                                <div class="flex items-start gap-2.5 p-3 rounded-2xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-100/80 dark:border-emerald-900/40 text-xs text-gray-700 dark:text-gray-300 font-medium">
+                                    <div class="w-5 h-5 rounded-lg bg-emerald-100 dark:bg-emerald-900 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+                                    </div>
+                                    <span>Volunteer is formally removed from this department's active roster.</span>
+                                </div>
+                                <div class="flex items-start gap-2.5 p-3 rounded-2xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-100/80 dark:border-emerald-900/40 text-xs text-gray-700 dark:text-gray-300 font-medium">
+                                    <div class="w-5 h-5 rounded-lg bg-emerald-100 dark:bg-emerald-900 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+                                    </div>
+                                    <span>Any upcoming unfilled shifts in this department will be released automatically.</span>
+                                </div>
                             </div>
                         </div>
                     </div>
 
                     <!-- Modal Actions Footer -->
                     <div class="p-4 sm:p-5 bg-gray-50/90 dark:bg-gray-800/60 border-t border-gray-100 dark:border-gray-800">
-                        <form method="POST" action="{% url 'dept_head_availability' %}">
+                        <form method="POST" action="{% url 'dept_head_leave_requests' %}">
                             {% csrf_token %}
                             <input type="hidden" name="action" value="approve">
-                            <input type="hidden" name="unavailability_id" :value="selectedId">
+                            <input type="hidden" name="request_id" :value="selectedRequestId">
 
                             <div class="flex items-center justify-end gap-3">
                                 <button type="button" @click="closeApproveModal()"
@@ -482,7 +470,7 @@
         </div>
     </div>
 
-    <!-- Enhanced Decline Unavailable Request Modal -->
+    <!-- Enhanced Decline Leave Request Modal -->
     <div x-show="declineModalOpen"
          x-cloak
          class="relative z-50">
@@ -517,8 +505,8 @@
                                     <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                                 </div>
                                 <div>
-                                    <h3 class="text-xl sm:text-2xl font-black text-gray-900 dark:text-white leading-tight">Decline Blackout Request</h3>
-                                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 font-medium">Keep the volunteer eligible to serve during these dates</p>
+                                    <h3 class="text-xl sm:text-2xl font-black text-gray-900 dark:text-white leading-tight">Decline Leave Request</h3>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 font-medium">Keep the volunteer active in the department roster</p>
                                 </div>
                             </div>
                         </div>
@@ -533,17 +521,17 @@
                                         <span x-text="(selectedVolunteerName || 'V').charAt(0).toUpperCase()"></span>
                                     </div>
                                     <div class="min-w-0">
-                                        <span class="text-[10px] font-black text-amber-700 dark:text-amber-400 uppercase tracking-wider">Volunteer</span>
+                                        <span class="text-[10px] font-black text-amber-700 dark:text-amber-400 uppercase tracking-wider">Active Volunteer</span>
                                         <h4 class="text-base font-black text-gray-900 dark:text-white truncate leading-tight" x-text="selectedVolunteerName"></h4>
                                     </div>
                                 </div>
-                                <span class="shrink-0 text-[11px] font-black px-3 py-1 rounded-xl bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-200 border border-amber-200 dark:border-amber-800" x-text="selectedDateRange"></span>
+                                <span class="shrink-0 text-[11px] font-black px-3 py-1 rounded-xl bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-200 border border-amber-200 dark:border-amber-800" x-text="selectedMinistryName"></span>
                             </div>
 
-                            <!-- Volunteer Reason Note -->
-                            <div x-show="selectedReason && selectedReason !== 'Unavailable'" 
+                            <!-- Volunteer Departure Note if provided -->
+                            <div x-show="selectedReason && selectedReason !== 'No reason provided'" 
                                  class="pt-3 border-t border-amber-100/70 dark:border-amber-900/40 text-xs text-gray-600 dark:text-gray-300 font-medium">
-                                <span class="text-amber-700 dark:text-amber-400 font-bold text-[11px] uppercase tracking-wider">Volunteer Reason:</span>
+                                <span class="text-amber-700 dark:text-amber-400 font-bold text-[11px] uppercase tracking-wider">Volunteer Note:</span>
                                 <p class="mt-0.5 italic text-gray-700 dark:text-gray-200" x-text="'“' + selectedReason + '”'"></p>
                             </div>
                         </div>
@@ -551,21 +539,21 @@
                         <div class="p-3.5 rounded-2xl bg-amber-50/50 dark:bg-amber-950/20 border border-amber-100/80 dark:border-amber-900/40 text-xs text-gray-600 dark:text-gray-300 space-y-1 font-medium">
                             <div class="flex items-center gap-2">
                                 <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-                                <span>The volunteer will remain eligible to be scheduled for shifts during this time.</span>
+                                <span>The volunteer will remain an active serving member of this department.</span>
                             </div>
                             <div class="flex items-center gap-2">
                                 <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-                                <span>Existing scheduled shifts will not be released.</span>
+                                <span>Upcoming serving schedules and shift assignments will remain unaffected.</span>
                             </div>
                         </div>
                     </div>
 
                     <!-- Modal Actions Footer -->
                     <div class="p-4 sm:p-5 bg-gray-50/90 dark:bg-gray-800/60 border-t border-gray-100 dark:border-gray-800">
-                        <form method="POST" action="{% url 'dept_head_availability' %}">
+                        <form method="POST" action="{% url 'dept_head_leave_requests' %}">
                             {% csrf_token %}
                             <input type="hidden" name="action" value="decline">
-                            <input type="hidden" name="unavailability_id" :value="selectedId">
+                            <input type="hidden" name="request_id" :value="selectedRequestId">
 
                             <div class="flex items-center justify-end gap-3">
                                 <button type="button" @click="closeDeclineModal()"

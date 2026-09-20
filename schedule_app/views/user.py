@@ -251,17 +251,8 @@ def volunteer_calendar_view(request):
             'offices': [{'id': o.id, 'name': o.name} for o in e.offices.all()],
         })
     
-    unavailabilities = Unavailability.objects.filter(volunteer=request.user, start_date__gte=today)
-    unavailabilities_data = [{
-        'id': u.id,
-        'start_date': u.start_date.isoformat(),
-        'end_date': u.end_date.isoformat() if u.end_date else u.start_date.isoformat(),
-        'reason': u.reason or 'Unavailable',
-    } for u in unavailabilities]
-    
     return render(request, 'volunteer/volunteer-calendar.html', {
         'events_json': json.dumps(events_data),
-        'unavailabilities_json': json.dumps(unavailabilities_data),
         'today': today.isoformat(),
     })
 
@@ -297,15 +288,16 @@ def volunteer_schedule_view(request):
                     volunteer=request.user,
                     start_date=start_date,
                     end_date=end_date,
-                    reason=final_reason
+                    reason=final_reason,
+                    status='pending'
                 )
-                pass  # Toast notification handles user feedback
+                messages.success(request, "Your unavailable date request has been submitted for department head confirmation.")
             return redirect('volunteer_schedule')
             
         elif action == 'delete_unavailability':
             unavail_id = request.POST.get('unavailability_id')
             Unavailability.objects.filter(id=unavail_id, volunteer=request.user).delete()
-            messages.info(request, "Unavailable date removed. You are now marked as available.")
+            messages.info(request, "Unavailable date request removed.")
             return redirect('volunteer_schedule')
 
     # Volunteer's active upcoming unavailable dates
@@ -314,22 +306,46 @@ def volunteer_schedule_view(request):
         start_date__gte=today
     ).order_by('start_date')
     
-    # Active scheduled shifts (Upcoming)
-    my_shifts = Shift.objects.filter(
+    # Active scheduled shifts (Upcoming) — grouped by event
+    raw_shifts = Shift.objects.filter(
         volunteer=request.user,
         event__date__gte=today
-    ).select_related('event', 'ministry').order_by('event__date', 'event__start_time')
+    ).select_related('event', 'ministry', 'job').order_by('event__date', 'event__start_time')
 
-    # Past served shifts (History)
-    past_shifts = Shift.objects.filter(
+    # Group shifts by event so multiple roles in the same event appear as one card
+    from collections import OrderedDict
+    grouped_shifts = OrderedDict()
+    for shift in raw_shifts:
+        eid = shift.event_id
+        if eid not in grouped_shifts:
+            grouped_shifts[eid] = {
+                'event': shift.event,
+                'shifts': [],
+            }
+        grouped_shifts[eid]['shifts'].append(shift)
+    my_shifts_grouped = list(grouped_shifts.values())
+
+    # Past served shifts (History) — also grouped by event
+    raw_past_shifts = Shift.objects.filter(
         volunteer=request.user,
         event__date__lt=today
-    ).select_related('event', 'ministry').order_by('-event__date', '-event__start_time')
-    
+    ).select_related('event', 'ministry', 'job').order_by('-event__date', '-event__start_time')
+
+    grouped_past = OrderedDict()
+    for shift in raw_past_shifts:
+        eid = shift.event_id
+        if eid not in grouped_past:
+            grouped_past[eid] = {
+                'event': shift.event,
+                'shifts': [],
+            }
+        grouped_past[eid]['shifts'].append(shift)
+    past_shifts_grouped = list(grouped_past.values())
+
     return render(request, 'volunteer/volunteer-schedule.html', {
         'unavailabilities': unavailabilities,
-        'my_shifts': my_shifts,
-        'past_shifts': past_shifts,
+        'my_shifts': my_shifts_grouped,
+        'past_shifts': past_shifts_grouped,
         'today': today.isoformat(),
     })
 
@@ -387,6 +403,128 @@ def volunteer_opportunities_view(request):
         'my_claimed_shifts': my_claimed_shifts,
         'my_ministries': my_ministries,
     })
+
+
+@login_required
+def volunteer_join_department_view(request):
+    """Allows volunteers to browse all departments and join or leave them."""
+    from schedule_app.models import Ministry, VolunteerProfile, DepartmentLeaveRequest, DepartmentJoinRequest
+    from schedule_app.utils import log_activity
+    
+    profile = getattr(request.user, 'volunteer_profile', None)
+    if not profile:
+        profile, _ = VolunteerProfile.objects.get_or_create(user=request.user)
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        ministry_id = request.POST.get('ministry_id')
+        ministry = Ministry.objects.filter(id=ministry_id).first()
+        
+        if ministry:
+            if action == 'join':
+                if ministry in profile.ministries.all():
+                    messages.info(request, f"You are already a member of {ministry.name}.")
+                else:
+                    # Check if already has a pending join request
+                    existing_request = DepartmentJoinRequest.objects.filter(
+                        volunteer=request.user,
+                        ministry=ministry,
+                        status='pending'
+                    ).first()
+
+                    if existing_request:
+                        messages.info(request, f"You already have a pending join request for {ministry.name}.")
+                    else:
+                        reason = request.POST.get('reason', '').strip()
+                        DepartmentJoinRequest.objects.create(
+                            volunteer=request.user,
+                            ministry=ministry,
+                            reason=reason,
+                            status='pending'
+                        )
+                        log_activity(
+                            request=request,
+                            action_type='UPDATE',
+                            category='Volunteer',
+                            description=f"Submitted request to join department '{ministry.name}'"
+                        )
+                        messages.success(request, f"Your request to join {ministry.name} has been submitted for review.")
+            elif action == 'leave':
+                if ministry in profile.ministries.all():
+                    # Check if already has a pending leave request
+                    existing_request = DepartmentLeaveRequest.objects.filter(
+                        volunteer=request.user,
+                        ministry=ministry,
+                        status='pending'
+                    ).first()
+
+                    if existing_request:
+                        messages.info(request, f"You already have a pending leave request for {ministry.name}.")
+                    else:
+                        reason = request.POST.get('reason', '').strip()
+                        DepartmentLeaveRequest.objects.create(
+                            volunteer=request.user,
+                            ministry=ministry,
+                            reason=reason,
+                            status='pending'
+                        )
+                        log_activity(
+                            request=request,
+                            action_type='UPDATE',
+                            category='Volunteer',
+                            description=f"Submitted request to leave department '{ministry.name}'"
+                        )
+                        messages.success(request, f"Your request to leave the {ministry.name} department has been submitted for review.")
+                else:
+                    messages.info(request, f"You are not currently a member of {ministry.name}.")
+        else:
+            messages.error(request, "Department not found.")
+            
+        return redirect('volunteer_join_department')
+
+    # GET: fetch all departments
+    all_ministries = Ministry.objects.prefetch_related('volunteers', 'head__user', 'jobs').order_by('name')
+    my_ministry_ids = set(profile.ministries.values_list('id', flat=True))
+
+    # Get ministries with pending leave requests by this volunteer
+    pending_leave_ministry_ids = set(DepartmentLeaveRequest.objects.filter(
+        volunteer=request.user,
+        status='pending'
+    ).values_list('ministry_id', flat=True))
+
+    # Get ministries with pending join requests by this volunteer
+    pending_join_ministry_ids = set(DepartmentJoinRequest.objects.filter(
+        volunteer=request.user,
+        status='pending'
+    ).values_list('ministry_id', flat=True))
+
+    ministries_data = []
+    for m in all_ministries:
+        is_member = m.id in my_ministry_ids
+        has_pending_leave = m.id in pending_leave_ministry_ids
+        has_pending_join = m.id in pending_join_ministry_ids
+        ministries_data.append({
+            'id': m.id,
+            'name': m.name,
+            'description': m.description,
+            'is_member': is_member,
+            'has_pending_leave': has_pending_leave,
+            'has_pending_join': has_pending_join,
+            'volunteers_count': m.volunteers.count(),
+            'jobs_count': m.jobs.count(),
+            'head_name': m.head.user.get_full_name() if (m.head and m.head.user) else None,
+        })
+
+    my_count = len(my_ministry_ids)
+    available_count = max(0, len(all_ministries) - my_count)
+
+    return render(request, 'volunteer/volunteer-join-department.html', {
+        'ministries_data': ministries_data,
+        'total_departments': len(all_ministries),
+        'my_departments_count': my_count,
+        'available_departments_count': available_count,
+    })
+
 
 @login_required
 def dept_head_events_view(request):
@@ -612,8 +750,9 @@ def dept_head_event_detail_view(request, event_id):
 
 @login_required
 def dept_head_availability_view(request):
-    """Allows Department Heads to view all unavailable/blackout dates ONLY for volunteers in their headed departments."""
-    from schedule_app.models import Unavailability, VolunteerProfile, Ministry
+    """Allows Department Heads to view and approve/decline unavailable/blackout date requests ONLY for volunteers in their headed departments."""
+    from schedule_app.models import Unavailability, VolunteerProfile, Ministry, Shift
+    from schedule_app.utils import log_activity
     from django.db.models import Q
     
     today = timezone.now().date()
@@ -635,15 +774,74 @@ def dept_head_availability_view(request):
     ).distinct().select_related('user', 'role').prefetch_related('ministries')
     
     member_user_ids = [m.user_id for m in dept_members]
-    
-    # Search query if provided
+
+    # Handle POST actions (Approve / Decline)
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        unavail_id = request.POST.get('unavailability_id')
+        unavail = Unavailability.objects.filter(
+            id=unavail_id,
+            volunteer_id__in=member_user_ids
+        ).first()
+
+        if unavail:
+            v_name = unavail.volunteer.get_full_name() or unavail.volunteer.username
+            date_range_str = f"{unavail.start_date.strftime('%b %d, %Y')}"
+            if unavail.end_date and unavail.end_date != unavail.start_date:
+                date_range_str += f" - {unavail.end_date.strftime('%b %d, %Y')}"
+
+            if action == 'approve':
+                unavail.status = 'approved'
+                unavail.reviewed_at = timezone.now()
+                unavail.reviewed_by = request.user
+                unavail.save()
+
+                # Release any upcoming shifts for this volunteer during this blackout window across headed ministries
+                end_dt = unavail.end_date or unavail.start_date
+                conflicting_shifts = Shift.objects.filter(
+                    volunteer=unavail.volunteer,
+                    ministry__in=headed_ministries,
+                    event__date__gte=unavail.start_date,
+                    event__date__lte=end_dt
+                )
+                shifts_cleared = conflicting_shifts.count()
+                conflicting_shifts.update(volunteer=None)
+
+                log_activity(
+                    request=request,
+                    action_type='UPDATE',
+                    category='Schedule',
+                    description=f"Approved unavailable dates for '{v_name}' ({date_range_str}) with {shifts_cleared} shift(s) released"
+                )
+                messages.success(request, f"Unavailable date request confirmed for {v_name}. Any overlapping shifts were released.")
+
+            elif action == 'decline':
+                unavail.status = 'declined'
+                unavail.reviewed_at = timezone.now()
+                unavail.reviewed_by = request.user
+                unavail.save()
+
+                log_activity(
+                    request=request,
+                    action_type='UPDATE',
+                    category='Schedule',
+                    description=f"Declined unavailable dates request for '{v_name}' ({date_range_str})"
+                )
+                messages.info(request, f"Unavailable date request declined for {v_name}.")
+        else:
+            messages.error(request, "Unavailable date request not found or access denied.")
+
+        return redirect('dept_head_availability')
+
+    # GET: List unavailabilities
     q = request.GET.get('q', '').strip()
-    
+    status_filter = request.GET.get('status', 'all').strip()
+
     unavail_qs = Unavailability.objects.filter(
         volunteer_id__in=member_user_ids,
         start_date__gte=today
-    ).select_related('volunteer', 'volunteer__volunteer_profile').order_by('start_date')
-    
+    ).select_related('volunteer', 'volunteer__volunteer_profile', 'reviewed_by').order_by('start_date')
+
     if q:
         unavail_qs = unavail_qs.filter(
             Q(volunteer__first_name__icontains=q) |
@@ -651,13 +849,241 @@ def dept_head_availability_view(request):
             Q(volunteer__username__icontains=q) |
             Q(reason__icontains=q)
         )
-        
+
+    all_list = list(unavail_qs)
+    pending_count = sum(1 for u in all_list if getattr(u, 'status', 'pending') == 'pending')
+    approved_count = sum(1 for u in all_list if getattr(u, 'status', 'pending') == 'approved')
+    declined_count = sum(1 for u in all_list if getattr(u, 'status', 'pending') == 'declined')
+
+    if status_filter in ['pending', 'approved', 'declined']:
+        unavail_qs = unavail_qs.filter(status=status_filter)
+
     return render(request, 'dept-head/dept-head-availability.html', {
         'headed_ministries': headed_ministries,
         'unavailabilities': unavail_qs,
-        'total_unavailabilities': unavail_qs.count(),
+        'total_unavailabilities': len(all_list),
+        'pending_count': pending_count,
+        'approved_count': approved_count,
+        'declined_count': declined_count,
         'total_members': dept_members.count(),
         'search_query': q,
+        'status_filter': status_filter,
+    })
+
+@login_required
+def dept_head_leave_requests_view(request):
+    """Allows Department Heads to view and approve or decline volunteer requests to leave their departments."""
+    from schedule_app.models import DepartmentLeaveRequest, VolunteerProfile, Ministry, Shift
+    from schedule_app.utils import log_activity
+    from django.db.models import Q
+    
+    profile = getattr(request.user, 'volunteer_profile', None)
+    is_admin = request.user.is_staff or request.user.is_superuser
+    
+    if profile and profile.headed_ministries.exists():
+        headed_ministries = profile.headed_ministries.all()
+    elif is_admin:
+        headed_ministries = Ministry.objects.all()
+    else:
+        messages.error(request, "Access restricted to Department Heads.")
+        return redirect('user_dashboard')
+
+    # Handle POST actions (Approve / Decline)
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        request_id = request.POST.get('request_id')
+        leave_req = DepartmentLeaveRequest.objects.filter(
+            id=request_id,
+            ministry__in=headed_ministries
+        ).first()
+
+        if leave_req:
+            volunteer_profile = getattr(leave_req.volunteer, 'volunteer_profile', None)
+            v_name = leave_req.volunteer.get_full_name() or leave_req.volunteer.username
+            m_name = leave_req.ministry.name
+
+            if action == 'approve':
+                leave_req.status = 'approved'
+                leave_req.reviewed_at = timezone.now()
+                leave_req.reviewed_by = request.user
+                leave_req.save()
+
+                if volunteer_profile and leave_req.ministry in volunteer_profile.ministries.all():
+                    volunteer_profile.ministries.remove(leave_req.ministry)
+
+                # Remove any upcoming shifts for this volunteer in this ministry
+                today = timezone.now().date()
+                upcoming_shifts = Shift.objects.filter(
+                    volunteer=leave_req.volunteer,
+                    ministry=leave_req.ministry,
+                    event__date__gte=today
+                )
+                shifts_cleared = upcoming_shifts.count()
+                upcoming_shifts.update(volunteer=None)
+
+                log_activity(
+                    request=request,
+                    action_type='UPDATE',
+                    category='Departments',
+                    description=f"Approved leave request for '{v_name}' from department '{m_name}' ({shifts_cleared} upcoming shifts released)"
+                )
+                messages.success(request, f"Leave request approved for {v_name}. Member has been removed from {m_name}.")
+
+            elif action == 'decline':
+                leave_req.status = 'declined'
+                leave_req.reviewed_at = timezone.now()
+                leave_req.reviewed_by = request.user
+                leave_req.save()
+
+                log_activity(
+                    request=request,
+                    action_type='UPDATE',
+                    category='Departments',
+                    description=f"Declined leave request for '{v_name}' from department '{m_name}'"
+                )
+                messages.info(request, f"Leave request declined for {v_name}.")
+        else:
+            messages.error(request, "Leave request not found or access denied.")
+
+        return redirect('dept_head_leave_requests')
+
+    # GET: List requests
+    q = request.GET.get('q', '').strip()
+    status_filter = request.GET.get('status', 'all').strip()
+
+    requests_qs = DepartmentLeaveRequest.objects.filter(
+        ministry__in=headed_ministries
+    ).select_related('volunteer', 'volunteer__volunteer_profile', 'ministry', 'reviewed_by').order_by('-created_at')
+
+    if q:
+        requests_qs = requests_qs.filter(
+            Q(volunteer__first_name__icontains=q) |
+            Q(volunteer__last_name__icontains=q) |
+            Q(volunteer__username__icontains=q) |
+            Q(ministry__name__icontains=q) |
+            Q(reason__icontains=q)
+        )
+
+    all_list = list(requests_qs)
+    pending_count = sum(1 for r in all_list if r.status == 'pending')
+    approved_count = sum(1 for r in all_list if r.status == 'approved')
+    declined_count = sum(1 for r in all_list if r.status == 'declined')
+
+    if status_filter in ['pending', 'approved', 'declined']:
+        requests_qs = requests_qs.filter(status=status_filter)
+
+    return render(request, 'dept-head/dept-head-leave-requests.html', {
+        'headed_ministries': headed_ministries,
+        'leave_requests': requests_qs,
+        'pending_count': pending_count,
+        'approved_count': approved_count,
+        'declined_count': declined_count,
+        'total_requests': len(all_list),
+        'search_query': q,
+        'status_filter': status_filter,
+    })
+
+@login_required
+def dept_head_join_requests_view(request):
+    """Allows Department Heads to view and approve or decline volunteer requests to join their departments."""
+    from schedule_app.models import DepartmentJoinRequest, VolunteerProfile, Ministry
+    from schedule_app.utils import log_activity
+    from django.db.models import Q
+    
+    profile = getattr(request.user, 'volunteer_profile', None)
+    is_admin = request.user.is_staff or request.user.is_superuser
+    
+    if profile and profile.headed_ministries.exists():
+        headed_ministries = profile.headed_ministries.all()
+    elif is_admin:
+        headed_ministries = Ministry.objects.all()
+    else:
+        messages.error(request, "Access restricted to Department Heads.")
+        return redirect('user_dashboard')
+
+    # Handle POST actions (Approve / Decline)
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        request_id = request.POST.get('request_id')
+        join_req = DepartmentJoinRequest.objects.filter(
+            id=request_id,
+            ministry__in=headed_ministries
+        ).first()
+
+        if join_req:
+            volunteer_profile = getattr(join_req.volunteer, 'volunteer_profile', None)
+            v_name = join_req.volunteer.get_full_name() or join_req.volunteer.username
+            m_name = join_req.ministry.name
+
+            if action == 'approve':
+                join_req.status = 'approved'
+                join_req.reviewed_at = timezone.now()
+                join_req.reviewed_by = request.user
+                join_req.save()
+
+                if volunteer_profile:
+                    volunteer_profile.ministries.add(join_req.ministry)
+
+                log_activity(
+                    request=request,
+                    action_type='UPDATE',
+                    category='Departments',
+                    description=f"Approved request for '{v_name}' to join department '{m_name}'"
+                )
+                messages.success(request, f"Join request approved! {v_name} is now a member of {m_name}.")
+
+            elif action == 'decline':
+                join_req.status = 'declined'
+                join_req.reviewed_at = timezone.now()
+                join_req.reviewed_by = request.user
+                join_req.save()
+
+                log_activity(
+                    request=request,
+                    action_type='UPDATE',
+                    category='Departments',
+                    description=f"Declined request for '{v_name}' to join department '{m_name}'"
+                )
+                messages.info(request, f"Join request declined for {v_name}.")
+        else:
+            messages.error(request, "Join request not found or access denied.")
+
+        return redirect('dept_head_join_requests')
+
+    # GET: List requests
+    q = request.GET.get('q', '').strip()
+    status_filter = request.GET.get('status', 'all').strip()
+
+    requests_qs = DepartmentJoinRequest.objects.filter(
+        ministry__in=headed_ministries
+    ).select_related('volunteer', 'volunteer__volunteer_profile', 'volunteer__volunteer_profile__role', 'ministry', 'reviewed_by').prefetch_related('volunteer__volunteer_profile__ministries').order_by('-created_at')
+
+    if q:
+        requests_qs = requests_qs.filter(
+            Q(volunteer__first_name__icontains=q) |
+            Q(volunteer__last_name__icontains=q) |
+            Q(volunteer__username__icontains=q) |
+            Q(ministry__name__icontains=q) |
+            Q(reason__icontains=q)
+        )
+
+    all_list = list(requests_qs)
+    pending_count = sum(1 for r in all_list if r.status == 'pending')
+    approved_count = sum(1 for r in all_list if r.status == 'approved')
+    declined_count = sum(1 for r in all_list if r.status == 'declined')
+
+    if status_filter in ['pending', 'approved', 'declined']:
+        requests_qs = requests_qs.filter(status=status_filter)
+
+    return render(request, 'dept-head/dept-head-join-requests.html', {
+        'headed_ministries': headed_ministries,
+        'join_requests': requests_qs,
+        'pending_count': pending_count,
+        'approved_count': approved_count,
+        'declined_count': declined_count,
+        'total_requests': len(all_list),
+        'search_query': q,
+        'status_filter': status_filter,
     })
 
 @login_required

@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Ministry, VolunteerProfile, Event, Shift, ActivityLog, Role, Capability
+from .models import Ministry, VolunteerProfile, Event, Shift, ActivityLog, Role, Capability, DepartmentLeaveRequest, DepartmentJoinRequest, Unavailability
 
 @admin.register(Capability)
 class CapabilityAdmin(admin.ModelAdmin):
@@ -41,3 +41,22 @@ class ActivityLogAdmin(admin.ModelAdmin):
     list_display = ('actor_name', 'action_type', 'category', 'description', 'ip_address', 'created_at')
     list_filter = ('action_type', 'category', 'created_at')
     search_fields = ('actor_name', 'description', 'ip_address', 'user__username')
+
+@admin.register(DepartmentLeaveRequest)
+class DepartmentLeaveRequestAdmin(admin.ModelAdmin):
+    list_display = ('volunteer', 'ministry', 'status', 'created_at', 'reviewed_by')
+    list_filter = ('status', 'ministry', 'created_at')
+    search_fields = ('volunteer__username', 'volunteer__first_name', 'volunteer__last_name', 'ministry__name', 'reason')
+
+@admin.register(DepartmentJoinRequest)
+class DepartmentJoinRequestAdmin(admin.ModelAdmin):
+    list_display = ('volunteer', 'ministry', 'status', 'created_at', 'reviewed_by')
+    list_filter = ('status', 'ministry', 'created_at')
+    search_fields = ('volunteer__username', 'volunteer__first_name', 'volunteer__last_name', 'ministry__name', 'reason')
+
+@admin.register(Unavailability)
+class UnavailabilityAdmin(admin.ModelAdmin):
+    list_display = ('volunteer', 'start_date', 'end_date', 'reason', 'status', 'created_at', 'reviewed_by')
+    list_filter = ('status', 'start_date', 'created_at')
+    search_fields = ('volunteer__username', 'volunteer__first_name', 'volunteer__last_name', 'reason')
+

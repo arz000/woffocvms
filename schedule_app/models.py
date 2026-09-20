@@ -137,16 +137,26 @@ class DepartmentJob(models.Model):
 
 class Unavailability(models.Model):
     """
-    Represents dates when a volunteer is unavailable/cannot serve (Blackout Dates).
+    Represents dates when a volunteer requests to be unavailable/cannot serve (Blackout Dates).
+    Requires Department Head review and confirmation.
     """
+    STATUS_CHOICES = [
+        ('pending', 'Pending Review'),
+        ('approved', 'Approved'),
+        ('declined', 'Declined'),
+    ]
+
     volunteer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='unavailabilities')
     start_date = models.DateField()
     end_date = models.DateField(null=True, blank=True)
     reason = models.CharField(max_length=255, blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     created_at = models.DateTimeField(auto_now_add=True)
+    reviewed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='reviewed_unavailabilities')
+    reviewed_at = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
-        return f"{self.volunteer.get_full_name() or self.volunteer.username} unavailable on {self.start_date}"
+        return f"{self.volunteer.get_full_name() or self.volunteer.username} unavailable on {self.start_date} ({self.status})"
 
     class Meta:
         verbose_name_plural = "Unavailabilities"
@@ -194,6 +204,65 @@ class ActivityLog(models.Model):
         return f"[{self.created_at.strftime('%Y-%m-%d %H:%M')}] {actor}: {self.description[:50]}"
 
 
+
+class DepartmentLeaveRequest(models.Model):
+    """
+    Represents a request submitted by a volunteer to leave a department/ministry,
+    which requires review and approval by the Department Head.
+    """
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('approved', 'Approved'),
+        ('declined', 'Declined'),
+    ]
+
+    volunteer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='department_leave_requests')
+    ministry = models.ForeignKey(Ministry, on_delete=models.CASCADE, related_name='leave_requests')
+    reason = models.TextField(blank=True, default='')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    created_at = models.DateTimeField(auto_now_add=True)
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    reviewed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='reviewed_leave_requests')
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = "Department Leave Request"
+        verbose_name_plural = "Department Leave Requests"
+
+    def __str__(self):
+        actor = self.volunteer.get_full_name() or self.volunteer.username
+        return f"{actor} - {self.ministry.name} ({self.status})"
+
+
+class DepartmentJoinRequest(models.Model):
+    """
+    Represents a request submitted by a volunteer to join a department/ministry,
+    which requires review and approval by the Department Head.
+    """
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('approved', 'Approved'),
+        ('declined', 'Declined'),
+    ]
+
+    volunteer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='department_join_requests')
+    ministry = models.ForeignKey(Ministry, on_delete=models.CASCADE, related_name='join_requests')
+    reason = models.TextField(blank=True, default='')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    created_at = models.DateTimeField(auto_now_add=True)
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    reviewed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='reviewed_join_requests')
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = "Department Join Request"
+        verbose_name_plural = "Department Join Requests"
+
+    def __str__(self):
+        actor = self.volunteer.get_full_name() or self.volunteer.username
+        return f"{actor} - Join {self.ministry.name} ({self.status})"
+
+
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):
     if created:
@@ -202,3 +271,4 @@ def create_user_profile(sender, instance, created, **kwargs):
 @receiver(post_save, sender=User)
 def save_user_profile(sender, instance, **kwargs):
     instance.volunteer_profile.save()
+

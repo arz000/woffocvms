@@ -23,12 +23,15 @@ urlpatterns = [
     path('volunteer/calendar/', views.volunteer_calendar_view, name='volunteer_calendar'),
     path('volunteer/schedule/', views.volunteer_schedule_view, name='volunteer_schedule'),
     path('volunteer/opportunities/', views.volunteer_opportunities_view, name='volunteer_opportunities'),
+    path('volunteer/join-department/', views.volunteer_join_department_view, name='volunteer_join_department'),
     path('volunteer/create-shift/', views.volunteer_create_shift_view, name='volunteer_create_shift'),
 
     # Department Head Routes
     path('dept-head/events/', views.dept_head_events_view, name='dept_head_events'),
     path('dept-head/events/<int:event_id>/', views.dept_head_event_detail_view, name='dept_head_event_detail'),
     path('dept-head/availability/', views.dept_head_availability_view, name='dept_head_availability'),
+    path('dept-head/join-requests/', views.dept_head_join_requests_view, name='dept_head_join_requests'),
+    path('dept-head/leave-requests/', views.dept_head_leave_requests_view, name='dept_head_leave_requests'),
     path('dept-head/jobs/', views.dept_head_jobs_view, name='dept_head_jobs'),
     
     # Admin Routes

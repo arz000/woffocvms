@@ -21,19 +21,13 @@
 <script id="volunteer-events-data" type="application/json">
     {{ events_json|safe|default:"[]" }}
 </script>
-<script id="volunteer-unavail-data" type="application/json">
-    {{ unavailabilities_json|safe|default:"[]" }}
-</script>
 
 <script>
 function volunteerCalendarApp() {
     let events = [];
-    let unavailabilities = [];
     try {
         const rawE = document.getElementById('volunteer-events-data')?.textContent;
         events = rawE ? JSON.parse(rawE) : [];
-        const rawU = document.getElementById('volunteer-unavail-data')?.textContent;
-        unavailabilities = rawU ? JSON.parse(rawU) : [];
     } catch (e) {
         console.error("Error parsing calendar data:", e);
     }
@@ -45,7 +39,6 @@ function volunteerCalendarApp() {
         days: [],
         monthNames: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
         allEvents: events,
-        allUnavailabilities: unavailabilities,
         modalOpen: false,
         activeEvent: null,
 
@@ -103,30 +96,24 @@ function volunteerCalendarApp() {
 
             for (let i = firstDayIndex - 1; i >= 0; i--) {
                 const d = new Date(this.year, this.month - 1, prevLastDay - i);
-                const unavailInfo = this.checkUnavailability(d);
                 const isPast = d.getTime() < today.getTime();
                 daysArr.push({
                     date: d,
                     isCurrentMonth: false,
                     isToday: d.getTime() === today.getTime(),
                     isPast: isPast,
-                    isUnavailable: unavailInfo.isUnavailable,
-                    unavailReason: unavailInfo.reason,
                     events: this.getEventsForDate(d)
                 });
             }
 
             for (let i = 1; i <= lastDay; i++) {
                 const d = new Date(this.year, this.month, i);
-                const unavailInfo = this.checkUnavailability(d);
                 const isPast = d.getTime() < today.getTime();
                 daysArr.push({
                     date: d,
                     isCurrentMonth: true,
                     isToday: d.getTime() === today.getTime(),
                     isPast: isPast,
-                    isUnavailable: unavailInfo.isUnavailable,
-                    unavailReason: unavailInfo.reason,
                     events: this.getEventsForDate(d)
                 });
             }
@@ -134,15 +121,12 @@ function volunteerCalendarApp() {
             const remaining = 42 - daysArr.length;
             for (let i = 1; i <= remaining; i++) {
                 const d = new Date(this.year, this.month + 1, i);
-                const unavailInfo = this.checkUnavailability(d);
                 const isPast = d.getTime() < today.getTime();
                 daysArr.push({
                     date: d,
                     isCurrentMonth: false,
                     isToday: d.getTime() === today.getTime(),
                     isPast: isPast,
-                    isUnavailable: unavailInfo.isUnavailable,
-                    unavailReason: unavailInfo.reason,
                     events: this.getEventsForDate(d)
                 });
             }
@@ -161,34 +145,16 @@ function volunteerCalendarApp() {
             for (let i = 0; i < 7; i++) {
                 const d = new Date(startOfWeek);
                 d.setDate(startOfWeek.getDate() + i);
-                const unavailInfo = this.checkUnavailability(d);
                 const isPast = d.getTime() < today.getTime();
                 daysArr.push({
                     date: d,
                     isCurrentMonth: true,
                     isToday: d.getTime() === today.getTime(),
                     isPast: isPast,
-                    isUnavailable: unavailInfo.isUnavailable,
-                    unavailReason: unavailInfo.reason,
                     events: this.getEventsForDate(d)
                 });
             }
             this.days = daysArr;
-        },
-
-        checkUnavailability(d) {
-            const y = d.getFullYear();
-            const m = String(d.getMonth() + 1).padStart(2, '0');
-            const day = String(d.getDate()).padStart(2, '0');
-            const dateStr = `${y}-${m}-${day}`;
-
-            for (const u of this.allUnavailabilities) {
-                const end = u.end_date || u.start_date;
-                if (dateStr >= u.start_date && dateStr <= end) {
-                    return { isUnavailable: true, reason: u.reason };
-                }
-            }
-            return { isUnavailable: false, reason: '' };
         },
 
         getEventsForDate(d) {
@@ -262,9 +228,8 @@ function volunteerCalendarApp() {
                         <div class="p-1 sm:p-2 group transition-colors relative flex flex-col min-h-0 overflow-hidden w-full min-w-0"
                              :class="{
                                  'bg-gray-100/50 dark:bg-gray-950/70 opacity-60 cursor-not-allowed': day.isPast && !day.isToday,
-                                 'bg-slate-100/80 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800': day.isUnavailable && (!day.isPast || day.isToday),
-                                 'bg-white dark:bg-gray-900 hover:bg-emerald-50/30 dark:hover:bg-gray-800/80': day.isCurrentMonth && !day.isUnavailable && (!day.isPast || day.isToday),
-                                 'bg-gray-50/50 dark:bg-gray-950/50': !day.isCurrentMonth && !day.isUnavailable && (!day.isPast || day.isToday)
+                                 'bg-white dark:bg-gray-900 hover:bg-emerald-50/30 dark:hover:bg-gray-800/80': day.isCurrentMonth && (!day.isPast || day.isToday),
+                                 'bg-gray-50/50 dark:bg-gray-950/50': !day.isCurrentMonth && (!day.isPast || day.isToday)
                              }">
                             
                             <!-- Date Number -->
@@ -272,18 +237,11 @@ function volunteerCalendarApp() {
                                 <span class="text-xs font-black w-6 h-6 flex items-center justify-center rounded-full transition-all"
                                       :class="{
                                           'bg-emerald-600 text-white shadow-sm shadow-emerald-600/30': day.isToday,
-                                          'text-gray-300 dark:text-gray-600': day.isPast && !day.isToday,
-                                          'text-slate-600 dark:text-slate-400': day.isUnavailable && !day.isToday && !day.isPast,
-                                          'text-gray-900 dark:text-white': day.isCurrentMonth && !day.isToday && !day.isUnavailable && !day.isPast,
-                                          'text-gray-300 dark:text-gray-600': !day.isCurrentMonth && !day.isPast
+                                          'text-gray-300 dark:text-gray-600': !day.isCurrentMonth,
+                                          'text-gray-400 dark:text-gray-500': day.isPast && day.isCurrentMonth && !day.isToday,
+                                          'text-gray-900 dark:text-white': day.isCurrentMonth && !day.isToday && !day.isPast
                                       }"
                                       x-text="day.date.getDate()"></span>
-
-                                <template x-if="day.isUnavailable">
-                                    <span class="text-[9px] font-black text-slate-600 dark:text-slate-400 uppercase tracking-wider bg-slate-200/80 dark:bg-slate-800 px-1.5 py-0.5 rounded-md truncate max-w-[70px]" 
-                                          :title="'Unavailable: ' + day.unavailReason"
-                                          x-text="day.unavailReason || 'Unavailable'"></span>
-                                </template>
                             </div>
 
                             <!-- Events List inside Day Cell (Colored based on event type) -->

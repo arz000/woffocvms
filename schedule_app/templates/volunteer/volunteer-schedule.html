@@ -9,18 +9,6 @@
 
         <main class="flex-1 p-4 sm:p-6 lg:p-8 space-y-8 pb-24">
 
-            <!-- Messages -->
-            {% if messages %}
-            <div class="space-y-2">
-                {% for message in messages %}
-                <div class="p-4 rounded-2xl flex items-center gap-3 text-sm font-bold shadow-sm {% if message.tags == 'success' %}bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800{% else %}bg-emerald-50/50 dark:bg-gray-900 text-gray-800 dark:text-gray-300 border border-emerald-200 dark:border-gray-800{% endif %}">
-                    <svg class="w-5 h-5 shrink-0 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                    <span>{{ message }}</span>
-                </div>
-                {% endfor %}
-            </div>
-            {% endif %}
-
             <!-- Header -->
             <div>
                 <h1 class="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white tracking-tight">Unavailable Dates</h1>
@@ -30,11 +18,105 @@
             </div>
 
             <!-- ═══════════════════════════════════════════════════ -->
-            <!-- ROW 1: Form (left) | Serving Shifts (right)        -->
+            <!-- ROW 1: Serving Shifts (left) | Form (right)        -->
             <!-- ═══════════════════════════════════════════════════ -->
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
 
-                <!-- LEFT: Add Unavailable Date Form -->
+                <!-- LEFT: Your Scheduled Serving Shifts -->
+                <div class="lg:col-span-7">
+                    {% if my_shifts %}
+                    <div x-data="{
+                            perPage: 4, page: 1, items: [],
+                            get total() { return this.items.length; },
+                            get totalPages() { return Math.ceil(this.total / this.perPage); },
+                            get paginated() { return this.items.slice((this.page-1)*this.perPage, this.page*this.perPage); },
+                            prev() { if(this.page>1) this.page--; },
+                            next() { if(this.page<this.totalPages) this.page++; },
+                            init() { this.items = Array.from(this.$refs.shiftList.querySelectorAll('[data-item]')); }
+                         }" x-init="init()"
+                         class="flex flex-col">
+
+                        <div class="flex items-center justify-between mb-4 shrink-0">
+                            <h2 class="text-xl font-black text-gray-900 dark:text-white">Your Scheduled Serving Shifts</h2>
+                            <span class="bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 text-xs font-bold px-3 py-1 rounded-full border border-emerald-200 dark:border-emerald-800">
+                                {{ my_shifts|length }} event{{ my_shifts|length|pluralize }}
+                            </span>
+                        </div>
+
+                        <!-- Hidden source -->
+                        <div x-ref="shiftList" class="hidden">
+                            {% for group in my_shifts %}
+                            <div data-item="{{ forloop.counter0 }}">
+                                <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl px-5 py-4 shadow-sm hover:border-emerald-200 dark:hover:border-gray-700 hover:shadow-md transition-all min-h-[116px] flex flex-col justify-between">
+                                    <!-- Event name + date -->
+                                    <div class="flex items-start justify-between gap-2 mb-2.5">
+                                        <h4 class="text-sm font-black text-gray-900 dark:text-white leading-snug">{{ group.event.name }}</h4>
+                                        <span class="shrink-0 text-[11px] font-bold text-gray-400 dark:text-gray-500 mt-0.5">{{ group.event.date|date:"M d, Y" }}</span>
+                                    </div>
+                                    <!-- Roles/Ministries pills — one per shift -->
+                                    <div class="flex flex-wrap gap-2 mb-2.5">
+                                        {% for shift in group.shifts %}
+                                        <span class="inline-flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-[11px] font-bold px-2.5 py-1 rounded-lg uppercase tracking-wide">
+                                            <svg class="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                                            {{ shift.ministry.name }}{% if shift.job %} — {{ shift.job.title }}{% endif %}
+                                        </span>
+                                        {% endfor %}
+                                    </div>
+                                    <!-- Time -->
+                                    <div class="flex items-center gap-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400">
+                                        <svg class="w-3.5 h-3.5 text-emerald-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                        {{ group.event.start_time|time:"g:i A" }} – {{ group.event.end_time|time:"g:i A" }}
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- Paginated list — 4 slots maintained so pagination position stays fixed -->
+                        <div class="space-y-3">
+                            <template x-for="slotIdx in [0, 1, 2, 3]" :key="slotIdx">
+                                <div x-show="paginated[slotIdx] || totalPages > 1">
+                                    <!-- Actual card -->
+                                    <template x-if="paginated[slotIdx]">
+                                        <div x-html="paginated[slotIdx].innerHTML"></div>
+                                    </template>
+                                    <!-- Invisible ghost card to keep exact height on pages with fewer than 4 items -->
+                                    <template x-if="!paginated[slotIdx] && totalPages > 1">
+                                        <div class="invisible pointer-events-none select-none" aria-hidden="true"
+                                             x-html="items[0] ? items[0].innerHTML : ''"></div>
+                                    </template>
+                                </div>
+                            </template>
+                        </div>
+
+                        <!-- Pagination — pinned to bottom, invisible when only 1 page -->
+                        <div class="shrink-0 flex items-center justify-between mt-4 pt-3 border-t border-gray-100 dark:border-gray-800"
+                             :class="totalPages <= 1 ? 'invisible' : ''">
+                            <span class="text-xs font-bold text-gray-400 dark:text-gray-500">Page <span x-text="page"></span> of <span x-text="totalPages"></span></span>
+                            <div class="flex items-center gap-2">
+                                <button @click="prev()" :disabled="page===1" :class="page===1?'opacity-40 cursor-not-allowed':'hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:text-emerald-700'"
+                                        class="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700 transition-all">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"></path></svg> Prev
+                                </button>
+                                <button @click="next()" :disabled="page===totalPages" :class="page===totalPages?'opacity-40 cursor-not-allowed':'hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:text-emerald-700'"
+                                        class="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700 transition-all">
+                                    Next <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path></svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="bg-white dark:bg-gray-900 border border-dashed border-gray-200 dark:border-gray-800 rounded-3xl p-10 text-center shadow-sm">
+                        <div class="w-12 h-12 mx-auto bg-emerald-50 dark:bg-emerald-900/30 rounded-2xl flex items-center justify-center mb-3 text-emerald-400">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        </div>
+                        <p class="text-sm font-bold text-gray-700 dark:text-gray-300">No upcoming serving shifts</p>
+                        <p class="text-xs text-gray-400 mt-1">You have no assigned shifts yet.</p>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- RIGHT: Add Unavailable Date Form -->
                 <div x-data="{ selectedReason: 'Out of Town / Vacation', otherReason: '' }"
                      class="lg:col-span-5 bg-white dark:bg-gray-900 border border-emerald-100 dark:border-gray-800 rounded-3xl p-6 sm:p-7 shadow-sm">
                     <div class="flex items-center gap-3 mb-6 pb-4 border-b border-gray-100 dark:border-gray-800">
@@ -65,32 +147,34 @@
 
                         <div class="space-y-2">
                             <label class="block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300">Select Reason</label>
-                            <div class="flex flex-wrap gap-2">
-                                <button type="button" @click="selectedReason = 'Out of Town / Vacation'"
-                                        :class="selectedReason === 'Out of Town / Vacation' ? 'bg-emerald-500 text-white border-emerald-500 shadow-sm shadow-emerald-500/20' : 'bg-gray-50 dark:bg-gray-800/80 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-emerald-50/50 dark:hover:bg-gray-700'"
-                                        class="px-3.5 py-2 rounded-xl text-xs font-bold border transition-all flex items-center gap-1.5 active:scale-95">
-                                    <span>🏖️</span><span>Vacation / Out of Town</span>
-                                </button>
-                                <button type="button" @click="selectedReason = 'Work / School Conflict'"
-                                        :class="selectedReason === 'Work / School Conflict' ? 'bg-emerald-500 text-white border-emerald-500 shadow-sm shadow-emerald-500/20' : 'bg-gray-50 dark:bg-gray-800/80 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-emerald-50/50 dark:hover:bg-gray-700'"
-                                        class="px-3.5 py-2 rounded-xl text-xs font-bold border transition-all flex items-center gap-1.5 active:scale-95">
-                                    <span>💼</span><span>Work / School</span>
-                                </button>
-                                <button type="button" @click="selectedReason = 'Family Event'"
-                                        :class="selectedReason === 'Family Event' ? 'bg-emerald-500 text-white border-emerald-500 shadow-sm shadow-emerald-500/20' : 'bg-gray-50 dark:bg-gray-800/80 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-emerald-50/50 dark:hover:bg-gray-700'"
-                                        class="px-3.5 py-2 rounded-xl text-xs font-bold border transition-all flex items-center gap-1.5 active:scale-95">
-                                    <span>👨‍👩‍👧</span><span>Family Event</span>
-                                </button>
-                                <button type="button" @click="selectedReason = 'Health / Medical'"
-                                        :class="selectedReason === 'Health / Medical' ? 'bg-emerald-500 text-white border-emerald-500 shadow-sm shadow-emerald-500/20' : 'bg-gray-50 dark:bg-gray-800/80 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-emerald-50/50 dark:hover:bg-gray-700'"
-                                        class="px-3.5 py-2 rounded-xl text-xs font-bold border transition-all flex items-center gap-1.5 active:scale-95">
-                                    <span>🏥</span><span>Health / Medical</span>
-                                </button>
-                                <button type="button" @click="selectedReason = 'Other'"
-                                        :class="selectedReason === 'Other' ? 'bg-emerald-500 text-white border-emerald-500 shadow-sm shadow-emerald-500/20' : 'bg-gray-50 dark:bg-gray-800/80 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-emerald-50/50 dark:hover:bg-gray-700'"
-                                        class="px-3.5 py-2 rounded-xl text-xs font-bold border transition-all flex items-center gap-1.5 active:scale-95">
-                                    <span>✏️</span><span>Other</span>
-                                </button>
+                            <div class="border border-gray-200 dark:border-gray-700 rounded-2xl p-3 bg-gray-50/50 dark:bg-gray-800/30">
+                                <div class="flex flex-wrap gap-2">
+                                    <button type="button" @click="selectedReason = 'Out of Town / Vacation'"
+                                            :class="selectedReason === 'Out of Town / Vacation' ? 'bg-emerald-500 text-white border-emerald-500 shadow-sm shadow-emerald-500/20' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-emerald-50/50 dark:hover:bg-gray-700'"
+                                            class="px-3.5 py-2 rounded-xl text-xs font-bold border transition-all flex items-center gap-1.5 active:scale-95">
+                                        <span>🏖️</span><span>Vacation / Out of Town</span>
+                                    </button>
+                                    <button type="button" @click="selectedReason = 'Work / School Conflict'"
+                                            :class="selectedReason === 'Work / School Conflict' ? 'bg-emerald-500 text-white border-emerald-500 shadow-sm shadow-emerald-500/20' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-emerald-50/50 dark:hover:bg-gray-700'"
+                                            class="px-3.5 py-2 rounded-xl text-xs font-bold border transition-all flex items-center gap-1.5 active:scale-95">
+                                        <span>💼</span><span>Work / School</span>
+                                    </button>
+                                    <button type="button" @click="selectedReason = 'Family Event'"
+                                            :class="selectedReason === 'Family Event' ? 'bg-emerald-500 text-white border-emerald-500 shadow-sm shadow-emerald-500/20' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-emerald-50/50 dark:hover:bg-gray-700'"
+                                            class="px-3.5 py-2 rounded-xl text-xs font-bold border transition-all flex items-center gap-1.5 active:scale-95">
+                                        <span>👨‍👩‍👧</span><span>Family Event</span>
+                                    </button>
+                                    <button type="button" @click="selectedReason = 'Health / Medical'"
+                                            :class="selectedReason === 'Health / Medical' ? 'bg-emerald-500 text-white border-emerald-500 shadow-sm shadow-emerald-500/20' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-emerald-50/50 dark:hover:bg-gray-700'"
+                                            class="px-3.5 py-2 rounded-xl text-xs font-bold border transition-all flex items-center gap-1.5 active:scale-95">
+                                        <span>🏥</span><span>Health / Medical</span>
+                                    </button>
+                                    <button type="button" @click="selectedReason = 'Other'"
+                                            :class="selectedReason === 'Other' ? 'bg-emerald-500 text-white border-emerald-500 shadow-sm shadow-emerald-500/20' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-emerald-50/50 dark:hover:bg-gray-700'"
+                                            class="px-3.5 py-2 rounded-xl text-xs font-bold border transition-all flex items-center gap-1.5 active:scale-95">
+                                        <span>✏️</span><span>Other</span>
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
@@ -110,87 +194,6 @@
                             </button>
                         </div>
                     </form>
-                </div>
-
-                <!-- RIGHT: Your Scheduled Serving Shifts (tapat ng form) -->
-                <div class="lg:col-span-7">
-                    {% if my_shifts %}
-                    <div x-data="{
-                            perPage: 4, page: 1, items: [],
-                            get total() { return this.items.length; },
-                            get totalPages() { return Math.ceil(this.total / this.perPage); },
-                            get paginated() { return this.items.slice((this.page-1)*this.perPage, this.page*this.perPage); },
-                            prev() { if(this.page>1) this.page--; },
-                            next() { if(this.page<this.totalPages) this.page++; },
-                            init() { this.items = Array.from(this.$refs.shiftList.querySelectorAll('[data-item]')); }
-                         }" x-init="init()">
-
-                        <div class="flex items-center justify-between mb-4">
-                            <h2 class="text-xl font-black text-gray-900 dark:text-white">Your Scheduled Serving Shifts</h2>
-                            <span class="bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 text-xs font-bold px-3 py-1 rounded-full border border-emerald-200 dark:border-emerald-800">
-                                {{ my_shifts|length }} shift{{ my_shifts|length|pluralize }}
-                            </span>
-                        </div>
-
-                        <!-- Hidden source -->
-                        <div x-ref="shiftList" class="hidden">
-                            {% for shift in my_shifts %}
-                            <div data-item="{{ forloop.counter0 }}">
-                                <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl px-5 py-4 shadow-sm hover:border-emerald-200 dark:hover:border-gray-700 hover:shadow-md transition-all">
-                                    <h4 class="text-sm font-black text-gray-900 dark:text-white mb-2">{{ shift.event.name }}</h4>
-                                    <div class="flex flex-wrap items-center gap-2 mb-2.5">
-                                        <span class="inline-flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-[11px] font-bold px-2.5 py-1 rounded-lg uppercase tracking-wide">
-                                            <svg class="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
-                                            {{ shift.ministry.name }}
-                                        </span>
-                                        {% if shift.job %}
-                                        <span class="inline-flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-[11px] font-bold px-2.5 py-1 rounded-lg uppercase tracking-wide">
-                                            <svg class="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
-                                            {{ shift.job.title }}
-                                        </span>
-                                        {% endif %}
-                                    </div>
-                                    <div class="flex items-center gap-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400">
-                                        <svg class="w-3.5 h-3.5 text-emerald-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                        {{ shift.start_time|default:shift.event.start_time|time:"g:i A" }} – {{ shift.end_time|default:shift.event.end_time|time:"g:i A" }}
-                                    </div>
-                                </div>
-                            </div>
-                            {% endfor %}
-                        </div>
-
-                        <!-- Paginated list -->
-                        <div class="space-y-3">
-                            <template x-for="(item, idx) in paginated" :key="idx">
-                                <div x-html="item.innerHTML"></div>
-                            </template>
-                        </div>
-
-                        {% if my_shifts|length > 4 %}
-                        <div class="flex items-center justify-between mt-4 pt-3 border-t border-gray-100 dark:border-gray-800">
-                            <span class="text-xs font-bold text-gray-400 dark:text-gray-500">Page <span x-text="page"></span> of <span x-text="totalPages"></span></span>
-                            <div class="flex items-center gap-2">
-                                <button @click="prev()" :disabled="page===1" :class="page===1?'opacity-40 cursor-not-allowed':'hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:text-emerald-700'"
-                                        class="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700 transition-all">
-                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"></path></svg> Prev
-                                </button>
-                                <button @click="next()" :disabled="page===totalPages" :class="page===totalPages?'opacity-40 cursor-not-allowed':'hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:text-emerald-700'"
-                                        class="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700 transition-all">
-                                    Next <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path></svg>
-                                </button>
-                            </div>
-                        </div>
-                        {% endif %}
-                    </div>
-                    {% else %}
-                    <div class="bg-white dark:bg-gray-900 border border-dashed border-gray-200 dark:border-gray-800 rounded-3xl p-10 text-center shadow-sm">
-                        <div class="w-12 h-12 mx-auto bg-emerald-50 dark:bg-emerald-900/30 rounded-2xl flex items-center justify-center mb-3 text-emerald-400">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                        </div>
-                        <p class="text-sm font-bold text-gray-700 dark:text-gray-300">No upcoming serving shifts</p>
-                        <p class="text-xs text-gray-400 mt-1">You have no assigned shifts yet.</p>
-                    </div>
-                    {% endif %}
                 </div>
 
             </div><!-- end row 1 -->
@@ -225,18 +228,36 @@
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                                 </div>
                                 <div>
-                                    <h3 class="text-sm font-bold text-gray-900 dark:text-white">
-                                        {{ unavail.start_date|date:"F d, Y" }}
-                                        {% if unavail.end_date and unavail.end_date != unavail.start_date %}
-                                        <span class="text-xs text-gray-400 font-normal">to</span> {{ unavail.end_date|date:"F d, Y" }}
+                                    <div class="flex items-center gap-2 flex-wrap">
+                                        <h3 class="text-sm font-bold text-gray-900 dark:text-white">
+                                            {{ unavail.start_date|date:"F d, Y" }}
+                                            {% if unavail.end_date and unavail.end_date != unavail.start_date %}
+                                            <span class="text-xs text-gray-400 font-normal">to</span> {{ unavail.end_date|date:"F d, Y" }}
+                                            {% endif %}
+                                        </h3>
+                                        {% if unavail.status == 'approved' %}
+                                        <span class="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-900/50 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                            Approved
+                                        </span>
+                                        {% elif unavail.status == 'declined' %}
+                                        <span class="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-gray-400"></span>
+                                            Declined
+                                        </span>
+                                        {% else %}
+                                        <span class="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-200 border border-amber-200 dark:border-amber-800">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                                            Pending Review
+                                        </span>
                                         {% endif %}
-                                    </h3>
+                                    </div>
                                     <p class="text-xs text-emerald-700 dark:text-emerald-400 font-medium mt-0.5">{{ unavail.reason|default:"Unavailable" }}</p>
                                 </div>
                             </div>
                             <button @click="$dispatch('open-delete-modal', { model: 'Unavailability', id: {{ unavail.id }}, title: '{{ unavail.start_date|date:'F d, Y'|escapejs }}' })"
                                     type="button"
-                                    class="p-2 rounded-xl text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 transition-all text-xs font-bold flex items-center gap-1.5"
+                                    class="p-2 rounded-xl text-gray-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/40 transition-all text-xs font-bold flex items-center gap-1.5"
                                     title="Remove unavailable date">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                                 Remove

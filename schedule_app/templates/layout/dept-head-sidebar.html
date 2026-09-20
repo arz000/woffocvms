@@ -68,10 +68,117 @@
                 <span x-show="(!sidebarCollapsed || sidebarHover)" class="whitespace-nowrap transition-opacity duration-200">Department Role</span>
             </a>
 
-            <a href="{% url 'dept_head_availability' %}" class="flex items-center gap-3 px-3 py-3 rounded-2xl font-bold transition-all duration-200 relative group {% if url_name == 'dept_head_availability' %}bg-white text-emerald-950 shadow-lg shadow-emerald-950/20 font-black{% else %}text-emerald-100 hover:text-white hover:bg-white/10{% endif %}" :class="(sidebarCollapsed && !sidebarHover) ? 'justify-center' : ''" title="Member Availability">
-                <svg class="w-5 h-5 shrink-0 {% if url_name != 'dept_head_availability' %}text-emerald-300 group-hover:text-white transition-colors{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                <span x-show="(!sidebarCollapsed || sidebarHover)" class="whitespace-nowrap transition-opacity duration-200">Member Availability</span>
-            </a>
+            <!-- Enhanced Modern Member Request Dropdown -->
+            <div x-data="{ 
+                requestDropdownOpen: {% if url_name == 'dept_head_availability' or url_name == 'dept_head_leave_requests' or url_name == 'dept_head_join_requests' %}true{% else %}false{% endif %} 
+            }" class="relative select-none">
+                <!-- Dropdown Trigger Button -->
+                <button type="button"
+                        @click="if (sidebarCollapsed && !sidebarHover) { sidebarCollapsed = false; requestDropdownOpen = true; } else { requestDropdownOpen = !requestDropdownOpen; }"
+                        class="w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-2xl font-bold transition-all duration-200 relative group cursor-pointer {% if url_name == 'dept_head_availability' or url_name == 'dept_head_leave_requests' or url_name == 'dept_head_join_requests' %}bg-white/15 text-white font-black shadow-sm ring-1 ring-white/10{% else %}text-emerald-100 hover:text-white hover:bg-white/10{% endif %}"
+                        :class="(sidebarCollapsed && !sidebarHover) ? 'justify-center' : ''"
+                        title="Member Request">
+                    
+                    <div class="flex items-center gap-3 min-w-0">
+                        <!-- Icon Container with subtle glass tint & ping dot -->
+                        <div class="relative w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-colors {% if url_name == 'dept_head_availability' or url_name == 'dept_head_leave_requests' or url_name == 'dept_head_join_requests' %}bg-white/20 text-white{% else %}bg-emerald-800/60 text-emerald-300 group-hover:bg-white/15 group-hover:text-white{% endif %}">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            {% if pending_leave_requests_count > 0 or pending_join_requests_count > 0 or pending_unavailability_requests_count > 0 %}
+                            <span x-show="(sidebarCollapsed && !sidebarHover)" x-cloak class="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                                <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-400 ring-2 ring-emerald-950"></span>
+                            </span>
+                            {% endif %}
+                        </div>
+                        <span x-show="(!sidebarCollapsed || sidebarHover)" class="whitespace-nowrap transition-opacity duration-200 text-sm flex items-center gap-2">
+                            <span>Member Request</span>
+                            {% if pending_leave_requests_count > 0 or pending_join_requests_count > 0 or pending_unavailability_requests_count > 0 %}
+                            <span class="relative flex h-2 w-2 shrink-0" title="Pending Requests">
+                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                                <span class="relative inline-flex rounded-full h-2 w-2 bg-amber-400 shadow-xs"></span>
+                            </span>
+                            {% endif %}
+                        </span>
+                    </div>
+
+                    <!-- Chevron Pill Button -->
+                    <div x-show="(!sidebarCollapsed || sidebarHover)" 
+                         class="w-5 h-5 rounded-lg flex items-center justify-center text-emerald-300 group-hover:text-white transition-all duration-200 shrink-0 ml-auto"
+                         :class="requestDropdownOpen ? 'rotate-180 bg-white/10' : ''">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </div>
+                </button>
+
+                <!-- Modern Nested Sub-menu Container -->
+                <div x-show="requestDropdownOpen && (!sidebarCollapsed || sidebarHover)"
+                     x-cloak
+                     class="mt-1.5 mb-1 mx-1 p-1.5 rounded-2xl bg-black/20 dark:bg-black/35 backdrop-blur-xs border border-white/5 space-y-1">
+                    
+                    <!-- Member Unavailable Dates Link -->
+                    <a href="{% url 'dept_head_availability' %}"
+                       class="group/sub flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs transition-all duration-200 relative {% if url_name == 'dept_head_availability' %}bg-white text-emerald-950 font-black shadow-md shadow-emerald-950/25{% else %}text-emerald-200 hover:text-white hover:bg-white/10 font-bold{% endif %}"
+                       title="Member Unavailable Dates">
+                        <div class="w-6 h-6 rounded-lg flex items-center justify-center shrink-0 transition-colors {% if url_name == 'dept_head_availability' %}bg-emerald-100 text-emerald-800{% else %}bg-white/5 text-emerald-300 group-hover/sub:bg-white/15 group-hover/sub:text-white{% endif %}">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                            </svg>
+                        </div>
+                        <div class="min-w-0 flex-1 flex items-center justify-between gap-2">
+                            <p class="truncate leading-tight">Member Unavailable</p>
+                            {% if pending_unavailability_requests_count > 0 %}
+                            <span class="relative flex h-2 w-2 shrink-0" title="Pending Unavailable Requests">
+                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                                <span class="relative inline-flex rounded-full h-2 w-2 bg-amber-400 shadow-xs"></span>
+                            </span>
+                            {% endif %}
+                        </div>
+                    </a>
+
+                    <!-- Volunteer Request to Join Link -->
+                    <a href="{% url 'dept_head_join_requests' %}"
+                       class="group/sub flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs transition-all duration-200 relative {% if url_name == 'dept_head_join_requests' %}bg-white text-emerald-950 font-black shadow-md shadow-emerald-950/25{% else %}text-emerald-200 hover:text-white hover:bg-white/10 font-bold{% endif %}"
+                       title="Volunteer Request to Join">
+                        <div class="w-6 h-6 rounded-lg flex items-center justify-center shrink-0 transition-colors {% if url_name == 'dept_head_join_requests' %}bg-emerald-100 text-emerald-800{% else %}bg-white/5 text-emerald-300 group-hover/sub:bg-white/15 group-hover/sub:text-white{% endif %}">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path>
+                            </svg>
+                        </div>
+                        <div class="min-w-0 flex-1 flex items-center justify-between gap-2">
+                            <p class="truncate leading-tight">Request to Join</p>
+                            {% if pending_join_requests_count > 0 %}
+                            <span class="relative flex h-2 w-2 shrink-0" title="Pending Join Requests">
+                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                                <span class="relative inline-flex rounded-full h-2 w-2 bg-amber-400 shadow-xs"></span>
+                            </span>
+                            {% endif %}
+                        </div>
+                    </a>
+
+                    <!-- Member Request for Leave Link -->
+                    <a href="{% url 'dept_head_leave_requests' %}"
+                       class="group/sub flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs transition-all duration-200 relative {% if url_name == 'dept_head_leave_requests' %}bg-white text-emerald-950 font-black shadow-md shadow-emerald-950/25{% else %}text-emerald-200 hover:text-white hover:bg-white/10 font-bold{% endif %}"
+                       title="Member Request for Leave">
+                        <div class="w-6 h-6 rounded-lg flex items-center justify-center shrink-0 transition-colors {% if url_name == 'dept_head_leave_requests' %}bg-amber-100 text-amber-800{% else %}bg-white/5 text-emerald-300 group-hover/sub:bg-white/15 group-hover/sub:text-white{% endif %}">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                            </svg>
+                        </div>
+                        <div class="min-w-0 flex-1 flex items-center justify-between gap-2">
+                            <p class="truncate leading-tight">Request for Leave</p>
+                            {% if pending_leave_requests_count > 0 %}
+                            <span class="relative flex h-2 w-2 shrink-0" title="Pending Leave Requests">
+                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                                <span class="relative inline-flex rounded-full h-2 w-2 bg-amber-400 shadow-xs"></span>
+                            </span>
+                            {% endif %}
+                        </div>
+                    </a>
+                </div>
+            </div>
 
             <a href="{% url 'dept_head_events' %}" class="flex items-center gap-3 px-3 py-3 rounded-2xl font-bold transition-all duration-200 relative group {% if url_name == 'dept_head_events' or url_name == 'dept_head_event_detail' %}bg-white text-emerald-950 shadow-lg shadow-emerald-950/20 font-black{% else %}text-emerald-100 hover:text-white hover:bg-white/10{% endif %}" :class="(sidebarCollapsed && !sidebarHover) ? 'justify-center' : ''" title="Service / Events">
                 <svg class="w-5 h-5 shrink-0 {% if url_name != 'dept_head_events' and url_name != 'dept_head_event_detail' %}text-emerald-300 group-hover:text-white transition-colors{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>

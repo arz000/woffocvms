@@ -72,6 +72,14 @@
                 </svg>
                 <span x-show="(!sidebarCollapsed || sidebarHover)" class="whitespace-nowrap transition-opacity duration-200">Department Member</span>
             </a>
+
+            <!-- Join Department -->
+            <a href="{% url 'volunteer_join_department' %}" class="flex items-center gap-3 px-3 py-3 rounded-2xl font-bold transition-all duration-200 relative group {% if url_name == 'volunteer_join_department' %}bg-white text-emerald-950 shadow-lg shadow-emerald-950/20 font-black{% else %}text-emerald-100 hover:text-white hover:bg-white/10{% endif %}" :class="(sidebarCollapsed && !sidebarHover) ? 'justify-center' : ''" title="Join Department">
+                <svg class="w-5 h-5 shrink-0 {% if url_name != 'volunteer_join_department' %}text-emerald-300 group-hover:text-white transition-colors{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                </svg>
+                <span x-show="(!sidebarCollapsed || sidebarHover)" class="whitespace-nowrap transition-opacity duration-200">Join Department</span>
+            </a>
         </nav>
         {% endwith %}
     </aside>
