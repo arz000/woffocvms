@@ -474,10 +474,6 @@
                                     </svg>
                                 </div>
                                 <div>
-                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-100/80 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800 mb-1">
-                                        <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-                                        Roster Departure
-                                    </span>
                                     <h3 class="text-xl sm:text-2xl font-black text-gray-900 dark:text-white leading-tight">Leave Department</h3>
                                     <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 font-medium">Request to be removed from this volunteer serving roster</p>
                                 </div>
@@ -557,30 +553,6 @@
                                         Reason for leaving <span class="text-gray-400 font-normal">(optional)</span>
                                     </label>
                                     <span class="text-[10px] font-bold text-gray-400" x-text="(leaveReason ? leaveReason.length : 0) + '/250'"></span>
-                                </div>
-
-                                <!-- Quick Reason Chips -->
-                                <div class="flex flex-wrap gap-1.5 pb-1">
-                                    <button type="button" @click="setLeaveChip('Schedule constraints and availability')"
-                                            :class="leaveReason === 'Schedule constraints and availability' ? 'bg-gray-900 dark:bg-amber-600 text-white border-transparent shadow-xs' : 'bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-amber-300'"
-                                            class="px-2.5 py-1 rounded-xl text-[11px] font-semibold border transition-all cursor-pointer select-none active:scale-95">
-                                        ⏳ Schedule Constraints
-                                    </button>
-                                    <button type="button" @click="setLeaveChip('Relocating to another area/residence')"
-                                            :class="leaveReason === 'Relocating to another area/residence' ? 'bg-gray-900 dark:bg-amber-600 text-white border-transparent shadow-xs' : 'bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-amber-300'"
-                                            class="px-2.5 py-1 rounded-xl text-[11px] font-semibold border transition-all cursor-pointer select-none active:scale-95">
-                                        📍 Relocation
-                                    </button>
-                                    <button type="button" @click="setLeaveChip('Transitioning focus to another church ministry')"
-                                            :class="leaveReason === 'Transitioning focus to another church ministry' ? 'bg-gray-900 dark:bg-amber-600 text-white border-transparent shadow-xs' : 'bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-amber-300'"
-                                            class="px-2.5 py-1 rounded-xl text-[11px] font-semibold border transition-all cursor-pointer select-none active:scale-95">
-                                        🔄 Another Ministry
-                                    </button>
-                                    <button type="button" @click="setLeaveChip('Taking a temporary personal sabbatical')"
-                                            :class="leaveReason === 'Taking a temporary personal sabbatical' ? 'bg-gray-900 dark:bg-amber-600 text-white border-transparent shadow-xs' : 'bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-amber-300'"
-                                            class="px-2.5 py-1 rounded-xl text-[11px] font-semibold border transition-all cursor-pointer select-none active:scale-95">
-                                        ☕ Personal Sabbatical
-                                    </button>
                                 </div>
 
                                 <textarea name="reason" id="leave_reason" rows="2" maxlength="250"
